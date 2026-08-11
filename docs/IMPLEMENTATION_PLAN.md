@@ -22,11 +22,11 @@ Agentes de IA devem consultar este arquivo para entender o estado atual do proje
 - [x] Autenticação Híbrida: Login local (HTML/Form) e rota base para Senha Única USP.
 
 ### Fase 2: Complemento de Identidade e Períodos Letivos
-- [ ] **App `users` (Complemento):** Adicionar campos `tax_id`, `codpes`, `is_email_verified`, `full_name` ao modelo `User`.
-- [ ] **App `users`:** Criar modelo `IdentityProviderLink` (para vínculo de Senha Única).
-- [ ] **App `terms`:** Criar o módulo de Períodos Letivos.
-- [ ] **App `terms`:** Criar o modelo `AcademicTerm` e expô-lo no Django Admin.
-- [ ] **Testes:** Validar `TS-AUTH-005` e criação de termos.
+- [x] **App `users` (Complemento):** Adicionar campos `tax_id`, `codpes`, `is_email_verified`, `full_name` ao modelo `User`.
+- [x] **App `users`:** Criar modelo `IdentityProviderLink` (para vínculo de Senha Única).
+- [x] **App `terms`:** Criar o módulo de Períodos Letivos.
+- [x] **App `terms`:** Criar o modelo `AcademicTerm` e expô-lo no Django Admin.
+- [x] **Testes:** Validar `TS-AUTH-005` e criação de termos.
 
 ### Fase 3: Domínio Core (Inscrições e Catálogos)
 - [ ] **App `applications`:** Criar os modelos `CatalogOption` e `ApplicationCatalogSelection`.
@@ -78,4 +78,4 @@ Agentes de IA devem consultar este arquivo para entender o estado atual do proje
 ---
 
 ## 📈 Status Atual
-**Progresso Geral:** Estamos na **Fase 2**. O setup inicial (Fase 1) foi concluído com sucesso.
+**Progresso Geral:** A **Fase 2** foi concluída. O próximo passo é a **Fase 3** (Domínio Core: Inscrições e Catálogos).

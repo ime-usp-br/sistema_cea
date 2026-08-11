@@ -29,7 +29,8 @@ django-stubs = "*"
 [tool.ruff]
 target-version = "py314"
 line-length = 119
-src = ["."]
+src = ["apps"]
+cache-dir = "/tmp/ruff_cache"
 exclude = [
     "**/migrations/**",
     "**/staticfiles/**",
@@ -51,6 +52,7 @@ line-ending = "auto"
 python_version = "3.14"
 plugins = ["mypy_django_plugin.main"]
 mypy_path = "apps"
+explicit_package_bases = true
 ignore_missing_imports = true
 no_implicit_optional = true
 check_untyped_defs = true

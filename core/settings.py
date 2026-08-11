@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     # Internal apps (from apps/ directory)
     'users.apps.UsersConfig',
     'base.apps.BaseConfig',
+    'terms.apps.TermsConfig',
 
     # USP Socialite
     'senhaunica_socialite',

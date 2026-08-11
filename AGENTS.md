@@ -30,7 +30,26 @@ Sempre consulte os documentos fundacionais do projeto antes de propor ou gerar c
 
 ---
 
-## 4. Regras de Ouro da Implementação
+## 4. Execução Local (Docker)
+
+O projeto roda **inteiramente via Docker Compose** (Postgres, Redis, Web, Celery). Nenhum comando deve ser executado no host; sempre use o serviço `web` como container de execução:
+
+| Comando | Descrição |
+|---|---|
+| `docker compose up -d` | Sobe os serviços (Web, Postgres, Redis, Celery). |
+| `docker compose exec web python manage.py makemigrations <app>` | Gera migrações. |
+| `docker compose exec --user "$(id -u):$(id -g)" web python manage.py makemigrations <app>` | Gera migrações quando o container não consegue escrever no *bind mount* (o container roda como `appuser` uid 1000, enquanto os arquivos do host pertencem ao usuário local). |
+| `docker compose exec web python manage.py migrate` | Aplica migrações. |
+| `docker compose exec web python -m pytest` | Roda os testes (Pytest). |
+| `docker compose exec web ruff check .` | Roda o linter (Ruff). |
+| `docker compose exec web mypy .` | Roda a verificação de tipos (MyPy). |
+| `docker compose logs -f web` | Acompanha os logs do Django. |
+
+O `docker-compose.override.yml` faz *bind mount* do código-fonte em `/app`, portanto alterações locais são refletidas imediatamente no container.
+
+---
+
+## 5. Regras de Ouro da Implementação
 
 Para manter a base de código limpa, coesa e alinhada à arquitetura aprovada, você **deve** seguir estas regras:
 
@@ -43,7 +62,7 @@ Para manter a base de código limpa, coesa e alinhada à arquitetura aprovada, v
 
 ---
 
-## 5. Plano de Execução (Roadmap de Implementação)
+## 6. Plano de Execução (Roadmap de Implementação)
 
 Agentes devem focar em entregas incrementais. Não tente implementar o sistema inteiro em um único prompt. Siga a ordem abaixo ao construir o projeto:
 
@@ -78,7 +97,7 @@ Agentes devem focar em entregas incrementais. Não tente implementar o sistema i
 
 ---
 
-## 6. Padrões de Testes exigidos do Agente
+## 7. Padrões de Testes exigidos do Agente
 
 Ao gerar código de testes, você deve:
 
@@ -89,7 +108,7 @@ Ao gerar código de testes, você deve:
 
 ---
 
-## 7. Resolução de Conflitos ou Ambiguidade
+## 8. Resolução de Conflitos ou Ambiguidade
 
 Se, durante a geração do código, você encontrar ambiguidade entre os documentos:
 1. Privilegie o **DATABASE_SCHEMA.md** para decisões sobre tipos de dados, limites e chaves, pois é a verdade absoluta do armazenamento.
