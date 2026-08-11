@@ -1,0 +1,32 @@
+{% extends "base/base.html" %}
+
+{% block title %}Inscrição {{ object.protocol }}{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
+{% block content %}
+    <h1>Inscrição {{ object.protocol }}</h1>
+
+    <dl>
+        <dt>Modalidade</dt>
+        <dd>{{ object.get_modality_display }}</dd>
+        <dt>Status</dt>
+        <dd>{{ object.get_lifecycle_status_display }}</dd>
+        <dt>Período</dt>
+        <dd>{{ object.term }}</dd>
+        <dt>Pesquisador</dt>
+        <dd>{{ object.researcher_name }}</dd>
+        <dt>E-mail</dt>
+        <dd>{{ object.contact_email }}</dd>
+    </dl>
+
+    {% if object.attachments.all %}
+        <h2>Anexos</h2>
+        <ul>
+            {% for attachment in object.attachments.all %}
+                <li>{{ attachment.file_asset.original_filename }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <p><a href="{% url 'applications:dashboard' %}">Voltar ao painel</a></p>
+{% endblock %}

@@ -23,6 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('auth/', include('django.contrib.auth.urls')),
     path('', index, name='index'),
+    path('', include('applications.urls')),
     path('logout/', logout_view, name='logout'),
     path('', include('senhaunica_socialite.urls')),
 ]

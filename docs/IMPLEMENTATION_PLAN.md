@@ -29,12 +29,12 @@ Agentes de IA devem consultar este arquivo para entender o estado atual do proje
 - [x] **Testes:** Validar `TS-AUTH-005` e criação de termos.
 
 ### Fase 3: Domínio Core (Inscrições e Catálogos)
-- [ ] **App `applications`:** Criar os modelos `CatalogOption` e `ApplicationCatalogSelection`.
-- [ ] **App `files`:** Criar o modelo genérico `FileAsset` (para metadados de arquivos no storage) e `ApplicationAttachment`.
-- [ ] **App `applications`:** Criar o modelo central `ServiceApplication` (com `soft_deleted_at`, relacionamentos, etc).
-- [ ] **Services:** Criar `ProtocolGenerator` para garantir protocolos únicos de 9 dígitos.
-- [ ] **Views/Forms:** Criar views e templates para o candidato enviar a inscrição (Projetos e Consultas).
-- [ ] **Testes:** Implementar suíte `TS-APP-001` até `TS-APP-010`.
+- [x] **App `applications`:** Criar os modelos `CatalogOption` e `ApplicationCatalogSelection`.
+- [x] **App `files`:** Criar o modelo genérico `FileAsset` (para metadados de arquivos no storage) e `ApplicationAttachment`.
+- [x] **App `applications`:** Criar o modelo central `ServiceApplication` (com `soft_deleted_at`, relacionamentos, etc).
+- [x] **Services:** Criar `ProtocolGenerator` para garantir protocolos únicos de 9 dígitos.
+- [x] **Views/Forms:** Criar views e templates para o candidato enviar a inscrição (Projetos e Consultas).
+- [x] **Testes:** Implementar suíte `TS-APP-001` até `TS-APP-010`.
 
 ### Fase 4: Auditoria de Dados (Fluxo Docente)
 - [ ] **App `audits`:** Criar os modelos `DatasetAuditSubmission`, `DatasetAuditReview` e `DatasetAuditResolution`.
@@ -78,4 +78,4 @@ Agentes de IA devem consultar este arquivo para entender o estado atual do proje
 ---
 
 ## 📈 Status Atual
-**Progresso Geral:** A **Fase 2** foi concluída. O próximo passo é a **Fase 3** (Domínio Core: Inscrições e Catálogos).
+**Progresso Geral:** A **Fase 3** foi concluída. O próximo passo é a **Fase 4** (Auditoria de Dados: Fluxo Docente).

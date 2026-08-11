@@ -1,0 +1,40 @@
+{% extends "base/base.html" %}
+
+{% block title %}Painel do Candidato{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
+{% block content %}
+    <h1>Painel do Candidato</h1>
+    <p><a href="{% url 'applications:create' %}">Nova inscrição</a></p>
+
+    {% if applications %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Protocolo</th>
+                    <th>Modalidade</th>
+                    <th>Status</th>
+                    <th>Período</th>
+                    <th>Data</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for application in applications %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'applications:detail' application.protocol %}">
+                                {{ application.protocol }}
+                            </a>
+                        </td>
+                        <td>{{ application.get_modality_display }}</td>
+                        <td>{{ application.get_lifecycle_status_display }}</td>
+                        <td>{{ application.term }}</td>
+                        <td>{{ application.created_at|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Você ainda não possui inscrições.</p>
+    {% endif %}
+{% endblock %}

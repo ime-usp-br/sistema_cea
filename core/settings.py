@@ -63,6 +63,8 @@ INSTALLED_APPS = [
     'users.apps.UsersConfig',
     'base.apps.BaseConfig',
     'terms.apps.TermsConfig',
+    'files.apps.FilesConfig',
+    'applications.apps.ApplicationsConfig',
 
     # USP Socialite
     'senhaunica_socialite',
@@ -143,6 +145,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Redirects for Auth
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
+LOGIN_URL = '/auth/login/'
 
 
 # Internationalization
@@ -162,6 +165,10 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Media files (private storage)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Use WhiteNoise storage only in production (DEBUG=False)
 if not DEBUG:
