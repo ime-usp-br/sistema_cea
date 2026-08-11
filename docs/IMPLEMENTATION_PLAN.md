@@ -50,11 +50,11 @@ Agentes de IA devem consultar este arquivo para entender o estado atual do proje
 - [x] **Testes:** Implementar suíte `TS-FEE-001` a `TS-FEE-008` e `TS-MAN-001`.
 
 ### Fase 6: Integração de Gateways (Pix e Boleto)
-- [ ] **App `pix`:** Criar modelo `PixPaymentInstrument` e `PixWebhookEvent`.
-- [ ] **App `pix`:** Implementar `PixGateway` (httpx) e `PixPaymentService`.
-- [ ] **App `bank_slips`:** Criar modelo `BankSlipPaymentInstrument`.
-- [ ] **App `bank_slips`:** Implementar `BankSlipGateway` (zeep SOAP) e `BankSlipPaymentService`.
-- [ ] **Testes:** Implementar suítes `TS-PAY`, `TS-PIX` e `TS-BSL`.
+- [x] **App `pix`:** Criar modelo `PixPaymentInstrument` e `PixWebhookEvent`.
+- [x] **App `pix`:** Implementar `PixGateway` (httpx) e `PixPaymentService`.
+- [x] **App `bank_slips`:** Criar modelo `BankSlipPaymentInstrument`.
+- [x] **App `bank_slips`:** Implementar `BankSlipGateway` (zeep SOAP) e `BankSlipPaymentService`.
+- [x] **Testes:** Implementar suítes `TS-PAY`, `TS-PIX` e `TS-BSL`.
 
 ### Fase 7: Agendamentos e Decisões
 - [ ] **App `meetings`:** Criar modelos `ProjectScreening` (Triagem) e `ConsultationMeeting`.
@@ -78,4 +78,4 @@ Agentes de IA devem consultar este arquivo para entender o estado atual do proje
 ---
 
 ## 📈 Status Atual
-**Progresso Geral:** A **Fase 5** foi concluída. O próximo passo é a **Fase 6** (Integração de Gateways: Pix e Boleto).
+**Progresso Geral:** A **Fase 6** foi concluída. O próximo passo é a **Fase 7** (Agendamentos e Decisões).

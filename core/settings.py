@@ -67,6 +67,8 @@ INSTALLED_APPS = [
     'applications.apps.ApplicationsConfig',
     'audits.apps.AuditsConfig',
     'payments.apps.PaymentsConfig',
+    'pix.apps.PixConfig',
+    'bank_slips.apps.BankSlipsConfig',
 
     # USP Socialite
     'senhaunica_socialite',
@@ -190,3 +192,29 @@ CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+
+
+# ---- Integração Pix (API REST/JSON) ----
+PIX_WEBHOOK_TOKEN = env('PIX_WEBHOOK_TOKEN', default='dev-webhook-token')
+PIX_BASE_URL = env('PIX_BASE_URL', default='https://example.com/pix')
+PIX_USERNAME = env('PIX_USERNAME', default='')
+PIX_PASSWORD = env('PIX_PASSWORD', default='')
+PIX_EXPIRATION_SECONDS = env.int('PIX_EXPIRATION_SECONDS', default=3600)
+PIX_CODIGO_FONTE_RECURSO = env.int('PIX_CODIGO_FONTE_RECURSO', default=423)
+PIX_CODIGO_UNIDADE_DESPESA = env.int('PIX_CODIGO_UNIDADE_DESPESA', default=1)
+PIX_ESTRUTURA_HIERARQUICA = env('PIX_ESTRUTURA_HIERARQUICA', default='\\DISTRIBUIDOR')
+# Máximo de dias aceito para o período de reconciliação (listarConcluidos).
+PIX_RECONCILIATION_MAX_DAYS = env.int('PIX_RECONCILIATION_MAX_DAYS', default=30)
+
+
+# ---- Integração Boleto (SOAP/WSDL) ----
+BANK_SLIP_WSDL_URL = env(
+    'BANK_SLIP_WSDL_URL',
+    default='https://dev.uspdigital.usp.br/wsboleto/wsdl/boleto.wsdl',
+)
+BANK_SLIP_USERNAME = env('BANK_SLIP_USERNAME', default='')
+BANK_SLIP_PASSWORD = env('BANK_SLIP_PASSWORD', default='')
+BANK_SLIP_DUE_DAYS = env.int('BANK_SLIP_DUE_DAYS', default=3)
+BANK_SLIP_CODIGO_FONTE_RECURSO = env.int('BANK_SLIP_CODIGO_FONTE_RECURSO', default=423)
+BANK_SLIP_CODIGO_UNIDADE_DESPESA = env.int('BANK_SLIP_CODIGO_UNIDADE_DESPESA', default=1)
+BANK_SLIP_ESTRUTURA_HIERARQUICA = env('BANK_SLIP_ESTRUTURA_HIERARQUICA', default='\\DISTRIBUIDOR')

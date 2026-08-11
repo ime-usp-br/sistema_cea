@@ -1,0 +1,22 @@
+{% extends "base/base.html" %}
+{% block title %}Pix - Inscrição {{ application.protocol }}{% endblock %}
+{% block content %}
+<h1>Pagamento via Pix</h1>
+<p>Inscrição: <strong>{{ application.protocol }}</strong></p>
+{% if pix %}
+  <p><strong>Valor:</strong> R$ {{ pix.payment_instrument.amount|floatformat:2 }}</p>
+  <p><strong>Válido até:</strong> {{ pix.expires_at|date:"d/m/Y H:i" }}</p>
+  {% if pix.qr_code_image_asset %}
+    <img src="{% url 'pix:qrcode_image' pix.pk %}" alt="QR Code Pix" width="220" height="220">
+  {% endif %}
+  <p><strong>Pix copia e cola:</strong></p>
+  <textarea rows="4" cols="60" readonly>{{ pix.qr_code_payload }}</textarea>
+{% else %}
+  <p>Nenhum Pix gerado para esta inscrição.</p>
+  <form method="post" action="{% url 'pix:generate' application.protocol %}">
+    {% csrf_token %}
+    <button type="submit">Gerar Pix</button>
+  </form>
+{% endif %}
+<p><a href="{% url 'payments:fee_payment' application.protocol %}">Voltar ao pagamento</a></p>
+{% endblock %}

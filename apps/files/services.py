@@ -4,6 +4,7 @@ import re
 import uuid
 from typing import Any
 
+from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import UploadedFile
 
@@ -33,6 +34,32 @@ def create_file_asset(
         original_filename=filename,
         storage_key=stored_key,
         content_type=uploaded_file.content_type or None,
+        size_bytes=len(content),
+        sha256_checksum=checksum,
+        purpose=purpose,
+        application=application,
+        uploaded_by=uploaded_by,
+    )
+
+
+def create_file_asset_from_bytes(
+    *,
+    application: Any,
+    uploaded_by: Any,
+    content: bytes,
+    filename: str,
+    content_type: str,
+    purpose: str,
+) -> FileAsset:
+    """Grava conteúdo em bytes no storage privado e registra os metadados."""
+    checksum = hashlib.sha256(content).hexdigest()
+    safe_name = _sanitize_filename(filename)
+    storage_key = f"{purpose}/{application.pk}/{uuid.uuid4()}-{safe_name}"
+    stored_key = default_storage.save(storage_key, ContentFile(content))
+    return FileAsset.objects.create(
+        original_filename=safe_name,
+        storage_key=stored_key,
+        content_type=content_type,
         size_bytes=len(content),
         sha256_checksum=checksum,
         purpose=purpose,
