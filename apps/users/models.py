@@ -11,11 +11,22 @@ class User(AbstractUser):
     painful migration required to swap the default user model later.
     """
 
+    class Role(models.TextChoices):
+        CANDIDATE = "candidate", "Candidato"
+        TEACHER = "teacher", "Docente"
+        SECRETARIAT = "secretariat", "Secretaria"
+        ADMINISTRATOR = "administrator", "Administrador"
+
     full_name = models.CharField(max_length=255, blank=True, default="")
     tax_id = models.CharField(max_length=20, unique=True, null=True, blank=True)
     codpes = models.IntegerField(unique=True, null=True, blank=True)
     is_email_verified = models.BooleanField(default=False)
     email_verified_at = models.DateTimeField(null=True, blank=True)
+    role = models.CharField(
+        max_length=20,
+        choices=Role.choices,
+        default=Role.CANDIDATE,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

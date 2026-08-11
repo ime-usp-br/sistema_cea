@@ -82,6 +82,11 @@ class ApplicationSubmissionService:
             if modality == ServiceApplication.Modality.PROJECT
             else ServiceApplication.LifecycleStatus.AWAITING_PAYMENT
         )
+        dataset_audit_state = (
+            ServiceApplication.DatasetAuditState.AWAITING_SUBMISSION
+            if dataset_audit_required
+            else None
+        )
         base_values: dict[str, Any] = {
             "term": term,
             "owner": owner,
@@ -89,6 +94,7 @@ class ApplicationSubmissionService:
             "origin": ServiceApplication.Origin.CREATED_PORTAL,
             "lifecycle_status": lifecycle_status,
             "dataset_audit_required": dataset_audit_required,
+            "dataset_audit_state": dataset_audit_state,
             "researcher_name": researcher_name,
             "contact_email": contact_email,
             "has_whatsapp": has_whatsapp,

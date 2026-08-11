@@ -37,10 +37,10 @@ Agentes de IA devem consultar este arquivo para entender o estado atual do proje
 - [x] **Testes:** Implementar suíte `TS-APP-001` até `TS-APP-010`.
 
 ### Fase 4: Auditoria de Dados (Fluxo Docente)
-- [ ] **App `audits`:** Criar os modelos `DatasetAuditSubmission`, `DatasetAuditReview` e `DatasetAuditResolution`.
-- [ ] **Services:** Implementar a máquina de estados no `DatasetAuditService` (aprovar, rejeitar, pedir correção).
-- [ ] **Views/Templates:** Telas para o candidato enviar o arquivo/link e para o docente/secretaria revisar.
-- [ ] **Testes:** Implementar suíte `TS-AUD-001` até `TS-AUD-017`.
+- [x] **App `audits`:** Criar os modelos `DatasetAuditSubmission`, `DatasetAuditReview` e `DatasetAuditResolution`.
+- [x] **Services:** Implementar a máquina de estados no `DatasetAuditService` (aprovar, rejeitar, pedir correção).
+- [x] **Views/Templates:** Telas para o candidato enviar o arquivo/link e para o docente/secretaria revisar.
+- [x] **Testes:** Implementar suíte `TS-AUD-001` até `TS-AUD-017`.
 
 ### Fase 5: Finanças e Pagamentos (Core Financeiro)
 - [ ] **App `payments`:** Criar os modelos `FeeRequirement` e `PaymentInstrument`.
@@ -78,4 +78,4 @@ Agentes de IA devem consultar este arquivo para entender o estado atual do proje
 ---
 
 ## 📈 Status Atual
-**Progresso Geral:** A **Fase 3** foi concluída. O próximo passo é a **Fase 4** (Auditoria de Dados: Fluxo Docente).
+**Progresso Geral:** A **Fase 4** foi concluída. O próximo passo é a **Fase 5** (Finanças e Pagamentos: Core Financeiro).

@@ -29,4 +29,18 @@
     {% endif %}
 
     <p><a href="{% url 'applications:dashboard' %}">Voltar ao painel</a></p>
+
+{% if object.modality == "project" and object.owner %}
+    {% if object.lifecycle_status == "awaiting_dataset_submission" or object.lifecycle_status == "awaiting_dataset_correction" %}
+        <p>
+            <a href="{% url 'audits:submit' object.protocol %}">
+                {% if object.lifecycle_status == "awaiting_dataset_correction" %}
+                    Corrigir e reenviar dados
+                {% else %}
+                    Enviar dados para auditoria
+                {% endif %}
+            </a>
+        </p>
+    {% endif %}
+{% endif %}
 {% endblock %}

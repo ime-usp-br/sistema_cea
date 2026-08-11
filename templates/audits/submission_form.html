@@ -1,0 +1,20 @@
+{% extends "base/base.html" %}
+
+{% block title %}Enviar dados — {{ application.protocol }}{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
+{% block content %}
+    <h1>Envio de dados para auditoria</h1>
+    <p>Inscrição: <strong>{{ application.protocol }}</strong></p>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        {% if form.non_field_errors %}
+            <p style="color: red;">{{ form.non_field_errors }}</p>
+        {% endif %}
+        <button type="submit">Enviar</button>
+    </form>
+
+    <p><a href="{% url 'applications:detail' application.protocol %}">Voltar</a></p>
+{% endblock %}

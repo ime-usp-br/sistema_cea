@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'terms.apps.TermsConfig',
     'files.apps.FilesConfig',
     'applications.apps.ApplicationsConfig',
+    'audits.apps.AuditsConfig',
 
     # USP Socialite
     'senhaunica_socialite',

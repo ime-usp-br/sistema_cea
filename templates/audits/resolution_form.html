@@ -1,0 +1,30 @@
+{% extends "base/base.html" %}
+
+{% block title %}Resolver rejeição — #{{ submission.pk }}{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
+{% block content %}
+    <h1>Decisão administrativa</h1>
+    <p>Submissão: <strong>#{{ submission.pk }}</strong> — Inscrição
+        <strong>{{ submission.application.protocol }}</strong></p>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <label for="target_term">Período alvo (para transferência):</label>
+        <select name="target_term" id="target_term">
+            <option value="">—</option>
+            {% for term in terms %}
+                <option value="{{ term.pk }}">{{ term }}</option>
+            {% endfor %}
+        </select>
+
+        {% if form.non_field_errors %}
+            <p style="color: red;">{{ form.non_field_errors }}</p>
+        {% endif %}
+        <button type="submit">Registrar decisão</button>
+    </form>
+
+    <p><a href="{% url 'audits:resolution_list' %}">Voltar</a></p>
+{% endblock %}

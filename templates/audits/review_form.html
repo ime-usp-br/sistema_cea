@@ -1,0 +1,36 @@
+{% extends "base/base.html" %}
+
+{% block title %}Revisar submissão #{{ submission.pk }}{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
+{% block content %}
+    <h1>Revisar submissão #{{ submission.pk }}</h1>
+    <p>Inscrição: <strong>{{ submission.application.protocol }}</strong></p>
+    <p>Canal: {{ submission.get_submission_channel_display }}</p>
+
+    {% if submission.submission_channel == 'file' and submission.file_asset %}
+        <p>Arquivo: {{ submission.file_asset.original_filename }}
+        ({{ submission.file_asset.size_bytes|default:"—" }} bytes)</p>
+    {% elif submission.submission_channel == 'external_link' and submission.external_url %}
+        <p>Link externo:
+            <a href="{{ submission.external_url }}" target="_blank" rel="noopener noreferrer">
+                {{ submission.external_url }}
+            </a>
+        </p>
+    {% endif %}
+
+    {% if submission.note %}
+        <p>Observação do candidato: {{ submission.note }}</p>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        {% if form.non_field_errors %}
+            <p style="color: red;">{{ form.non_field_errors }}</p>
+        {% endif %}
+        <button type="submit">Registrar decisão</button>
+    </form>
+
+    <p><a href="{% url 'audits:teacher_queue' %}">Voltar à fila</a></p>
+{% endblock %}
