@@ -1,0 +1,37 @@
+{% extends "base/base.html" %}
+
+{% block title %}Agendar triagem — {{ application.protocol }}{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
+{% block content %}
+    <h1>{% if screening %}Reagendar{% else %}Agendar{% endif %} triagem</h1>
+    <p>Inscrição: <strong>{{ application.protocol }}</strong> —
+        {{ application.researcher_name }}</p>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        {% if form.non_field_errors %}
+            <p style="color: red;">{{ form.non_field_errors }}</p>
+        {% endif %}
+        <button type="submit">
+            {% if screening %}Reagendar{% else %}Agendar{% endif %}
+        </button>
+    </form>
+
+    {% if screening and screening.state != 'canceled' %}
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="cancel">
+            <button type="submit">Cancelar triagem</button>
+        </form>
+    {% endif %}
+
+    {% if screening and screening.state == 'completed' %}
+        <p>Triagem concluída.
+            <a href="{% url 'meetings:screening_decision' screening.pk %}">Ver decisão e feedback</a>
+        </p>
+    {% endif %}
+
+    <p><a href="{% url 'meetings:queue' %}">Voltar à fila</a></p>
+{% endblock %}

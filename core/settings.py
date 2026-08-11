@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     'payments.apps.PaymentsConfig',
     'pix.apps.PixConfig',
     'bank_slips.apps.BankSlipsConfig',
+    'meetings.apps.MeetingsConfig',
 
     # USP Socialite
     'senhaunica_socialite',

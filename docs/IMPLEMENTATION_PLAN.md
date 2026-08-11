@@ -57,10 +57,10 @@ Agentes de IA devem consultar este arquivo para entender o estado atual do proje
 - [x] **Testes:** Implementar suítes `TS-PAY`, `TS-PIX` e `TS-BSL`.
 
 ### Fase 7: Agendamentos e Decisões
-- [ ] **App `meetings`:** Criar modelos `ProjectScreening` (Triagem) e `ConsultationMeeting`.
-- [ ] **Services:** Criar lógicas de agendamento, reagendamento, cancelamento e decisão final (Aprovado/Não Aprovado).
-- [ ] **Views/Templates:** Interface da secretaria e docentes para gerenciar agenda e dar feedback.
-- [ ] **Testes:** Implementar suíte `TS-MEET-001` até `TS-MEET-012`.
+- [x] **App `meetings`:** Criar modelos `ProjectScreening` (Triagem) e `ConsultationMeeting`.
+- [x] **Services:** Criar lógicas de agendamento, reagendamento, cancelamento e decisão final (Aprovado/Não Aprovado).
+- [x] **Views/Templates:** Interface da secretaria e docentes para gerenciar agenda e dar feedback.
+- [x] **Testes:** Implementar suíte `TS-MEET-001` até `TS-MEET-012`.
 
 ### Fase 8: Comunicação, Eventos e PDFs
 - [ ] **App `notifications`:** Criar `NotificationTemplate` e `NotificationDispatch`.
@@ -78,4 +78,4 @@ Agentes de IA devem consultar este arquivo para entender o estado atual do proje
 ---
 
 ## 📈 Status Atual
-**Progresso Geral:** A **Fase 6** foi concluída. O próximo passo é a **Fase 7** (Agendamentos e Decisões).
+**Progresso Geral:** A **Fase 7** foi concluída. O próximo passo é a **Fase 8** (Comunicação, Eventos e PDFs).

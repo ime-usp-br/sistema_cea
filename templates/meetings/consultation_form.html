@@ -1,0 +1,37 @@
+{% extends "base/base.html" %}
+
+{% block title %}Agendar reunião — {{ application.protocol }}{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
+{% block content %}
+    <h1>{% if meeting %}Reagendar{% else %}Agendar{% endif %} reunião</h1>
+    <p>Inscrição: <strong>{{ application.protocol }}</strong> —
+        {{ application.researcher_name }}</p>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        {% if form.non_field_errors %}
+            <p style="color: red;">{{ form.non_field_errors }}</p>
+        {% endif %}
+        <button type="submit">
+            {% if meeting %}Reagendar{% else %}Agendar{% endif %}
+        </button>
+    </form>
+
+    {% if meeting and meeting.state != 'canceled' %}
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="cancel">
+            <button type="submit">Cancelar reunião</button>
+        </form>
+    {% endif %}
+
+    {% if meeting and meeting.state == 'completed' %}
+        <p>Reunião concluída.
+            <a href="{% url 'meetings:consultation_decision' meeting.pk %}">Ver decisão e feedback</a>
+        </p>
+    {% endif %}
+
+    <p><a href="{% url 'meetings:queue' %}">Voltar à fila</a></p>
+{% endblock %}
