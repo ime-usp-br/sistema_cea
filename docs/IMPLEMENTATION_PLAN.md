@@ -63,11 +63,11 @@ Agentes de IA devem consultar este arquivo para entender o estado atual do proje
 - [x] **Testes:** Implementar suíte `TS-MEET-001` até `TS-MEET-012`.
 
 ### Fase 8: Comunicação, Eventos e PDFs
-- [ ] **App `notifications`:** Criar `NotificationTemplate` e `NotificationDispatch`.
-- [ ] **Services:** Criar disparo assíncrono via Celery.
-- [ ] **App `applications` (Eventos):** Criar `ApplicationEvent` para auditoria de histórico.
-- [ ] **App `documents`:** Implementar geração de PDF da Ficha de Inscrição e Comprovantes usando HTML/WeasyPrint.
-- [ ] **Testes:** Implementar `TS-NOT`, `TS-EVT` e `TS-NFR` (PDFs).
+- [x] **App `notifications`:** Criar `NotificationTemplate` e `NotificationDispatch`.
+- [x] **Services:** Criar disparo assíncrono via Celery.
+- [x] **App `applications` (Eventos):** Criar `ApplicationEvent` para auditoria de histórico.
+- [x] **App `documents`:** Implementar geração de PDF da Ficha de Inscrição e Comprovantes usando HTML/WeasyPrint.
+- [x] **Testes:** Implementar `TS-NOT`, `TS-EVT` e `TS-NFR` (PDFs).
 
 ### Fase 9: Relatórios, Migração e Resgate (Legacy)
 - [ ] **App `reports`:** Criar views e serviços para exportação CSV/XLSX do Relatório Financeiro e Auditoria.
@@ -78,4 +78,4 @@ Agentes de IA devem consultar este arquivo para entender o estado atual do proje
 ---
 
 ## 📈 Status Atual
-**Progresso Geral:** A **Fase 7** foi concluída. O próximo passo é a **Fase 8** (Comunicação, Eventos e PDFs).
+**Progresso Geral:** A **Fase 8** foi concluída. O próximo passo é a **Fase 9** (Relatórios, Migração e Resgate).

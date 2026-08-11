@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>Ficha de Inscrição {{ protocol }}</title>
+<style>
+    @page {
+        size: A4;
+        margin: 2cm;
+        @top-center { content: "Ficha de Inscrição CEA"; font-size: 9pt; color: #555; }
+        @bottom-center { content: "Página " counter(page) " de " counter(pages); font-size: 9pt; color: #555; }
+    }
+    body { font-family: "DejaVu Sans", sans-serif; font-size: 11pt; color: #111; }
+    h1 { font-size: 16pt; color: #0b5fa5; border-bottom: 2px solid #0b5fa5; padding-bottom: 4px; }
+    h2 { font-size: 12pt; color: #0b5fa5; margin-top: 16px; }
+    .field { margin: 6px 0; }
+    .field-label { font-weight: bold; color: #444; }
+    .field-value {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+    table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+    th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; vertical-align: top; }
+    th { background: #eef4fb; }
+</style>
+</head>
+<body>
+    <h1>Ficha de Inscrição — Protocolo {{ protocol }}</h1>
+
+    <h2>Identificação</h2>
+    <div class="field"><span class="field-label">Pesquisador(a):</span> <span class="field-value">{{ application.researcher_name }}</span></div>
+    <div class="field"><span class="field-label">E-mail de contato:</span> <span class="field-value">{{ application.contact_email }}</span></div>
+    <div class="field"><span class="field-label">Telefone:</span> <span class="field-value">{{ application.contact_phone|default:"—" }}</span></div>
+    <div class="field"><span class="field-label">CPF:</span> <span class="field-value">{{ application.tax_id|default:"—" }}</span></div>
+    <div class="field"><span class="field-label">Instituição:</span> <span class="field-value">{{ application.institution_name|default:"—" }}</span></div>
+    <div class="field"><span class="field-label">Curso:</span> <span class="field-value">{{ application.course_name|default:"—" }}</span></div>
+    <div class="field"><span class="field-label">Orientador(a):</span> <span class="field-value">{{ application.mentor_name|default:"—" }}</span></div>
+
+    <h2>Dados da Inscrição</h2>
+    <div class="field"><span class="field-label">Modalidade:</span> <span class="field-value">{{ application.get_modality_display }}</span></div>
+    <div class="field"><span class="field-label">Período letivo:</span> <span class="field-value">{{ application.term }}</span></div>
+    <div class="field"><span class="field-label">Status do ciclo:</span> <span class="field-value">{{ application.get_lifecycle_status_display }}</span></div>
+    <div class="field"><span class="field-label">Título do projeto:</span> <span class="field-value">{{ application.project_title|default:"—" }}</span></div>
+
+    <h2>Resumo do Projeto</h2>
+    <div class="field"><span class="field-label">Contexto:</span> <div class="field-value">{{ application.context_summary|default:"—" }}</div></div>
+    <div class="field"><span class="field-label">Objetivos gerais:</span> <div class="field-value">{{ application.general_objectives|default:"—" }}</div></div>
+    <div class="field"><span class="field-label">Variáveis e medições:</span> <div class="field-value">{{ application.variables_and_measurements|default:"—" }}</div></div>
+    <div class="field"><span class="field-label">Fatores contextuais:</span> <div class="field-value">{{ application.contextual_factors|default:"—" }}</div></div>
+    <div class="field"><span class="field-label">Amostragem e limitações:</span> <div class="field-value">{{ application.sampling_and_limitations|default:"—" }}</div></div>
+    <div class="field"><span class="field-label">Plano de gestão de dados:</span> <div class="field-value">{{ application.data_management_plan|default:"—" }}</div></div>
+    <div class="field"><span class="field-label">Resultados esperados:</span> <div class="field-value">{{ application.expected_results|default:"—" }}</div></div>
+    <div class="field"><span class="field-label">Apoio esperado do CEA:</span> <div class="field-value">{{ application.expected_support|default:"—" }}</div></div>
+
+    <h2>Catálogo selecionado</h2>
+    {% if application.catalog_selections.all %}
+    <table>
+        <thead><tr><th>Categoria</th><th>Opção</th></tr></thead>
+        <tbody>
+        {% for sel in application.catalog_selections.all %}
+            <tr><td>{{ sel.option.get_category_display }}</td><td>{{ sel.option.label }}{% if sel.other_text %} — {{ sel.other_text }}{% endif %}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="field-value">Nenhuma seleção.</div>
+    {% endif %}
+</body>
+</html>

@@ -70,6 +70,8 @@ INSTALLED_APPS = [
     'pix.apps.PixConfig',
     'bank_slips.apps.BankSlipsConfig',
     'meetings.apps.MeetingsConfig',
+    'notifications.apps.NotificationsConfig',
+    'documents.apps.DocumentsConfig',
 
     # USP Socialite
     'senhaunica_socialite',
@@ -193,6 +195,13 @@ CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+
+
+# ---- E-mail (notificações) ----
+# E-mail padrão usado no remetente dos disparos de notificação.
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@cea.ime.usp.br')
+# Destinatário dos avisos internos para a equipe CEA.
+NOTIFICATION_CENTER_EMAIL = env('NOTIFICATION_CENTER_EMAIL', default='cea@ime.usp.br')
 
 
 # ---- Integração Pix (API REST/JSON) ----

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>Resumo de Triagem {{ application.protocol }}</title>
+<style>
+    @page {
+        size: A4;
+        margin: 2cm;
+        @bottom-center { content: "Página " counter(page) " de " counter(pages); font-size: 9pt; color: #555; }
+    }
+    body { font-family: "DejaVu Sans", sans-serif; font-size: 11pt; color: #111; }
+    h1 { font-size: 16pt; color: #0b5fa5; border-bottom: 2px solid #0b5fa5; padding-bottom: 4px; }
+    .field { margin: 6px 0; }
+    .field-label { font-weight: bold; color: #444; }
+    .field-value {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+    table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+    th, td { border: 1px solid #ccc; padding: 6px; text-align: left; vertical-align: top; }
+    th { background: #eef4fb; }
+</style>
+</head>
+<body>
+    <h1>Resumo de Triagem — Protocolo {{ application.protocol }}</h1>
+
+    <table>
+        <tr><th>Pesquisador(a)</th><td>{{ application.researcher_name }}</td></tr>
+        <tr><th>Data agendada</th><td>{{ screening.scheduled_date }}</td></tr>
+        <tr><th>Horário</th><td>{{ screening.scheduled_time }}</td></tr>
+        <tr><th>Modalidade do evento</th><td>{{ screening.get_meeting_mode_display }}</td></tr>
+        <tr><th>Local / Link</th><td>{{ screening.place|default:screening.virtual_link|default:"—" }}</td></tr>
+        <tr><th>Situação</th><td>{{ screening.get_state_display }}</td></tr>
+        <tr><th>Decisão</th><td>{{ screening.get_decision_display|default:"Pendente" }}</td></tr>
+        <tr><th>Feedback docente</th><td>{{ screening.get_teacher_feedback_display|default:"—" }}</td></tr>
+    </table>
+
+    <h1>Nota da decisão</h1>
+    <div class="field-value">{{ screening.decision_note|default:"Sem anotações." }}</div>
+</body>
+</html>

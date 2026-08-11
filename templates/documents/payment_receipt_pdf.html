@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>Comprovante de Pagamento</title>
+<style>
+    @page {
+        size: A4;
+        margin: 2cm;
+        @bottom-center { content: "Página " counter(page) " de " counter(pages); font-size: 9pt; color: #555; }
+    }
+    body { font-family: "DejaVu Sans", sans-serif; font-size: 11pt; color: #111; }
+    h1 { font-size: 16pt; color: #0b5fa5; border-bottom: 2px solid #0b5fa5; padding-bottom: 4px; }
+    .field { margin: 6px 0; }
+    .field-label { font-weight: bold; color: #444; }
+    .field-value {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+    table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+    th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+    th { background: #eef4fb; }
+</style>
+</head>
+<body>
+    <h1>Comprovante de Pagamento</h1>
+
+    <table>
+        <tr><th>Protocolo da inscrição</th><td>{{ application.protocol }}</td></tr>
+        <tr><th>Pesquisador(a)</th><td>{{ application.researcher_name }}</td></tr>
+        <tr><th>Modalidade</th><td>{{ application.get_modality_display }}</td></tr>
+        <tr><th>Método de pagamento</th><td>{{ instrument.get_method_display }}</td></tr>
+        <tr><th>Situação</th><td>{{ instrument.get_state_display }}</td></tr>
+        <tr><th>Valor (R$)</th><td>{{ instrument.amount|floatformat:2 }}</td></tr>
+        <tr><th>Pago em</th><td>{{ instrument.paid_at|default:"—" }}</td></tr>
+        <tr><th>Referência da taxa</th><td>{{ instrument.fee_requirement.get_fee_type_display }}</td></tr>
+    </table>
+
+    <h1>Observações</h1>
+    <div class="field-value">{{ application.refund_receipt_details|default:"Sem observações." }}</div>
+</body>
+</html>

@@ -29,6 +29,7 @@ urlpatterns = [
     path('', include('pix.urls')),
     path('', include('bank_slips.urls')),
     path('', include('meetings.urls')),
+    path('', include('documents.urls')),
     path('logout/', logout_view, name='logout'),
     path('', include('senhaunica_socialite.urls')),
 ]
