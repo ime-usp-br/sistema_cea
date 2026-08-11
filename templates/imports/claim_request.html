@@ -1,0 +1,22 @@
+{% extends "base/base.html" %}
+
+{% block title %}Vincular inscrição{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
+{% block content %}
+    <h1>Vincular inscrição existente</h1>
+    <p>Informe o protocolo e/ou o e-mail ou documento cadastrado na sua inscrição. Enviaremos um código de confirmação para o e-mail registrado.</p>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {{ form.as_p }}
+        {% if form.non_field_errors %}
+            <ul class="errorlist">
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        <button type="submit">Enviar código</button>
+    </form>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base/base.html" %}
+
+{% block title %}Fila de resgates{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
+{% block content %}
+    <h1>Solicitações de resgate</h1>
+
+    {% if claims %}
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Protocolo</th>
+                    <th>Candidato</th>
+                    <th>E-mail</th>
+                    <th>Status</th>
+                    <th>Criada em</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for claim in claims %}
+                    <tr>
+                        <td>#{{ claim.pk }}</td>
+                        <td>{{ claim.protocol }}</td>
+                        <td>{{ claim.user|default:"—" }}</td>
+                        <td>{{ claim.contact_email|default:"—" }}</td>
+                        <td>{{ claim.get_status_display }}</td>
+                        <td>{{ claim.created_at }}</td>
+                        <td><a href="{% url 'imports:claim_approve' claim.pk %}">Aprovar</a></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Não há solicitações de resgate pendentes.</p>
+    {% endif %}
+{% endblock %}

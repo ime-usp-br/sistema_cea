@@ -72,6 +72,8 @@ INSTALLED_APPS = [
     'meetings.apps.MeetingsConfig',
     'notifications.apps.NotificationsConfig',
     'documents.apps.DocumentsConfig',
+    'reports.apps.ReportsConfig',
+    'imports.apps.ImportsConfig',
 
     # USP Socialite
     'senhaunica_socialite',

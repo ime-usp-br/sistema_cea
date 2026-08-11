@@ -1,0 +1,45 @@
+{% extends "base/base.html" %}
+
+{% block title %}Relatório de auditoria{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
+{% block content %}
+    <h1>Relatório de auditoria</h1>
+
+    {% if rows %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Protocolo</th>
+                    <th>Projeto</th>
+                    <th>Candidato</th>
+                    <th>Submissão</th>
+                    <th>Canal</th>
+                    <th>Estado da análise</th>
+                    <th>Estado da submissão</th>
+                    <th>Decisão docente</th>
+                    <th>Decisão administrativa</th>
+                    <th>Correções</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    <tr>
+                        <td>{{ row.protocol }}</td>
+                        <td>{{ row.project }}</td>
+                        <td>{{ row.candidate }}</td>
+                        <td>{{ row.submitted_at }}</td>
+                        <td>{{ row.channel }}</td>
+                        <td>{{ row.audit_state }}</td>
+                        <td>{{ row.submission_state }}</td>
+                        <td>{{ row.teacher_decision|default:"—" }}</td>
+                        <td>{{ row.admin_decision|default:"—" }}</td>
+                        <td>{{ row.corrections }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Não há dados de auditoria para exibir.</p>
+    {% endif %}
+{% endblock %}

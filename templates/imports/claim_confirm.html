@@ -1,0 +1,22 @@
+{% extends "base/base.html" %}
+
+{% block title %}Confirmar resgate{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
+{% block content %}
+    <h1>Confirmar código</h1>
+    <p>Inscrição {{ claim.protocol }} — informe o código enviado por e-mail.</p>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {{ form.as_p }}
+        {% if form.non_field_errors %}
+            <ul class="errorlist">
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        <button type="submit">Confirmar</button>
+    </form>
+{% endblock %}

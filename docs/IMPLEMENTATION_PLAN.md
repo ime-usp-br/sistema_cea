@@ -70,12 +70,12 @@ Agentes de IA devem consultar este arquivo para entender o estado atual do proje
 - [x] **Testes:** Implementar `TS-NOT`, `TS-EVT` e `TS-NFR` (PDFs).
 
 ### Fase 9: Relatórios, Migração e Resgate (Legacy)
-- [ ] **App `reports`:** Criar views e serviços para exportação CSV/XLSX do Relatório Financeiro e Auditoria.
-- [ ] **App `imports`:** Criar modelo `LegacyOwnershipClaim` (Resgate de inscrições órfãs por token no e-mail).
-- [ ] **Comandos:** Criar scripts (management commands) para importar os dados antigos de tabelas externas.
-- [ ] **Testes:** Implementar `TS-REP`, `TS-CLAIM` e `TS-IMP`.
+- [x] **App `reports`:** Criar views e serviços para exportação CSV/XLSX do Relatório Financeiro e Auditoria.
+- [x] **App `imports`:** Criar modelo `LegacyOwnershipClaim` (Resgate de inscrições órfãs por token no e-mail).
+- [x] **Comandos:** Criar scripts (management commands) para importar os dados antigos de tabelas externas.
+- [x] **Testes:** Implementar `TS-REP`, `TS-CLAIM` e `TS-IMP`.
 
 ---
 
 ## 📈 Status Atual
-**Progresso Geral:** A **Fase 8** foi concluída. O próximo passo é a **Fase 9** (Relatórios, Migração e Resgate).
+**Progresso Geral:** O **Roadmap está 100% CONCLUÍDO!** Todas as 9 fases foram implementadas e validadas.

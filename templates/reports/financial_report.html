@@ -1,0 +1,59 @@
+{% extends "base/base.html" %}
+
+{% block title %}Relatório financeiro{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
+{% block content %}
+    <h1>Relatório financeiro</h1>
+    <p>
+        <a href="{% url 'reports:financial_csv' %}">Exportar CSV</a> |
+        <a href="{% url 'reports:financial_xlsx' %}">Exportar XLSX</a>
+    </p>
+
+    {% if rows %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Protocolo</th>
+                    <th>Modalidade</th>
+                    <th>Candidato</th>
+                    <th>E-mail</th>
+                    <th>Taxa</th>
+                    <th>Método</th>
+                    <th>Valor base</th>
+                    <th>Ajuste</th>
+                    <th>Valor final</th>
+                    <th>Estado</th>
+                    <th>Pagamento</th>
+                    <th>Manual</th>
+                    <th>Substituída</th>
+                    <th>Crédito</th>
+                    <th>Reembolso</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    <tr>
+                        <td>{{ row.protocol }}</td>
+                        <td>{{ row.modality }}</td>
+                        <td>{{ row.candidate }}</td>
+                        <td>{{ row.email }}</td>
+                        <td>{{ row.fee_type }}</td>
+                        <td>{{ row.payment_method }}</td>
+                        <td>{{ row.base_amount }}</td>
+                        <td>{{ row.adjustment_amount }}</td>
+                        <td>{{ row.amount }}</td>
+                        <td>{{ row.payment_state }}</td>
+                        <td>{{ row.paid_at|default:"—" }}</td>
+                        <td>{{ row.manual|yesno:"Sim,Não" }}</td>
+                        <td>{{ row.superseded|yesno:"Sim,Não" }}</td>
+                        <td>{{ row.modality_credit }}</td>
+                        <td>{{ row.refund_status }}{% if row.refund_amount %}<br>{{ row.refund_amount }}{% endif %}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Não há dados financeiros para exibir.</p>
+    {% endif %}
+{% endblock %}
