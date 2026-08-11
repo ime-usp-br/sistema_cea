@@ -1,0 +1,22 @@
+{% extends "base/base.html" %}
+
+{% block title %}Confirmar pagamento manual{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
+{% block content %}
+    <h1>Confirmar pagamento manual</h1>
+    <p>Inscrição: <strong>{{ instrument.fee_requirement.application.protocol }}</strong></p>
+    <p>Taxa: {{ instrument.fee_requirement.get_fee_type_display }} — R$ {{ instrument.fee_requirement.amount }}</p>
+    <p>Instrumento #{{ instrument.pk }} ({{ instrument.get_method_display }}) — {{ instrument.get_state_display }}</p>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        {% if form.non_field_errors %}
+            <p style="color: red;">{{ form.non_field_errors }}</p>
+        {% endif %}
+        <button type="submit">Confirmar pagamento</button>
+    </form>
+
+    <p><a href="{% url 'admin:index' %}">Voltar ao painel administrativo</a></p>
+{% endblock %}

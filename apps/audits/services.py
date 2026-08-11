@@ -9,6 +9,7 @@ from django.utils import timezone
 from applications.models import ServiceApplication
 from files.models import FileAsset
 from files.services import create_file_asset
+from payments.services import FeeCalculationService
 from terms.models import AcademicTerm
 
 from .models import (
@@ -267,6 +268,7 @@ class DatasetAuditService:
             application.dataset_audit_state = (
                 ServiceApplication.DatasetAuditState.APPROVED
             )
+            FeeCalculationService().create_application_fee(application)
         else:  # rejected
             submission.state = DatasetAuditSubmission.State.REJECTED
             submission.save(update_fields=["state", "updated_at"])
@@ -302,6 +304,7 @@ class DatasetAuditService:
                     "updated_at",
                 ]
             )
+            FeeCalculationService().create_application_fee(application)
         elif resolution_enum == DatasetAuditResolution.Resolution.REJECT_APPLICATION:
             application.lifecycle_status = (
                 ServiceApplication.LifecycleStatus.NOT_APPROVED

@@ -1,0 +1,54 @@
+{% extends "base/base.html" %}
+
+{% block title %}Pagamento da inscrição{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
+{% block content %}
+    <h1>Pagamento da inscrição {{ application.protocol }}</h1>
+    <p>Modalidade: {{ application.get_modality_display }}</p>
+
+    {% if fee is None %}
+        <p>Não há taxa de inscrição disponível para esta inscrição.</p>
+        <p><a href="{% url 'applications:detail' application.protocol %}">Voltar à inscrição</a></p>
+    {% else %}
+        <p>Taxa de inscrição: <strong>R$ {{ fee.amount }}</strong></p>
+        {% if fee.is_paid %}
+            <p><strong>Taxa paga.</strong></p>
+        {% elif form %}
+            <h2>Escolha a forma de pagamento</h2>
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                {% if form.non_field_errors %}
+                    <p style="color: red;">{{ form.non_field_errors }}</p>
+                {% endif %}
+                <button type="submit">Gerar pagamento</button>
+            </form>
+        {% endif %}
+        <h2>Instrumentos de pagamento</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Método</th>
+                    <th>Valor</th>
+                    <th>Estado</th>
+                    <th>Data</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for instrument in fee.payment_instruments.all %}
+                    <tr>
+                        <td>{{ instrument.pk }}</td>
+                        <td>{{ instrument.get_method_display }}</td>
+                        <td>R$ {{ instrument.amount }}</td>
+                        <td>{{ instrument.get_state_display }}</td>
+                        <td>{{ instrument.created_at }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5">Nenhum instrumento de pagamento gerado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+{% endblock %}

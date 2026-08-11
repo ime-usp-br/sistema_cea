@@ -304,3 +304,32 @@ class ApplicationAttachment(models.Model):
 
     def __str__(self) -> str:
         return f"{self.application_id} - {self.file_asset_id}"
+
+
+class ApplicationEvent(models.Model):
+    """Trilha de auditoria de eventos de uma inscrição."""
+
+    application = models.ForeignKey(
+        ServiceApplication,
+        on_delete=models.CASCADE,
+        related_name="events",
+    )
+    event_code = models.CharField(max_length=100)
+    description = models.TextField(null=True, blank=True)
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="application_events",
+    )
+    metadata = models.JSONField(null=True, blank=True)
+    occurred_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "application_events"
+        ordering = ["-occurred_at"]
+
+    def __str__(self) -> str:
+        return f"{self.application_id} - {self.event_code}"

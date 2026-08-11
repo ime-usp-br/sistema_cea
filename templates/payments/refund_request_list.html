@@ -1,0 +1,43 @@
+{% extends "base/base.html" %}
+
+{% block title %}Solicitações de reembolso{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
+{% block content %}
+    <h1>Solicitações de reembolso</h1>
+
+    {% if refunds %}
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Inscrição</th>
+                    <th>Valor</th>
+                    <th>Status</th>
+                    <th>Solicitado por</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for refund in refunds %}
+                    <tr>
+                        <td>{{ refund.pk }}</td>
+                        <td>{{ refund.application.protocol }}</td>
+                        <td>R$ {{ refund.amount }}</td>
+                        <td>{{ refund.get_status_display }}</td>
+                        <td>{{ refund.requested_by|default:"—" }}</td>
+                        <td>
+                            {% if refund.status == 'requested' %}
+                                <a href="{% url 'payments:refund_action' refund.pk 'approve' %}">Aprovar</a>
+                            {% elif refund.status == 'approved' %}
+                                <a href="{% url 'payments:refund_action' refund.pk 'execute' %}">Executar</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Não há solicitações de reembolso.</p>
+    {% endif %}
+{% endblock %}

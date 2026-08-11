@@ -1,4 +1,5 @@
 import tempfile
+from decimal import Decimal
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError, transaction
@@ -297,7 +298,10 @@ class AuditScenarioTests(TestCase):
             application.dataset_audit_state,
             ServiceApplication.DatasetAuditState.APPROVED,
         )
-        # TODO(Fase 5): assertar criação da taxa de inscrição Projeto R$ 80,00.
+        fee = application.fee_requirements.get(
+            fee_type="application_fee", base_amount="80.00"
+        )
+        self.assertEqual(fee.amount, Decimal("80.00"))
 
     # TS-AUD-012
     def test_TS_AUD_012_docente_rejeita_auditoria(self) -> None:
@@ -341,7 +345,10 @@ class AuditScenarioTests(TestCase):
             ServiceApplication.LifecycleStatus.AWAITING_PAYMENT,
         )
         self.assertFalse(application.dataset_audit_required)
-        # TODO(Fase 5): assertar criação da taxa de Consulta R$ 140,00.
+        fee = application.fee_requirements.get(
+            fee_type="application_fee", base_amount="140.00"
+        )
+        self.assertEqual(fee.amount, Decimal("140.00"))
 
     # TS-AUD-014
     def test_TS_AUD_014_secretaria_rejeita_inscricao(self) -> None:

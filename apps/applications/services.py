@@ -137,6 +137,10 @@ class ApplicationSubmissionService:
         self._add_catalog_selections(application, catalog_option_ids or [], catalog_other_text)
         for uploaded_file in attachments or []:
             self._add_attachment(application, owner, uploaded_file)
+        if application.modality == ServiceApplication.Modality.CONSULTATION:
+            from payments.services import FeeCalculationService
+
+            FeeCalculationService().create_application_fee(application)
         return application
 
     def _add_catalog_selections(

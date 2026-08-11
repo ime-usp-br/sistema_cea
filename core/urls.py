@@ -25,6 +25,7 @@ urlpatterns = [
     path('', index, name='index'),
     path('', include('applications.urls')),
     path('', include('audits.urls')),
+    path('', include('payments.urls')),
     path('logout/', logout_view, name='logout'),
     path('', include('senhaunica_socialite.urls')),
 ]

@@ -43,11 +43,11 @@ Agentes de IA devem consultar este arquivo para entender o estado atual do proje
 - [x] **Testes:** Implementar suíte `TS-AUD-001` até `TS-AUD-017`.
 
 ### Fase 5: Finanças e Pagamentos (Core Financeiro)
-- [ ] **App `payments`:** Criar os modelos `FeeRequirement` e `PaymentInstrument`.
-- [ ] **App `payments`:** Criar `ManualPaymentConfirmation` e `RefundRequest`.
-- [ ] **Services:** Criar `PaymentOrchestrationService` (garantindo a regra de Ouro: *apenas um instrumento ativo por taxa*).
-- [ ] **Services:** Criar `ModalityChangeService` e `FeeCalculationService` (Lógica de crédito de R$ 60,00 na mudança de Consulta -> Projeto).
-- [ ] **Testes:** Implementar suíte `TS-FEE-001` a `TS-FEE-008` e `TS-MAN-001`.
+- [x] **App `payments`:** Criar os modelos `FeeRequirement` e `PaymentInstrument`.
+- [x] **App `payments`:** Criar `ManualPaymentConfirmation` e `RefundRequest`.
+- [x] **Services:** Criar `PaymentOrchestrationService` (garantindo a regra de Ouro: *apenas um instrumento ativo por taxa*).
+- [x] **Services:** Criar `ModalityChangeService` e `FeeCalculationService` (Lógica de crédito de R$ 60,00 na mudança de Consulta -> Projeto).
+- [x] **Testes:** Implementar suíte `TS-FEE-001` a `TS-FEE-008` e `TS-MAN-001`.
 
 ### Fase 6: Integração de Gateways (Pix e Boleto)
 - [ ] **App `pix`:** Criar modelo `PixPaymentInstrument` e `PixWebhookEvent`.
@@ -78,4 +78,4 @@ Agentes de IA devem consultar este arquivo para entender o estado atual do proje
 ---
 
 ## 📈 Status Atual
-**Progresso Geral:** A **Fase 4** foi concluída. O próximo passo é a **Fase 5** (Finanças e Pagamentos: Core Financeiro).
+**Progresso Geral:** A **Fase 5** foi concluída. O próximo passo é a **Fase 6** (Integração de Gateways: Pix e Boleto).
