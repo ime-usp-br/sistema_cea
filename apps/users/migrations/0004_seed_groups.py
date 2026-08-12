@@ -68,13 +68,13 @@ def _all_perms_for_apps(perms, app_labels):
             _perm(perms, app_label, model_name, _ALL_ACTIONS)
 
 
-def _build_role_permissions():
-    """Retorna {nome_do_grupo: set de permissões (app.codename)}."""
+def _build_role_permissions() -> dict[str, set[tuple[str, str]]]:
+    """Retorna {nome_do_grupo: set de permissões (app_label, codename)}."""
 
-    administrator = set()
+    administrator: set[tuple[str, str]] = set()
     _all_perms_for_apps(administrator, _MODELS.keys())
 
-    secretariat = set()
+    secretariat: set[tuple[str, str]] = set()
     internal_apps = [
         "applications",
         "audits",
@@ -91,7 +91,7 @@ def _build_role_permissions():
     # Secretaria apenas visualiza usuários (gestão de papéis é do administrador).
     _perm(secretariat, "users", "user", (_VIEW,))
 
-    teacher = set()
+    teacher: set[tuple[str, str]] = set()
     for model_name in _MODELS["applications"]:
         _perm(teacher, "applications", model_name, (_VIEW,))
     _perm(teacher, "audits", "datasetauditsubmission", (_VIEW,))
@@ -103,7 +103,7 @@ def _build_role_permissions():
     _perm(teacher, "notifications", "notificationdispatch", (_VIEW,))
     _perm(teacher, "files", "fileasset", (_VIEW,))
 
-    candidate = set()
+    candidate: set[tuple[str, str]] = set()
     _perm(candidate, "applications", "serviceapplication", (_ADD,))
     _perm(candidate, "applications", "applicationcatalogselection", (_ADD,))
     _perm(candidate, "applications", "applicationattachment", (_ADD,))
