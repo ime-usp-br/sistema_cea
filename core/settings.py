@@ -126,7 +126,7 @@ AUTH_USER_MODEL = 'users.User'
 ENABLE_LOCAL_LOGIN = env('ENABLE_LOCAL_LOGIN', default=True)
 
 AUTHENTICATION_BACKENDS = [
-    'senhaunica_socialite.backends.SenhaUnicaBackend',
+    'users.backends.CustomSenhaUnicaBackend',
 ]
 
 if ENABLE_LOCAL_LOGIN:
