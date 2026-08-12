@@ -72,6 +72,12 @@ class ApplicationSubmissionService:
         mentor_declaration_accepted: bool = False,
         wants_refund_receipt: bool = False,
         refund_receipt_details: str | None = None,
+        refund_account_holder_name: str | None = None,
+        refund_account_holder_tax_id: str | None = None,
+        refund_bank_name: str | None = None,
+        refund_branch_number: str | None = None,
+        refund_bank_account_number: str | None = None,
+        refund_bank_account_type: str | None = None,
         catalog_option_ids: list[int] | None = None,
         catalog_other_text: str | None = None,
         attachments: list[UploadedFile] | None = None,
@@ -119,6 +125,12 @@ class ApplicationSubmissionService:
             "expected_support": expected_support,
             "data_already_collected": data_already_collected,
             "refund_receipt_details": refund_receipt_details,
+            "refund_account_holder_name": refund_account_holder_name,
+            "refund_account_holder_tax_id": refund_account_holder_tax_id,
+            "refund_bank_name": refund_bank_name,
+            "refund_branch_number": refund_branch_number,
+            "refund_bank_account_number": refund_bank_account_number,
+            "refund_bank_account_type": refund_bank_account_type,
         }
         values = {**base_values, **{k: v for k, v in optional_values.items() if v is not None}}
 

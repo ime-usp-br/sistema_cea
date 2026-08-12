@@ -188,27 +188,38 @@ class ApplicationScenarioTests(TestCase):
         other = CatalogOption.objects.get(category="institutional_tie", code="other")
 
         self.login()
+
+        # Regra de exclusividade por seção: Estudante + Outro são rejeitados.
         response = self.post_application(
             modality="project",
-            data={
-                "catalog_options": [str(student.pk), str(other.pk)],
-                "catalog_other_text": "Outro vínculo institucional",
-            },
+            data={"catalog_options": [str(student.pk), str(other.pk)]},
         )
-        self.assertEqual(response.status_code, 302)
-        application = ServiceApplication.objects.get()
-        selections = application.catalog_selections.all()
-        self.assertEqual(selections.count(), 2)
-        self.assertEqual(selections.get(option=other).other_text, "Outro vínculo institucional")
-        self.assertIsNone(selections.get(option=student).other_text)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("catalog_options", response.context["form"].errors)
+        self.assertEqual(ServiceApplication.objects.count(), 0)
 
+        # Selecionar apenas "Outro" sem texto complementar exige preenchimento.
         response = self.post_application(
             modality="project",
             data={"catalog_options": [str(other.pk)]},
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn("catalog_other_text", response.context["form"].errors)
-        self.assertEqual(ServiceApplication.objects.count(), 1)
+        self.assertEqual(ServiceApplication.objects.count(), 0)
+
+        # Selecionar apenas "Outro" com texto é aceito e salva other_text.
+        response = self.post_application(
+            modality="project",
+            data={
+                "catalog_options": [str(other.pk)],
+                "catalog_other_text": "Outro vínculo institucional",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        application = ServiceApplication.objects.get()
+        selections = application.catalog_selections.all()
+        self.assertEqual(selections.count(), 1)
+        self.assertEqual(selections.get(option=other).other_text, "Outro vínculo institucional")
 
     def test_TS_APP_008_anexos_de_inscricao(self) -> None:
         self.login()

@@ -4,19 +4,27 @@
 {% block app_name %}Inscrições CEA{% endblock %}
 
 {% block content %}
-    <h1>Vincular inscrição existente</h1>
-    <p>Informe o protocolo e/ou o e-mail ou documento cadastrado na sua inscrição. Enviaremos um código de confirmação para o e-mail registrado.</p>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Vincular inscrição existente</h1>
+        <p class="page-subtitle">Informe o protocolo e/ou o e-mail ou documento cadastrado na sua inscrição. Enviaremos um código de confirmação para o e-mail registrado.</p>
+    </div>
+</div>
 
-    <form method="post" novalidate>
-        {% csrf_token %}
-        {{ form.as_p }}
-        {% if form.non_field_errors %}
-            <ul class="errorlist">
-                {% for error in form.non_field_errors %}
-                    <li>{{ error }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-        <button type="submit">Enviar código</button>
-    </form>
+<div class="card" style="max-width: 640px;">
+    <div class="card-body">
+        <form method="post" novalidate class="form">
+            {% csrf_token %}
+            {{ form.as_p }}
+            {% if form.non_field_errors %}
+                <div class="alert alert-error">
+                    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                </div>
+            {% endif %}
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Enviar código</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}

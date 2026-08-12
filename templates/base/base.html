@@ -55,11 +55,12 @@
                     </a>
                     <span class="app-name">{% block app_name %}Python USP Starter Kit{% endblock %}</span>
                 </div>
+
+                {% block site_nav %}{% endblock %}
+
                 <div class="auth-info">
                     {% if user.is_authenticated %}
-                        <span class="user-name" style="color: var(--text-color); margin-right: 1rem; font-size: 0.875rem;">
-                            {{ user.first_name|default:user.username }}
-                        </span>
+                        <span class="user-name">{{ user.first_name|default:user.username }}</span>
                         <a href="{% url 'logout' %}">Sair</a>
                     {% else %}
                         {% block header_actions %}
@@ -72,6 +73,14 @@
     </header>
 
     <main class="container content-main">
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
         {% block content %}{% endblock %}
     </main>
 

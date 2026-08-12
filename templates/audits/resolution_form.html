@@ -4,27 +4,40 @@
 {% block app_name %}Inscrições CEA{% endblock %}
 
 {% block content %}
-    <h1>Decisão administrativa</h1>
-    <p>Submissão: <strong>#{{ submission.pk }}</strong> — Inscrição
-        <strong>{{ submission.application.protocol }}</strong></p>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Decisão administrativa</h1>
+        <p class="page-subtitle">
+            Submissão <strong>#{{ submission.pk }}</strong> — Inscrição
+            <strong>{{ submission.application.protocol }}</strong>
+        </p>
+    </div>
+    <a href="{% url 'audits:resolution_list' %}" class="btn btn-ghost">Voltar</a>
+</div>
 
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
+<div class="card" style="max-width: 760px;">
+    <div class="card-body">
+        <form method="post" class="form">
+            {% csrf_token %}
+            {{ form.as_p }}
 
-        <label for="target_term">Período alvo (para transferência):</label>
-        <select name="target_term" id="target_term">
-            <option value="">—</option>
-            {% for term in terms %}
-                <option value="{{ term.pk }}">{{ term }}</option>
-            {% endfor %}
-        </select>
+            <p>
+                <label for="target_term">Período alvo (para transferência):</label>
+                <select name="target_term" id="target_term">
+                    <option value="">—</option>
+                    {% for term in terms %}
+                        <option value="{{ term.pk }}">{{ term }}</option>
+                    {% endfor %}
+                </select>
+            </p>
 
-        {% if form.non_field_errors %}
-            <p style="color: red;">{{ form.non_field_errors }}</p>
-        {% endif %}
-        <button type="submit">Registrar decisão</button>
-    </form>
-
-    <p><a href="{% url 'audits:resolution_list' %}">Voltar</a></p>
+            {% if form.non_field_errors %}
+                <div class="alert alert-error">{{ form.non_field_errors }}</div>
+            {% endif %}
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Registrar decisão</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}

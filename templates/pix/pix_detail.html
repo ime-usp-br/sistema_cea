@@ -1,22 +1,47 @@
 {% extends "base/base.html" %}
 {% block title %}Pix - Inscrição {{ application.protocol }}{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
 {% block content %}
-<h1>Pagamento via Pix</h1>
-<p>Inscrição: <strong>{{ application.protocol }}</strong></p>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Pagamento via Pix</h1>
+        <p class="page-subtitle">Inscrição: <strong>{{ application.protocol }}</strong></p>
+    </div>
+    <a href="{% url 'payments:fee_payment' application.protocol %}" class="btn btn-ghost">Voltar ao pagamento</a>
+</div>
+
 {% if pix %}
-  <p><strong>Valor:</strong> R$ {{ pix.payment_instrument.amount|floatformat:2 }}</p>
-  <p><strong>Válido até:</strong> {{ pix.expires_at|date:"d/m/Y H:i" }}</p>
-  {% if pix.qr_code_image_asset %}
-    <img src="{% url 'pix:qrcode_image' pix.pk %}" alt="QR Code Pix" width="220" height="220">
-  {% endif %}
-  <p><strong>Pix copia e cola:</strong></p>
-  <textarea rows="4" cols="60" readonly>{{ pix.qr_code_payload }}</textarea>
+    <div class="card" style="max-width: 560px;">
+        <div class="card-body">
+            <dl class="detail-list" style="grid-template-columns: 1fr;">
+                <div><dt>Valor</dt><dd>R$ {{ pix.payment_instrument.amount|floatformat:2 }}</dd></div>
+                <div><dt>Válido até</dt><dd>{{ pix.expires_at|date:"d/m/Y H:i" }}</dd></div>
+            </dl>
+
+            {% if pix.qr_code_image_asset %}
+                <p class="mt-2 text-center">
+                    <img src="{% url 'pix:qrcode_image' pix.pk %}" alt="QR Code Pix" width="220" height="220">
+                </p>
+            {% endif %}
+
+            <p class="mt-2"><strong>Pix copia e cola:</strong></p>
+            <textarea rows="4" readonly class="form-textarea">{{ pix.qr_code_payload }}</textarea>
+        </div>
+    </div>
 {% else %}
-  <p>Nenhum Pix gerado para esta inscrição.</p>
-  <form method="post" action="{% url 'pix:generate' application.protocol %}">
-    {% csrf_token %}
-    <button type="submit">Gerar Pix</button>
-  </form>
+    <div class="card" style="max-width: 560px;">
+        <div class="card-body">
+            <div class="empty-state mb-3">
+                <p>Nenhum Pix gerado para esta inscrição.</p>
+            </div>
+            <form method="post" action="{% url 'pix:generate' application.protocol %}" class="form">
+                {% csrf_token %}
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Gerar Pix</button>
+                </div>
+            </form>
+        </div>
+    </div>
 {% endif %}
-<p><a href="{% url 'payments:fee_payment' application.protocol %}">Voltar ao pagamento</a></p>
 {% endblock %}

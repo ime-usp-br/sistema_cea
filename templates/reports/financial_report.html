@@ -4,14 +4,20 @@
 {% block app_name %}Inscrições CEA{% endblock %}
 
 {% block content %}
-    <h1>Relatório financeiro</h1>
-    <p>
-        <a href="{% url 'reports:financial_csv' %}">Exportar CSV</a> |
-        <a href="{% url 'reports:financial_xlsx' %}">Exportar XLSX</a>
-    </p>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Relatório financeiro</h1>
+        <p class="page-subtitle">Visão consolidada das receitas de inscrição.</p>
+    </div>
+    <div class="form-actions">
+        <a href="{% url 'reports:financial_csv' %}" class="btn btn-secondary btn-sm">Exportar CSV</a>
+        <a href="{% url 'reports:financial_xlsx' %}" class="btn btn-secondary btn-sm">Exportar XLSX</a>
+    </div>
+</div>
 
-    {% if rows %}
-        <table>
+{% if rows %}
+    <div class="table-responsive">
+        <table class="table">
             <thead>
                 <tr>
                     <th>Protocolo</th>
@@ -43,7 +49,7 @@
                         <td>{{ row.base_amount }}</td>
                         <td>{{ row.adjustment_amount }}</td>
                         <td>{{ row.amount }}</td>
-                        <td>{{ row.payment_state }}</td>
+                        <td><span class="badge badge-neutral">{{ row.payment_state }}</span></td>
                         <td>{{ row.paid_at|default:"—" }}</td>
                         <td>{{ row.manual|yesno:"Sim,Não" }}</td>
                         <td>{{ row.superseded|yesno:"Sim,Não" }}</td>
@@ -53,7 +59,10 @@
                 {% endfor %}
             </tbody>
         </table>
-    {% else %}
+    </div>
+{% else %}
+    <div class="empty-state">
         <p>Não há dados financeiros para exibir.</p>
-    {% endif %}
+    </div>
+{% endif %}
 {% endblock %}

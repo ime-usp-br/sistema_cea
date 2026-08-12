@@ -4,10 +4,16 @@
 {% block app_name %}Inscrições CEA{% endblock %}
 
 {% block content %}
-    <h1>Solicitações de reembolso</h1>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Solicitações de reembolso</h1>
+        <p class="page-subtitle">Revise, aprove e execute os reembolsos solicitados.</p>
+    </div>
+</div>
 
-    {% if refunds %}
-        <table>
+{% if refunds %}
+    <div class="table-responsive">
+        <table class="table">
             <thead>
                 <tr>
                     <th>#</th>
@@ -24,20 +30,23 @@
                         <td>{{ refund.pk }}</td>
                         <td>{{ refund.application.protocol }}</td>
                         <td>R$ {{ refund.amount }}</td>
-                        <td>{{ refund.get_status_display }}</td>
+                        <td><span class="badge badge-warning">{{ refund.get_status_display }}</span></td>
                         <td>{{ refund.requested_by|default:"—" }}</td>
-                        <td>
+                        <td class="actions">
                             {% if refund.status == 'requested' %}
-                                <a href="{% url 'payments:refund_action' refund.pk 'approve' %}">Aprovar</a>
+                                <a href="{% url 'payments:refund_action' refund.pk 'approve' %}" class="btn btn-sm btn-primary">Aprovar</a>
                             {% elif refund.status == 'approved' %}
-                                <a href="{% url 'payments:refund_action' refund.pk 'execute' %}">Executar</a>
+                                <a href="{% url 'payments:refund_action' refund.pk 'execute' %}" class="btn btn-sm btn-secondary">Executar</a>
                             {% endif %}
                         </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
-    {% else %}
+    </div>
+{% else %}
+    <div class="empty-state">
         <p>Não há solicitações de reembolso.</p>
-    {% endif %}
+    </div>
+{% endif %}
 {% endblock %}

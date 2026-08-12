@@ -1,28 +1,46 @@
 {% extends "base/base.html" %}
 
-{% block title %}Bem-vindo ao Python USP Starter Kit{% endblock %}
-
+{% block title %}Bem-vindo ao Inscrições CEA{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
 
 {% block content %}
-    <div style="background: var(--card-bg); padding: 3rem; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); text-align: center; transition: background-color 0.3s ease;">
-        <h1 style="color: var(--usp-blue-pri); font-size: 2.5rem; margin-bottom: 1rem;">Python USP Starter Kit</h1>
-        <p style="font-size: 1.25rem; color: var(--text-color); margin-bottom: 2rem;">
-            Uma base python para desenvolvimento web na USP.
+<div class="card">
+    <div class="card-body text-center" style="padding: 3rem 1.5rem;">
+        <h1 class="page-title">Inscrições CEA</h1>
+        <p class="page-subtitle" style="margin: 0 auto 2rem;">
+            Plataforma de inscrições para o Centro de Estudos Avançados do IME-USP.
         </p>
-        
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-top: 3rem;">
-            <div style="padding: 1.5rem; border: 1px solid var(--border-color); border-radius: 0.5rem; text-align: left;">
-                <h3 style="color: var(--usp-blue-pri); margin-bottom: 0.5rem;">Autenticação</h3>
-                <p>Integração nativa com a Senha Única USP via Socialite.</p>
+
+        <div class="grid grid-3" style="text-align: left;">
+            <div class="card" style="box-shadow: none;">
+                <div class="card-body">
+                    <h3>Autenticação</h3>
+                    <p class="muted">Integração nativa com a Senha Única USP.</p>
+                </div>
             </div>
-            <div style="padding: 1.5rem; border: 1px solid var(--border-color); border-radius: 0.5rem; text-align: left;">
-                <h3 style="color: var(--usp-blue-pri); margin-bottom: 0.5rem;">Dados USP</h3>
-                <p>Acesso simplificado aos sistemas corporativos via Replicado.</p>
+            <div class="card" style="box-shadow: none;">
+                <div class="card-body">
+                    <h3>Dados USP</h3>
+                    <p class="muted">Acesso simplificado aos sistemas corporativos via Replicado.</p>
+                </div>
             </div>
-            <div style="padding: 1.5rem; border: 1px solid var(--border-color); border-radius: 0.5rem; text-align: left;">
-                <h3 style="color: var(--usp-blue-pri); margin-bottom: 0.5rem;">Docker Ready</h3>
-                <p>Ambiente conteinerizado para desenvolvimento e produção.</p>
+            <div class="card" style="box-shadow: none;">
+                <div class="card-body">
+                    <h3>Docker Ready</h3>
+                    <p class="muted">Ambiente conteinerizado para desenvolvimento e produção.</p>
+                </div>
             </div>
         </div>
+
+        {% if not user.is_authenticated %}
+            <p class="mt-3">
+                <a href="{% url 'login' %}" class="btn btn-primary">Acessar o sistema</a>
+            </p>
+        {% else %}
+            <p class="mt-3">
+                <a href="{% url 'applications:dashboard' %}" class="btn btn-primary">Ir para o painel</a>
+            </p>
+        {% endif %}
     </div>
+</div>
 {% endblock %}

@@ -1,37 +1,48 @@
 {% extends "base/base.html" %}
 
-{% block title %}Agendar triagem — {{ application.protocol }}{% endblock %}
+{% block title %}{% if screening %}Reagendar{% else %}Agendar{% endif %} triagem — {{ application.protocol }}{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
 {% block content %}
-    <h1>{% if screening %}Reagendar{% else %}Agendar{% endif %} triagem</h1>
-    <p>Inscrição: <strong>{{ application.protocol }}</strong> —
-        {{ application.researcher_name }}</p>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{% if screening %}Reagendar{% else %}Agendar{% endif %} triagem</h1>
+        <p class="page-subtitle">Inscrição: <strong>{{ application.protocol }}</strong> — {{ application.researcher_name }}</p>
+    </div>
+    <a href="{% url 'meetings:queue' %}" class="btn btn-ghost">Voltar à fila</a>
+</div>
 
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        {% if form.non_field_errors %}
-            <p style="color: red;">{{ form.non_field_errors }}</p>
-        {% endif %}
-        <button type="submit">
-            {% if screening %}Reagendar{% else %}Agendar{% endif %}
-        </button>
-    </form>
-
-    {% if screening and screening.state != 'canceled' %}
-        <form method="post">
+<div class="card" style="max-width: 760px;">
+    <div class="card-body">
+        <form method="post" class="form">
             {% csrf_token %}
-            <input type="hidden" name="action" value="cancel">
-            <button type="submit">Cancelar triagem</button>
+            {{ form.as_p }}
+            {% if form.non_field_errors %}
+                <div class="alert alert-error">{{ form.non_field_errors }}</div>
+            {% endif %}
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    {% if screening %}Reagendar{% else %}Agendar{% endif %}
+                </button>
+            </div>
         </form>
-    {% endif %}
 
-    {% if screening and screening.state == 'completed' %}
-        <p>Triagem concluída.
-            <a href="{% url 'meetings:screening_decision' screening.pk %}">Ver decisão e feedback</a>
-        </p>
-    {% endif %}
+        {% if screening and screening.state != 'canceled' %}
+            <form method="post" class="form mt-3">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="cancel">
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-danger">Cancelar triagem</button>
+                </div>
+            </form>
+        {% endif %}
 
-    <p><a href="{% url 'meetings:queue' %}">Voltar à fila</a></p>
+        {% if screening and screening.state == 'completed' %}
+            <div class="alert alert-info mt-3">
+                Triagem concluída.
+                <a href="{% url 'meetings:screening_decision' screening.pk %}">Ver decisão e feedback</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}

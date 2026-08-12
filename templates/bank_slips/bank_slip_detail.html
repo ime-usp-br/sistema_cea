@@ -1,19 +1,42 @@
 {% extends "base/base.html" %}
 {% block title %}Boleto - Inscrição {{ application.protocol }}{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
 {% block content %}
-<h1>Pagamento via Boleto</h1>
-<p>Inscrição: <strong>{{ application.protocol }}</strong></p>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Pagamento via Boleto</h1>
+        <p class="page-subtitle">Inscrição: <strong>{{ application.protocol }}</strong></p>
+    </div>
+    <a href="{% url 'payments:fee_payment' application.protocol %}" class="btn btn-ghost">Voltar ao pagamento</a>
+</div>
+
 {% if slip %}
-  <p><strong>Referência:</strong> {{ slip.bank_slip_reference }}</p>
-  <p><strong>Valor:</strong> R$ {{ slip.document_amount|floatformat:2 }}</p>
-  <p><strong>Vencimento:</strong> {{ slip.due_date|date:"d/m/Y" }}</p>
-  <p><a href="{% url 'bank_slips:download_pdf' slip.pk %}" target="_blank">Baixar PDF do boleto</a></p>
+    <div class="card" style="max-width: 560px;">
+        <div class="card-body">
+            <dl class="detail-list" style="grid-template-columns: 1fr;">
+                <div><dt>Referência</dt><dd>{{ slip.bank_slip_reference }}</dd></div>
+                <div><dt>Valor</dt><dd>R$ {{ slip.document_amount|floatformat:2 }}</dd></div>
+                <div><dt>Vencimento</dt><dd>{{ slip.due_date|date:"d/m/Y" }}</dd></div>
+            </dl>
+            <div class="form-actions mt-2">
+                <a href="{% url 'bank_slips:download_pdf' slip.pk %}" target="_blank" class="btn btn-primary">Baixar PDF do boleto</a>
+            </div>
+        </div>
+    </div>
 {% else %}
-  <p>Nenhum boleto gerado para esta inscrição.</p>
-  <form method="post" action="{% url 'bank_slips:generate' application.protocol %}">
-    {% csrf_token %}
-    <button type="submit">Gerar Boleto</button>
-  </form>
+    <div class="card" style="max-width: 560px;">
+        <div class="card-body">
+            <div class="empty-state mb-3">
+                <p>Nenhum boleto gerado para esta inscrição.</p>
+            </div>
+            <form method="post" action="{% url 'bank_slips:generate' application.protocol %}" class="form">
+                {% csrf_token %}
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Gerar Boleto</button>
+                </div>
+            </form>
+        </div>
+    </div>
 {% endif %}
-<p><a href="{% url 'payments:fee_payment' application.protocol %}">Voltar ao pagamento</a></p>
 {% endblock %}

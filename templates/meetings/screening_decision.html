@@ -4,35 +4,56 @@
 {% block app_name %}Inscrições CEA{% endblock %}
 
 {% block content %}
-    <h1>Decisão e feedback da triagem</h1>
-    <p>Inscrição: <strong>{{ screening.application.protocol }}</strong></p>
-    <p>Agendada para {{ screening.scheduled_date }} às {{ screening.scheduled_time }}
-        ({{ screening.get_meeting_mode_display }})</p>
-    <p>Estado: {{ screening.get_state_display }}</p>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Decisão e feedback da triagem</h1>
+        <p class="page-subtitle">Inscrição: <strong>{{ screening.application.protocol }}</strong></p>
+    </div>
+    <a href="{% url 'meetings:queue' %}" class="btn btn-ghost">Voltar</a>
+</div>
 
-    {% if screening.decision %}
-        <p>Decisão registrada: <strong>{{ screening.get_decision_display }}</strong></p>
-    {% endif %}
+<div class="card">
+    <div class="card-body">
+        <dl class="detail-list">
+            <div><dt>Agendada</dt><dd>{{ screening.scheduled_date }} às {{ screening.scheduled_time }}</dd></div>
+            <div><dt>Modalidade</dt><dd>{{ screening.get_meeting_mode_display }}</dd></div>
+            <div><dt>Estado</dt><dd><span class="badge badge-neutral">{{ screening.get_state_display }}</span></dd></div>
+            {% if screening.decision %}
+                <div><dt>Decisão registrada</dt><dd>{{ screening.get_decision_display }}</dd></div>
+            {% endif %}
+        </dl>
+    </div>
+</div>
 
-    <form method="post">
-        {% csrf_token %}
-        <h2>Registrar decisão</h2>
-        {{ decision_form.as_p }}
-        {% if decision_form.non_field_errors %}
-            <p style="color: red;">{{ decision_form.non_field_errors }}</p>
-        {% endif %}
-        <button type="submit">Registrar decisão</button>
-    </form>
+<div class="card" style="max-width: 760px;">
+    <div class="card-body">
+        <h3>Registrar decisão</h3>
+        <form method="post" class="form">
+            {% csrf_token %}
+            {{ decision_form.as_p }}
+            {% if decision_form.non_field_errors %}
+                <div class="alert alert-error">{{ decision_form.non_field_errors }}</div>
+            {% endif %}
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Registrar decisão</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-    <form method="post">
-        {% csrf_token %}
-        <h2>Registrar feedback do docente</h2>
-        {{ feedback_form.as_p }}
-        {% if feedback_form.non_field_errors %}
-            <p style="color: red;">{{ feedback_form.non_field_errors }}</p>
-        {% endif %}
-        <button type="submit" name="submit_feedback">Registrar feedback</button>
-    </form>
-
-    <p><a href="{% url 'meetings:queue' %}">Voltar</a></p>
+<div class="card" style="max-width: 760px;">
+    <div class="card-body">
+        <h3>Registrar feedback do docente</h3>
+        <form method="post" class="form">
+            {% csrf_token %}
+            {{ feedback_form.as_p }}
+            {% if feedback_form.non_field_errors %}
+                <div class="alert alert-error">{{ feedback_form.non_field_errors }}</div>
+            {% endif %}
+            <div class="form-actions">
+                <button type="submit" name="submit_feedback" class="btn btn-secondary">Registrar feedback</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}

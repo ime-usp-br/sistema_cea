@@ -4,10 +4,16 @@
 {% block app_name %}Inscrições CEA{% endblock %}
 
 {% block content %}
-    <h1>Submissões pendentes de análise</h1>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Submissões pendentes de análise</h1>
+        <p class="page-subtitle">Revise e registre decisões sobre os dados enviados pelos candidatos.</p>
+    </div>
+</div>
 
-    {% if submissions %}
-        <table>
+{% if submissions %}
+    <div class="table-responsive">
+        <table class="table">
             <thead>
                 <tr>
                     <th>Submissão</th>
@@ -23,15 +29,18 @@
                     <tr>
                         <td>#{{ submission.pk }}</td>
                         <td>{{ submission.application.protocol }}</td>
-                        <td>{{ submission.get_submission_channel_display }}</td>
+                        <td><span class="badge badge-neutral">{{ submission.get_submission_channel_display }}</span></td>
                         <td>{{ submission.submitted_by|default:"—" }}</td>
                         <td>{{ submission.submitted_at }}</td>
-                        <td><a href="{% url 'audits:review' submission.pk %}">Analisar</a></td>
+                        <td class="actions"><a href="{% url 'audits:review' submission.pk %}" class="btn btn-sm btn-primary">Analisar</a></td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
-    {% else %}
+    </div>
+{% else %}
+    <div class="empty-state">
         <p>Não há submissões pendentes de análise.</p>
-    {% endif %}
+    </div>
+{% endif %}
 {% endblock %}

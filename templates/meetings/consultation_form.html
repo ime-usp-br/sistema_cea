@@ -1,37 +1,48 @@
 {% extends "base/base.html" %}
 
-{% block title %}Agendar reunião — {{ application.protocol }}{% endblock %}
+{% block title %}{% if consultation %}Reagendar{% else %}Agendar{% endif %} reunião — {{ application.protocol }}{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
 {% block content %}
-    <h1>{% if meeting %}Reagendar{% else %}Agendar{% endif %} reunião</h1>
-    <p>Inscrição: <strong>{{ application.protocol }}</strong> —
-        {{ application.researcher_name }}</p>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{% if meeting %}Reagendar{% else %}Agendar{% endif %} reunião</h1>
+        <p class="page-subtitle">Inscrição: <strong>{{ application.protocol }}</strong> — {{ application.researcher_name }}</p>
+    </div>
+    <a href="{% url 'meetings:queue' %}" class="btn btn-ghost">Voltar à fila</a>
+</div>
 
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        {% if form.non_field_errors %}
-            <p style="color: red;">{{ form.non_field_errors }}</p>
-        {% endif %}
-        <button type="submit">
-            {% if meeting %}Reagendar{% else %}Agendar{% endif %}
-        </button>
-    </form>
-
-    {% if meeting and meeting.state != 'canceled' %}
-        <form method="post">
+<div class="card" style="max-width: 760px;">
+    <div class="card-body">
+        <form method="post" class="form">
             {% csrf_token %}
-            <input type="hidden" name="action" value="cancel">
-            <button type="submit">Cancelar reunião</button>
+            {{ form.as_p }}
+            {% if form.non_field_errors %}
+                <div class="alert alert-error">{{ form.non_field_errors }}</div>
+            {% endif %}
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    {% if meeting %}Reagendar{% else %}Agendar{% endif %}
+                </button>
+            </div>
         </form>
-    {% endif %}
 
-    {% if meeting and meeting.state == 'completed' %}
-        <p>Reunião concluída.
-            <a href="{% url 'meetings:consultation_decision' meeting.pk %}">Ver decisão e feedback</a>
-        </p>
-    {% endif %}
+        {% if meeting and meeting.state != 'canceled' %}
+            <form method="post" class="form mt-3">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="cancel">
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-danger">Cancelar reunião</button>
+                </div>
+            </form>
+        {% endif %}
 
-    <p><a href="{% url 'meetings:queue' %}">Voltar à fila</a></p>
+        {% if meeting and meeting.state == 'completed' %}
+            <div class="alert alert-info mt-3">
+                Reunião concluída.
+                <a href="{% url 'meetings:consultation_decision' meeting.pk %}">Ver decisão e feedback</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}

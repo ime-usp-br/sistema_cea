@@ -4,36 +4,46 @@
 {% block app_name %}Inscrições CEA{% endblock %}
 
 {% block content %}
-    <h1>Inscrição {{ object.protocol }}</h1>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Inscrição {{ object.protocol }}</h1>
+        <p class="page-subtitle">
+            <span class="badge badge-primary">{{ object.get_modality_display }}</span>
+            <span class="badge badge-info">{{ object.get_lifecycle_status_display }}</span>
+        </p>
+    </div>
+    <a href="{% url 'applications:dashboard' %}" class="btn btn-ghost">Voltar ao painel</a>
+</div>
 
-    <dl>
-        <dt>Modalidade</dt>
-        <dd>{{ object.get_modality_display }}</dd>
-        <dt>Status</dt>
-        <dd>{{ object.get_lifecycle_status_display }}</dd>
-        <dt>Período</dt>
-        <dd>{{ object.term }}</dd>
-        <dt>Pesquisador</dt>
-        <dd>{{ object.researcher_name }}</dd>
-        <dt>E-mail</dt>
-        <dd>{{ object.contact_email }}</dd>
-    </dl>
+<div class="card">
+    <div class="card-body">
+        <dl class="detail-list">
+            <div><dt>Modalidade</dt><dd>{{ object.get_modality_display }}</dd></div>
+            <div><dt>Status</dt><dd>{{ object.get_lifecycle_status_display }}</dd></div>
+            <div><dt>Período</dt><dd>{{ object.term }}</dd></div>
+            <div><dt>Pesquisador</dt><dd>{{ object.researcher_name }}</dd></div>
+            <div><dt>E-mail</dt><dd>{{ object.contact_email }}</dd></div>
+        </dl>
+    </div>
+</div>
 
-    {% if object.attachments.all %}
-        <h2>Anexos</h2>
-        <ul>
-            {% for attachment in object.attachments.all %}
-                <li>{{ attachment.file_asset.original_filename }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
-
-    <p><a href="{% url 'applications:dashboard' %}">Voltar ao painel</a></p>
+{% if object.attachments.all %}
+    <div class="card">
+        <div class="card-header"><h2 class="card-title">Anexos</h2></div>
+        <div class="card-body">
+            <ul>
+                {% for attachment in object.attachments.all %}
+                    <li>{{ attachment.file_asset.original_filename }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+{% endif %}
 
 {% if object.modality == "project" and object.owner %}
     {% if object.lifecycle_status == "awaiting_dataset_submission" or object.lifecycle_status == "awaiting_dataset_correction" %}
         <p>
-            <a href="{% url 'audits:submit' object.protocol %}">
+            <a href="{% url 'audits:submit' object.protocol %}" class="btn btn-primary">
                 {% if object.lifecycle_status == "awaiting_dataset_correction" %}
                     Corrigir e reenviar dados
                 {% else %}

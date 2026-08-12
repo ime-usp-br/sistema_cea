@@ -4,13 +4,273 @@
 {% block app_name %}Inscrições CEA{% endblock %}
 
 {% block content %}
-    <h1>Nova Inscrição</h1>
+<div class="page-header" style="display: block; text-align: center;">
+    <div>
+        <h1 class="page-title">FICHA DE INSCRIÇÃO PARA ASSESSORIA ESTATÍSTICA</h1>
+        <p class="page-subtitle" style="margin: 0.35rem auto 0;">{% if form.term.value %}{{ form.term.value }}{% endif %}</p>
+    </div>
+</div>
 
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Enviar inscrição</button>
-    </form>
+<div class="card ficha" style="max-width: 900px; margin: 0 auto;">
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data" class="form" id="form-inscricao">
+            {% csrf_token %}
+            {{ form.term.as_hidden }}
 
-    <p><a href="{% url 'applications:dashboard' %}">Voltar ao painel</a></p>
+            {% if form.non_field_errors %}
+                <div class="alert alert-error">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            {% include "applications/_form_field.html" with field=form.modality label="Modalidade do serviço solicitado" inline=True %}
+
+            <hr class="form-section-divider">
+
+            {% include "applications/_form_field.html" with field=form.researcher_name label="Nome do pesquisador" %}
+
+            <div class="form-row{% if form.contact_phone.errors %} has-error{% endif %}">
+                <div class="form-row-label"><label for="{{ form.contact_phone.id_for_label }}">Telefones para contato</label></div>
+                <div class="form-row-control">
+                    <div class="inline-group">
+                        <label class="has-whatsapp">{{ form.has_whatsapp }} Whatsapp</label>
+                        {{ form.contact_phone }}
+                    </div>
+                    {% if form.contact_phone.errors %}<div class="field-errors">{{ form.contact_phone.errors }}</div>{% endif %}
+                </div>
+            </div>
+
+            {% include "applications/_form_field.html" with field=form.tax_id label="CPF/CNPJ" %}
+
+            {% include "applications/_form_field.html" with field=form.contact_email label="E-mail" %}
+
+            {% include "applications/_form_field.html" with field=form.contact_email_confirmation label="Repetir e-mail" %}
+
+            {% include "applications/_form_field.html" with field=form.institution_name label="Instituição/Unidade" %}
+
+            {% include "applications/_form_field.html" with field=form.course_name label="Curso" %}
+
+            {% include "applications/_form_field.html" with field=form.mentor_name %}
+
+            <div class="form-block">
+                {{ form.catalog_options }}
+                <div class="catalog-other-field">
+                    {{ form.catalog_other_text }}
+                </div>
+                {% if form.catalog_options.errors %}<div class="field-errors">{{ form.catalog_options.errors }}</div>{% endif %}
+                {% if form.catalog_other_text.errors %}<div class="field-errors">{{ form.catalog_other_text.errors }}</div>{% endif %}
+            </div>
+
+            <hr class="form-section-divider">
+
+            {% include "applications/_form_field.html" with field=form.data_already_collected label="Os dados já foram coletados" inline=True %}
+
+            {% include "applications/_form_field.html" with field=form.wants_refund_receipt label="Recibo para reembolso" inline=True %}
+
+            {% include "applications/_form_block.html" with field=form.refund_receipt_details label="Dados que devem constar no recibo" %}
+
+            <hr class="form-section-divider">
+
+            <h5 class="form-section-title">Dados bancários para emissão do boleto e devolução da taxa em caso de não poder ser feita a consulta</h5>
+
+            {% include "applications/_form_field.html" with field=form.refund_account_holder_name label="Nome completo" %}
+
+            {% include "applications/_form_field.html" with field=form.refund_account_holder_tax_id label="CPF/CNPJ" %}
+
+            {% include "applications/_form_field.html" with field=form.refund_bank_name label="Nome do Banco" %}
+
+            {% include "applications/_form_field.html" with field=form.refund_branch_number label="Número da Agência (sem DV)" %}
+
+            {% include "applications/_form_field.html" with field=form.refund_bank_account_number label="Número da Conta" %}
+
+            {% include "applications/_form_field.html" with field=form.refund_bank_account_type label="Tipo da Conta" inline=True %}
+
+            <div class="form-notice">
+                <p><strong>A DEVOLUÇÃO DA TAXA DE INSCRIÇÃO EM CASO DE DESISTÊNCIA ESTÁ SUJEITA A ANÁLISE.</strong></p>
+                <p><strong>A SUA INSCRIÇÃO SÓ SERÁ CONFIRMADA NA TRIAGEM APÓS O PAGAMENTO DO BOLETO BANCÁRIO.</strong></p>
+            </div>
+
+            <hr class="form-section-divider">
+
+            <div class="form-block">
+                <label class="consent-check">
+                    {{ form.data_use_authorization_accepted }}
+                    <span>{{ form.data_use_authorization_accepted.label }}</span>
+                </label>
+                {% if form.data_use_authorization_accepted.errors %}<div class="field-errors">{{ form.data_use_authorization_accepted.errors }}</div>{% endif %}
+            </div>
+
+            <hr class="form-section-divider">
+
+            <div class="form-block">
+                <label class="consent-check">
+                    {{ form.mentor_declaration_accepted }}
+                    <span>{{ form.mentor_declaration_accepted.label }}</span>
+                </label>
+                {% if form.mentor_declaration_accepted.errors %}<div class="field-errors">{{ form.mentor_declaration_accepted.errors }}</div>{% endif %}
+            </div>
+
+            <hr class="form-section-divider">
+
+            <div class="form-block">
+                <strong>Com o intuito de facilitar o trabalho dos consultores do CEA gostaríamos que fosse apresentada uma descrição sucinta do projeto, salientando os aspectos indicados a seguir (os itens 8 e 9 são muito importantes). Termos técnicos estatísticos devem ser evitados e aqueles pertinentes à área de concentração devem ser explicados.</strong>
+            </div>
+
+            {% include "applications/_form_block.html" with field=form.project_title label="1. Título do projeto, mesmo sendo provisório" %}
+
+            {% include "applications/_form_block.html" with field=form.context_summary label="2. Aspectos gerais da área de concentração, com ênfase naqueles que motivaram o projeto" %}
+
+            {% include "applications/_form_block.html" with field=form.general_objectives label="3. Objetivos gerais" %}
+
+            {% include "applications/_form_block.html" with field=form.variables_and_measurements label="4. Que características (ou variáveis) foram ou serão observadas para atingir os objetivos? Como foram ou serão efetuadas as medidas dessas características (ou variáveis)? Quais as unidades de medida?" %}
+
+            {% include "applications/_form_block.html" with field=form.contextual_factors label="5. Que outras características (ou variáveis) poderiam influenciar essas medidas? Existe possibilidade destas serem controladas?" %}
+
+            {% include "applications/_form_block.html" with field=form.sampling_and_limitations label="6. Como foi (ou será) conduzida a investigação para que os objetivos do item 3 sejam atingidos? Quais as restrições que foram ou serão naturalmente impostas à coleta de dados? Quantas unidades amostrais* foram ou serão analisadas? Indique as limitações de tempo e custo." %}
+
+            {% include "applications/_form_block.html" with field=form.data_management_plan label="7. Como os dados estão ou serão armazenados? Existe a possibilidade de apresentá-los em mídia eletrônica (CD, DVD, etc)?" %}
+
+            {% include "applications/_form_block.html" with field=form.expected_results label="8. Supondo que os dados já tivessem sido analisados de forma apropriada, indique o tipo de conclusões que seriam satisfatórias, tendo em vista seu comentário no item 3. Simule resultados possíveis e comente-os." %}
+
+            {% include "applications/_form_block.html" with field=form.expected_support label="9. Que tipo de ajuda você espera do CEA?" %}
+
+            <hr class="form-section-divider">
+
+            <div class="form-block">
+                <label for="{{ form.attachments.id_for_label }}">10. Caso seja pertinente, anexe a esta ficha de inscrição algum plano de pesquisa, relatório, resumo ou trabalho publicado que se relacione com este projeto (máx. 8 MB total).</label>
+                {{ form.attachments }}
+                {% if form.attachments.errors %}<div class="field-errors">{{ form.attachments.errors }}</div>{% endif %}
+            </div>
+
+            <hr class="form-section-divider">
+
+            <div class="form-actions" style="justify-content: center;">
+                <button type="submit" class="btn btn-primary">Enviar inscrição</button>
+                <a href="{% url 'applications:dashboard' %}" class="btn btn-ghost">Voltar ao painel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    function eachCheckbox(fn) {
+        document.querySelectorAll('.catalog-option input[type="checkbox"]').forEach(fn);
+    }
+
+    // Exclusividade por seção + campo "Outro" inline junto à opção marcada.
+    function syncOther() {
+        var other = document.querySelector('.catalog-option input[type="checkbox"][data-other]:checked');
+        var field = document.getElementById('id_catalog_other_text');
+        if (!field) return;
+        var wrapper = field.closest('.catalog-other-field');
+        if (other) {
+            other.closest('label.catalog-option').after(wrapper);
+            wrapper.style.display = 'flex';
+            field.placeholder = 'Especifique o outro — ' + other.dataset.group;
+        } else {
+            wrapper.style.display = 'none';
+        }
+    }
+
+    eachCheckbox(function (cb) {
+        cb.addEventListener('change', function () {
+            if (cb.checked) {
+                eachCheckbox(function (other) {
+                    if (other !== cb && other.dataset.group === cb.dataset.group) {
+                        other.checked = false;
+                    }
+                });
+            }
+            syncOther();
+        });
+    });
+
+    syncOther();
+})();
+
+(function () {
+    var input = document.querySelector('input[name="attachments"]');
+    if (!input) return;
+
+    var files = [];
+    var form = input.closest('form');
+
+    var hint = document.createElement('p');
+    hint.className = 'attachment-hint';
+    hint.textContent = 'Você pode anexar arquivos de pastas diferentes em etapas.';
+    input.after(hint);
+
+    var listEl = document.createElement('div');
+    listEl.className = 'attachment-list';
+    hint.after(listEl);
+
+    function formatSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    function render() {
+        listEl.innerHTML = '';
+        files.forEach(function (file, index) {
+            var row = document.createElement('div');
+            row.className = 'attachment-item';
+
+            var info = document.createElement('span');
+            info.className = 'attachment-name';
+            info.textContent = file.name + ' (' + formatSize(file.size) + ')';
+
+            var trash = document.createElement('button');
+            trash.type = 'button';
+            trash.className = 'attachment-remove';
+            trash.setAttribute('aria-label', 'Remover ' + file.name);
+            trash.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
+            trash.addEventListener('click', function () {
+                files.splice(index, 1);
+                render();
+            });
+
+            row.appendChild(info);
+            row.appendChild(trash);
+            listEl.appendChild(row);
+        });
+    }
+
+    input.addEventListener('change', function () {
+        Array.prototype.forEach.call(input.files, function (f) {
+            files.push(f);
+        });
+        input.value = '';
+        render();
+    });
+
+    form.addEventListener('submit', function (e) {
+        if (files.length === 0) return;
+        e.preventDefault();
+        var fd = new FormData(form);
+        fd.delete('attachments');
+        files.forEach(function (f) {
+            fd.append('attachments', f);
+        });
+        fetch(form.action, {
+            method: 'POST',
+            body: fd,
+            credentials: 'same-origin'
+        }).then(function (resp) {
+            if (resp.redirected) {
+                window.location.href = resp.url;
+            } else {
+                resp.text().then(function (html) {
+                    document.open();
+                    document.write(html);
+                    document.close();
+                });
+            }
+        }).catch(function () {
+            window.location.reload();
+        });
+    });
+})();
+</script>
 {% endblock %}

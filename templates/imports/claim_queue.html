@@ -4,10 +4,16 @@
 {% block app_name %}Inscrições CEA{% endblock %}
 
 {% block content %}
-    <h1>Solicitações de resgate</h1>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Solicitações de resgate</h1>
+        <p class="page-subtitle">Solicitações de vínculo de inscrições existentes aguardando aprovação.</p>
+    </div>
+</div>
 
-    {% if claims %}
-        <table>
+{% if claims %}
+    <div class="table-responsive">
+        <table class="table">
             <thead>
                 <tr>
                     <th>ID</th>
@@ -26,14 +32,19 @@
                         <td>{{ claim.protocol }}</td>
                         <td>{{ claim.user|default:"—" }}</td>
                         <td>{{ claim.contact_email|default:"—" }}</td>
-                        <td>{{ claim.get_status_display }}</td>
+                        <td><span class="badge badge-warning">{{ claim.get_status_display }}</span></td>
                         <td>{{ claim.created_at }}</td>
-                        <td><a href="{% url 'imports:claim_approve' claim.pk %}">Aprovar</a></td>
+                        <td class="actions">
+                            <a href="{% url 'imports:claim_approve' claim.pk %}" class="btn btn-sm btn-primary">Aprovar</a>
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
-    {% else %}
+    </div>
+{% else %}
+    <div class="empty-state">
         <p>Não há solicitações de resgate pendentes.</p>
-    {% endif %}
+    </div>
+{% endif %}
 {% endblock %}

@@ -20,10 +20,10 @@ class CatalogOption(models.Model):
     """Opções de catálogo para campos de múltipla escolha."""
 
     class Category(models.TextChoices):
-        INSTITUTIONAL_TIE = "institutional_tie", "Vínculo institucional"
+        INSTITUTIONAL_TIE = "institutional_tie", "Vínculo com a Instituição"
         PROJECT_PURPOSE = "project_purpose", "Finalidade do projeto"
         KNOWLEDGE_AREA = "knowledge_area", "Área de conhecimento"
-        FUNDING_AGENCY = "funding_agency", "Agência de fomento"
+        FUNDING_AGENCY = "funding_agency", "Agência financiadora do projeto"
 
     id = models.SmallAutoField(primary_key=True)
     category = models.CharField(max_length=50, choices=Category.choices)

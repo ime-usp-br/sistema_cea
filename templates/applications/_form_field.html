@@ -1,0 +1,10 @@
+<div class="form-row{% if field.errors %} has-error{% endif %}">
+    <div class="form-row-label">
+        {% if label %}<label for="{{ field.id_for_label }}">{{ label }}</label>{% else %}{{ field.label_tag }}{% endif %}
+    </div>
+    <div class="form-row-control{% if inline %} inline-group{% endif %}">
+        {{ field }}
+        {% if field.errors %}<div class="field-errors">{{ field.errors }}</div>{% endif %}
+        {% if field.help_text %}<div class="helptext">{{ field.help_text }}</div>{% endif %}
+    </div>
+</div>

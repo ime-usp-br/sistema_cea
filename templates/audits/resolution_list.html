@@ -4,10 +4,16 @@
 {% block app_name %}Inscrições CEA{% endblock %}
 
 {% block content %}
-    <h1>Auditorias rejeitadas — aguardando decisão</h1>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Auditorias rejeitadas</h1>
+        <p class="page-subtitle">Submissões rejeitadas aguardando decisão administrativa.</p>
+    </div>
+</div>
 
-    {% if submissions %}
-        <table>
+{% if submissions %}
+    <div class="table-responsive">
+        <table class="table">
             <thead>
                 <tr>
                     <th>Submissão</th>
@@ -22,12 +28,15 @@
                         <td>#{{ submission.pk }}</td>
                         <td>{{ submission.application.protocol }}</td>
                         <td>{{ submission.submitted_at }}</td>
-                        <td><a href="{% url 'audits:resolve' submission.pk %}">Decidir</a></td>
+                        <td class="actions"><a href="{% url 'audits:resolve' submission.pk %}" class="btn btn-sm btn-secondary">Decidir</a></td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
-    {% else %}
+    </div>
+{% else %}
+    <div class="empty-state">
         <p>Não há auditorias rejeitadas pendentes de decisão.</p>
-    {% endif %}
+    </div>
+{% endif %}
 {% endblock %}

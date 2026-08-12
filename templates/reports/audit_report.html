@@ -4,10 +4,16 @@
 {% block app_name %}Inscrições CEA{% endblock %}
 
 {% block content %}
-    <h1>Relatório de auditoria</h1>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Relatório de auditoria</h1>
+        <p class="page-subtitle">Visão consolidada das submissões e decisões de auditoria.</p>
+    </div>
+</div>
 
-    {% if rows %}
-        <table>
+{% if rows %}
+    <div class="table-responsive">
+        <table class="table">
             <thead>
                 <tr>
                     <th>Protocolo</th>
@@ -30,8 +36,8 @@
                         <td>{{ row.candidate }}</td>
                         <td>{{ row.submitted_at }}</td>
                         <td>{{ row.channel }}</td>
-                        <td>{{ row.audit_state }}</td>
-                        <td>{{ row.submission_state }}</td>
+                        <td><span class="badge badge-neutral">{{ row.audit_state }}</span></td>
+                        <td><span class="badge badge-neutral">{{ row.submission_state }}</span></td>
                         <td>{{ row.teacher_decision|default:"—" }}</td>
                         <td>{{ row.admin_decision|default:"—" }}</td>
                         <td>{{ row.corrections }}</td>
@@ -39,7 +45,10 @@
                 {% endfor %}
             </tbody>
         </table>
-    {% else %}
+    </div>
+{% else %}
+    <div class="empty-state">
         <p>Não há dados de auditoria para exibir.</p>
-    {% endif %}
+    </div>
+{% endif %}
 {% endblock %}

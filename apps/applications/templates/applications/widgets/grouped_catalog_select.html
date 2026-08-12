@@ -1,0 +1,16 @@
+<div class="catalog-groups">
+    {% for group in groups %}
+        <fieldset class="catalog-group">
+            <span class="catalog-group-title">{{ group.title }}</span>
+            {% for opt in group.options %}
+                <label class="catalog-option">
+                    <input type="checkbox" name="{{ opt.name }}" value="{{ opt.value }}"
+                           id="{{ opt.id }}" data-group="{{ group.title }}"
+                           {% if opt.is_other %} data-other="true"{% endif %}
+                           {% if opt.checked %} checked{% endif %}>
+                    <span>{{ opt.label }}</span>
+                </label>
+            {% endfor %}
+        </fieldset>
+    {% endfor %}
+</div>

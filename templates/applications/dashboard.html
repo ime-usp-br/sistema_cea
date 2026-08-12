@@ -4,11 +4,17 @@
 {% block app_name %}Inscrições CEA{% endblock %}
 
 {% block content %}
-    <h1>Painel do Candidato</h1>
-    <p><a href="{% url 'applications:create' %}">Nova inscrição</a></p>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Painel do Candidato</h1>
+        <p class="page-subtitle">Acompanhe suas inscrições e seu andamento.</p>
+    </div>
+    <a href="{% url 'applications:create' %}" class="btn btn-primary">Nova inscrição</a>
+</div>
 
-    {% if applications %}
-        <table>
+{% if applications %}
+    <div class="table-responsive">
+        <table class="table">
             <thead>
                 <tr>
                     <th>Protocolo</th>
@@ -27,14 +33,17 @@
                             </a>
                         </td>
                         <td>{{ application.get_modality_display }}</td>
-                        <td>{{ application.get_lifecycle_status_display }}</td>
+                        <td><span class="badge badge-primary">{{ application.get_lifecycle_status_display }}</span></td>
                         <td>{{ application.term }}</td>
                         <td>{{ application.created_at|date:"d/m/Y H:i" }}</td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
-    {% else %}
+    </div>
+{% else %}
+    <div class="empty-state">
         <p>Você ainda não possui inscrições.</p>
-    {% endif %}
+    </div>
+{% endif %}
 {% endblock %}

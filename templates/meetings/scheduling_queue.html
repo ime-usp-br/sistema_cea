@@ -4,11 +4,17 @@
 {% block app_name %}Inscrições CEA{% endblock %}
 
 {% block content %}
-    <h1>Agendamentos pendentes</h1>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Agendamentos pendentes</h1>
+        <p class="page-subtitle">Programe triagens de projetos e reuniões de consulta.</p>
+    </div>
+</div>
 
-    <h2>Triagens de Projetos</h2>
-    {% if projects %}
-        <table>
+<h2>Triagens de Projetos</h2>
+{% if projects %}
+    <div class="table-responsive">
+        <table class="table">
             <thead>
                 <tr>
                     <th>Protocolo</th>
@@ -21,20 +27,24 @@
                     <tr>
                         <td>{{ application.protocol }}</td>
                         <td>{{ application.researcher_name }}</td>
-                        <td>
-                            <a href="{% url 'meetings:screening_schedule' application.protocol %}">Agendar</a>
+                        <td class="actions">
+                            <a href="{% url 'meetings:screening_schedule' application.protocol %}" class="btn btn-sm btn-primary">Agendar</a>
                         </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
-    {% else %}
+    </div>
+{% else %}
+    <div class="empty-state">
         <p>Não há triagens de Projetos aguardando agendamento.</p>
-    {% endif %}
+    </div>
+{% endif %}
 
-    <h2>Reuniões de Consulta</h2>
-    {% if consultations %}
-        <table>
+<h2>Reuniões de Consulta</h2>
+{% if consultations %}
+    <div class="table-responsive">
+        <table class="table">
             <thead>
                 <tr>
                     <th>Protocolo</th>
@@ -47,14 +57,17 @@
                     <tr>
                         <td>{{ application.protocol }}</td>
                         <td>{{ application.researcher_name }}</td>
-                        <td>
-                            <a href="{% url 'meetings:consultation_schedule' application.protocol %}">Agendar</a>
+                        <td class="actions">
+                            <a href="{% url 'meetings:consultation_schedule' application.protocol %}" class="btn btn-sm btn-secondary">Agendar</a>
                         </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
-    {% else %}
+    </div>
+{% else %}
+    <div class="empty-state">
         <p>Não há reuniões de Consulta aguardando agendamento.</p>
-    {% endif %}
+    </div>
+{% endif %}
 {% endblock %}
