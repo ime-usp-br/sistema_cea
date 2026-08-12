@@ -610,6 +610,27 @@ h3 {
     color: var(--danger);
 }
 
+/* Destaque de campos com erro (validação client-side e servidor) */
+.form-row.has-error input[type="text"],
+.form-row.has-error input[type="email"],
+.form-row.has-error textarea,
+.form-row.has-error select,
+.form-block.has-error input[type="text"],
+.form-block.has-error input[type="email"],
+.form-block.has-error textarea,
+.form-block.has-error select {
+    border-color: var(--danger);
+}
+
+.form-row.has-error input:focus,
+.form-row.has-error textarea:focus,
+.form-row.has-error select:focus,
+.form-block.has-error input:focus,
+.form-block.has-error textarea:focus,
+.form-block.has-error select:focus {
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+}
+
 /* Radio/checkbox inline */
 .inline-group {
     display: flex;

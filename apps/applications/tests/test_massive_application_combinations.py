@@ -361,3 +361,56 @@ class TestRegressionSampleMatrix:
         assert response.status_code == 200
         assert "data_already_collected" in response.context["form"].errors
         assert ServiceApplication.objects.count() == 0
+
+
+@pytest.mark.django_db
+class TestClientSideValidationSupport:
+    """Garantias de frontend para a validação client-side e re-preenchimento."""
+
+    def test_form_invalido_volta_pre_preenchido(self, logged_client, term) -> None:
+        payload = build_valid_form_payload(modality="project", term_pk=term.pk)
+        payload["data_already_collected"] = "false"
+        payload["researcher_name"] = "Maria Pesquisadora Anônima"
+        response = logged_client.post(reverse("applications:create"), payload)
+        assert response.status_code == 200
+        html = response.content.decode()
+        assert 'name="researcher_name" value="Maria Pesquisadora Anônima"' in html
+        assert 'name="data_already_collected"' in html
+        assert "form-error-summary" in html
+        assert "novalidate" in html
+        assert "application_form.js" in html
+        assert ServiceApplication.objects.count() == 0
+
+    def test_widget_catalogo_expoe_code_e_categoria(self, term) -> None:
+        from applications.forms import ApplicationForm
+
+        doctorate = CatalogOption.objects.get(
+            category="project_purpose",
+            code="doctorate",
+        )
+        form = ApplicationForm(
+            data={
+                "term": str(term.pk),
+                "modality": "project",
+                "catalog_options": [str(doctorate.pk)],
+            }
+        )
+        html = str(form["catalog_options"])
+        assert 'data-code="doctorate"' in html
+        assert 'data-category="project_purpose"' in html
+        assert f'value="{doctorate.pk}"' in html
+
+    def test_widget_catalogo_marca_opcao_outro(self, term) -> None:
+        from applications.forms import ApplicationForm
+
+        other = CatalogOption.objects.get(category="institutional_tie", code="other")
+        form = ApplicationForm(
+            data={
+                "term": str(term.pk),
+                "modality": "consultation",
+                "catalog_options": [str(other.pk)],
+            }
+        )
+        html = str(form["catalog_options"])
+        assert 'data-other="true"' in html
+        assert 'data-code="other"' in html

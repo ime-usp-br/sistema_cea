@@ -6,6 +6,7 @@
                 <label class="catalog-option">
                     <input type="checkbox" name="{{ opt.name }}" value="{{ opt.value }}"
                            id="{{ opt.id }}" data-group="{{ group.title }}"
+                           data-category="{{ opt.category }}" data-code="{{ opt.code }}"
                            {% if opt.is_other %} data-other="true"{% endif %}
                            {% if opt.checked %} checked{% endif %}>
                     <span>{{ opt.label }}</span>

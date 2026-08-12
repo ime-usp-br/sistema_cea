@@ -1,4 +1,5 @@
 {% extends "base/base.html" %}
+{% load static %}
 
 {% block title %}Nova Inscrição{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
@@ -13,13 +14,15 @@
 
 <div class="card ficha" style="max-width: 900px; margin: 0 auto;">
     <div class="card-body">
-        <form method="post" enctype="multipart/form-data" class="form" id="form-inscricao">
+        <form method="post" enctype="multipart/form-data" class="form" id="form-inscricao" novalidate>
             {% csrf_token %}
             {{ form.term.as_hidden }}
 
             {% if form.non_field_errors %}
                 <div class="alert alert-error">{{ form.non_field_errors }}</div>
             {% endif %}
+
+            <div id="form-error-summary" class="alert alert-error" style="display: none;" role="alert"></div>
 
             {% include "applications/_form_field.html" with field=form.modality label="Modalidade do serviço solicitado" inline=True %}
 
@@ -138,6 +141,7 @@
                 <label for="{{ form.attachments.id_for_label }}">10. Caso seja pertinente, anexe a esta ficha de inscrição algum plano de pesquisa, relatório, resumo ou trabalho publicado que se relacione com este projeto (máx. 8 MB total).</label>
                 {{ form.attachments }}
                 {% if form.attachments.errors %}<div class="field-errors">{{ form.attachments.errors }}</div>{% endif %}
+                <p class="attachment-hint">Em caso de erro ao enviar, os arquivos precisam ser anexados novamente.</p>
             </div>
 
             <hr class="form-section-divider">
@@ -152,6 +156,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'applications/js/application_form.js' %}"></script>
 <script>
 (function () {
     function eachCheckbox(fn) {
@@ -248,6 +253,7 @@
     form.addEventListener('submit', function (e) {
         if (files.length === 0) return;
         e.preventDefault();
+        if (form.dataset.ceaValid === 'false') return;
         var fd = new FormData(form);
         fd.delete('attachments');
         files.forEach(function (f) {

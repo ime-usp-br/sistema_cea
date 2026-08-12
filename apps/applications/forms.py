@@ -85,6 +85,8 @@ class GroupedCatalogCheckboxSelect(forms.CheckboxSelectMultiple):
                             "label": opt.label,
                             "checked": str(opt.pk) in checked,
                             "is_other": _is_other_option(opt),
+                            "category": opt.category,
+                            "code": opt.code,
                         }
                         for opt in options
                     ],
