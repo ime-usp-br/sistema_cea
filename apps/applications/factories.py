@@ -16,6 +16,10 @@ from .services import ApplicationSubmissionService
 # Os campos "tipo catálogo" eram texto livre, mas os valores dominantes
 # coincidem exatamente com as opções semeadas no novo sistema. As tuplas
 # abaixo carregam (code, peso) com base nas frequências observadas.
+#
+# ANONIMIZAÇÃO: nenhum dado pessoal é usado; apenas a distribuição de
+# frequências e a estrutura das inscrições. Todos os valores pessoais
+# (nome, e-mail, CPF, telefone, banco) são gerados sinteticamente via Faker.
 _CATALOG_WEIGHTS: dict[str, list[tuple[str, int]]] = {
     CatalogOption.Category.INSTITUTIONAL_TIE: [
         ("student", 52),  # Estudante
@@ -91,7 +95,12 @@ def build_valid_form_payload(
     catalog_option_ids, used_other = _pick_catalog_option_ids(fake_br) if catalog_required else ([], False)
 
     wants_refund_receipt = fake_br.random.choices(["false", "true"], weights=[10, 2], k=1)[0]
-    data_collected = fake_br.random.choices(["true", "false"], weights=[10, 2], k=1)[0]
+    # Projeto exige coleta de dados já realizada (regra 1.2 do documento de validação).
+    data_collected = (
+        "true"
+        if modality == ServiceApplication.Modality.PROJECT
+        else fake_br.random.choices(["true", "false"], weights=[10, 2], k=1)[0]
+    )
     has_whatsapp = fake_br.random.choices(["on", ""], weights=[4, 8], k=1)[0]
 
     payload: dict[str, Any] = {
@@ -139,9 +148,7 @@ def build_valid_form_payload(
                 "refund_bank_name": fake_br.random_element(_REFUND_BANKS),
                 "refund_branch_number": fake_br.random_int(1, 9999),
                 "refund_bank_account_number": fake_br.random_int(1, 99999),
-                "refund_bank_account_type": fake_br.random.choices(
-                    ["checking", "savings"], weights=[163, 5], k=1
-                )[0],
+                "refund_bank_account_type": fake_br.random.choices(["checking", "savings"], weights=[163, 5], k=1)[0],
             }
         )
 

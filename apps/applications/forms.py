@@ -1,4 +1,5 @@
 from django import forms
+from django.forms.models import ModelChoiceIterator
 
 from terms.models import AcademicTerm
 
@@ -17,6 +18,20 @@ REQUIRED_BANK_FIELDS = [
     "refund_bank_account_number",
     "refund_bank_account_type",
 ]
+
+PROJECT_DESCRIPTIVE_FIELDS = [
+    "project_title",
+    "context_summary",
+    "general_objectives",
+    "variables_and_measurements",
+    "contextual_factors",
+    "sampling_and_limitations",
+    "data_management_plan",
+    "expected_results",
+    "expected_support",
+]
+
+MENTOR_REQUIRING_PURPOSES = {"undergraduate_research", "master", "doctorate"}
 
 
 def _yes_no_field(label: str) -> forms.TypedChoiceField:
@@ -50,16 +65,12 @@ class GroupedCatalogCheckboxSelect(forms.CheckboxSelectMultiple):
             value = [value]
         checked = {str(v) for v in value}
 
-        queryset = self.choices.queryset if self.choices else []
+        queryset = self.choices.queryset if isinstance(self.choices, ModelChoiceIterator) else []
         field_id = context["widget"]["attrs"].get("id") or f"id_{name}"
 
         groups = []
         for category in CatalogOption.Category:
-            options = [
-                opt
-                for opt in queryset
-                if opt.category == category.value
-            ]
+            options = [opt for opt in queryset if opt.category == category.value]
             if not options:
                 continue
             options.sort(key=lambda opt: _is_other_option(opt))
@@ -120,9 +131,7 @@ class ApplicationForm(forms.Form):
     )
     researcher_name = forms.CharField(max_length=255, label="Nome do pesquisador")
     contact_email = forms.EmailField(max_length=255, label="E-mail de contato")
-    contact_email_confirmation = forms.EmailField(
-        max_length=255, required=False, label="Repetir e-mail"
-    )
+    contact_email_confirmation = forms.EmailField(max_length=255, required=False, label="Repetir e-mail")
     contact_phone = forms.CharField(max_length=50, required=False, label="Telefones para contato")
     has_whatsapp = forms.BooleanField(required=False, label="WhatsApp")
     tax_id = forms.CharField(max_length=20, required=False, label="CPF/CNPJ")
@@ -167,8 +176,7 @@ class ApplicationForm(forms.Form):
     )
     mentor_declaration_accepted = forms.BooleanField(
         required=False,
-        label="Declaro que estou ciente de que o(a) meu/minha orientador(a) deverá estar "
-        "presente na entrevista.",
+        label="Declaro que estou ciente de que o(a) meu/minha orientador(a) deverá estar presente na entrevista.",
     )
 
     wants_refund_receipt = _yes_no_field("Recibo para reembolso")
@@ -178,14 +186,10 @@ class ApplicationForm(forms.Form):
         label="Dados que devem constar no recibo",
     )
     refund_account_holder_name = forms.CharField(max_length=255, required=False, label="Nome completo")
-    refund_account_holder_tax_id = forms.CharField(
-        max_length=20, required=False, label="CPF/CNPJ (dados bancários)"
-    )
+    refund_account_holder_tax_id = forms.CharField(max_length=20, required=False, label="CPF/CNPJ (dados bancários)")
     refund_bank_name = forms.CharField(max_length=255, required=False, label="Nome do banco")
     refund_branch_number = forms.CharField(max_length=50, required=False, label="Número da agência (sem DV)")
-    refund_bank_account_number = forms.CharField(
-        max_length=50, required=False, label="Número da conta"
-    )
+    refund_bank_account_number = forms.CharField(max_length=50, required=False, label="Número da conta")
     refund_bank_account_type = forms.ChoiceField(
         choices=[("checking", "Conta Corrente"), ("savings", "Poupança")],
         widget=forms.RadioSelect,
@@ -229,7 +233,15 @@ class ApplicationForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean() or {}
+        modality = cleaned_data.get("modality")
         catalog_options = cleaned_data.get("catalog_options") or []
+
+        if not cleaned_data.get("data_use_authorization_accepted"):
+            self.add_error(
+                "data_use_authorization_accepted",
+                "A autorização de uso dos dados é obrigatória.",
+            )
+
         by_category: dict[str, list] = {}
         for option in catalog_options:
             by_category.setdefault(option.category, []).append(option)
@@ -247,6 +259,34 @@ class ApplicationForm(forms.Form):
                 "catalog_other_text",
                 "Informe o texto complementar para a opção 'Outro'.",
             )
+
+        if modality == ServiceApplication.Modality.PROJECT:
+            if not cleaned_data.get("data_already_collected"):
+                self.add_error(
+                    "data_already_collected",
+                    "Para solicitar assessoria em Projeto é necessário já ter coletado os dados.",
+                )
+            for field_name in PROJECT_DESCRIPTIVE_FIELDS:
+                if not (cleaned_data.get(field_name) or "").strip():
+                    self.add_error(
+                        field_name,
+                        "Este campo é obrigatório para inscrições de Projeto.",
+                    )
+
+        purposes = {
+            option.code for option in catalog_options if option.category == CatalogOption.Category.PROJECT_PURPOSE
+        }
+        if purposes & MENTOR_REQUIRING_PURPOSES:
+            if not (cleaned_data.get("mentor_name") or "").strip():
+                self.add_error(
+                    "mentor_name",
+                    "Informe o nome do orientador.",
+                )
+            if not cleaned_data.get("mentor_declaration_accepted"):
+                self.add_error(
+                    "mentor_declaration_accepted",
+                    "A declaração de presença do orientador é obrigatória.",
+                )
 
         if cleaned_data.get("wants_refund_receipt"):
             for field_name in REQUIRED_BANK_FIELDS + ["refund_receipt_details"]:

@@ -310,8 +310,9 @@ class BankSlipPdfViewTests(TestCase):
         response = self.client.get(f"/boleto/{slip.pk}/pdf/")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "application/pdf")
+        response.close()
         from django.core.files.storage import default_storage
 
         assert slip.pdf_asset is not None
-        stored = default_storage.open(slip.pdf_asset.storage_key).read()
-        self.assertEqual(stored, _PDF_BYTES)
+        with default_storage.open(slip.pdf_asset.storage_key) as stored:
+            self.assertEqual(stored.read(), _PDF_BYTES)

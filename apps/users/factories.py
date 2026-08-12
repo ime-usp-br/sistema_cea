@@ -30,6 +30,16 @@ class UserFactory(factory.django.DjangoModelFactory):
     is_email_verified = True
     is_active = True
 
+    @classmethod
+    def _after_postgeneration(cls, instance, create, results=None):
+        """Persiste alterações dos hooks de pós-geração (ex.: hash da senha).
+
+        Substitui o comportamento padrão do factory-boy para evitar a
+        DeprecationWarning sobre ``skip_postgeneration_save``.
+        """
+        if create and results:
+            instance.save()
+
 
 class TeacherFactory(UserFactory):
     role = User.Role.TEACHER

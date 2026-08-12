@@ -6,6 +6,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
+from applications.factories import build_valid_form_payload
 from applications.forms import ApplicationForm
 from applications.models import CatalogOption, ServiceApplication
 from applications.services import ApplicationSubmissionService, ProtocolGenerator
@@ -42,12 +43,9 @@ class ApplicationScenarioTests(TestCase):
         self.client.force_login(self.user)
 
     def post_application(self, *, modality: str = "project", data=None, files=None):
-        payload = {
-            "term": str(self.term.pk),
-            "modality": modality,
-            "researcher_name": "Maria Pesquisadora",
-            "contact_email": "maria@example.com",
-        }
+        # Base 100% válida (dados sintéticos Faker) conforme as regras de
+        # validação vigentes; `data` sobrescreve campos pontualmente.
+        payload = build_valid_form_payload(modality=modality, term_pk=self.term.pk)
         payload.update(data or {})
         if files:
             payload.update(files)
@@ -201,7 +199,7 @@ class ApplicationScenarioTests(TestCase):
         # Selecionar apenas "Outro" sem texto complementar exige preenchimento.
         response = self.post_application(
             modality="project",
-            data={"catalog_options": [str(other.pk)]},
+            data={"catalog_options": [str(other.pk)], "catalog_other_text": ""},
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn("catalog_other_text", response.context["form"].errors)
