@@ -76,6 +76,7 @@ django_settings_module = "core.settings"
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "core.settings"
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
+norecursedirs = ["e2e"]
 addopts = "--cov=apps --cov-report=term-missing --reuse-db -p no:cacheprovider"
 
 [tool.coverage.run]

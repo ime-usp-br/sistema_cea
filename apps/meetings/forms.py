@@ -70,3 +70,9 @@ class TeacherFeedbackForm(forms.Form):
     """Formulário de feedback do docente após o evento."""
 
     teacher_feedback = forms.ChoiceField(label="Feedback do docente")
+
+    def __init__(self, *args, teacher_feedback_choices=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if teacher_feedback_choices is not None:
+            field: Any = self.fields["teacher_feedback"]
+            field.choices = teacher_feedback_choices

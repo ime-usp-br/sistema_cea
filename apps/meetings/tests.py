@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from django.db import IntegrityError, transaction
 from django.test import TestCase
+from django.urls import reverse
 
 from applications.models import ServiceApplication
 from meetings.models import ConsultationMeeting, ProjectScreening
@@ -382,3 +383,273 @@ class MeetingScenarioTests(TestCase):
             )
         meeting.refresh_from_db()
         self.assertIsNone(meeting.teacher_feedback)
+
+
+class MeetingViewTests(TestCase):
+    """Testes das telas de agendamento, decisão e feedback (apps/meetings/views.py)."""
+
+    def setUp(self) -> None:
+        self.teacher = User.objects.create_user(
+            username="teacher_view",
+            email="teacher_view@example.com",
+            password="pass",
+            role=User.Role.TEACHER,
+        )
+        self.secretariat = User.objects.create_user(
+            username="secretariat_view",
+            email="secretariat_view@example.com",
+            password="pass",
+            role=User.Role.SECRETARIAT,
+        )
+        self.term = AcademicTerm.objects.create(year=2026, period="first")
+        self.screening_service = ProjectScreeningService()
+        self.consultation_service = ConsultationMeetingService()
+
+    def _application(
+        self,
+        *,
+        modality: str,
+        lifecycle_status: str,
+        protocol: str,
+        owner: User | None = None,
+    ) -> ServiceApplication:
+        return ServiceApplication.objects.create(
+            term=self.term,
+            owner=owner or self.teacher,
+            protocol=protocol,
+            modality=modality,
+            lifecycle_status=lifecycle_status,
+            modality_credit_amount=Decimal("0.00"),
+            researcher_name="Maria Pesquisadora",
+            contact_email="maria@example.com",
+        )
+
+    def project_awaiting(self) -> ServiceApplication:
+        return self._application(
+            modality="project",
+            lifecycle_status=ServiceApplication.LifecycleStatus.AWAITING_SCREENING_SCHEDULING,
+            protocol="333000333",
+        )
+
+    def consultation_awaiting(self) -> ServiceApplication:
+        return self._application(
+            modality="consultation",
+            lifecycle_status=ServiceApplication.LifecycleStatus.AWAITING_CONSULTATION_SCHEDULING,
+            protocol="444000444",
+        )
+
+    def schedule_project(
+        self, application: ServiceApplication, scheduled_date: date = FUTURE_DATE
+    ) -> ProjectScreening:
+        return self.screening_service.schedule_screening(
+            application=application,
+            scheduled_by=self.secretariat,
+            scheduled_date=scheduled_date,
+            scheduled_time=FUTURE_TIME,
+            meeting_mode="online",
+            virtual_link="https://meet.example.com/sala",
+        )
+
+    # Fila de agendamentos (/agendamentos/)
+    def test_view_fila_requer_autenticacao(self) -> None:
+        response = self.client.get(reverse("meetings:queue"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_view_fila_exibe_projetos_e_consultas_aguardando(self) -> None:
+        self.client.force_login(self.secretariat)
+        proj = self.project_awaiting()
+        cons = self.consultation_awaiting()
+        response = self.client.get(reverse("meetings:queue"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, proj.protocol)
+        self.assertContains(response, cons.protocol)
+
+    def test_view_fila_bloqueia_candidato(self) -> None:
+        candidate = User.objects.create_user(
+            username="candidate_view",
+            email="candidate_view@example.com",
+            password="pass",
+            role=User.Role.CANDIDATE,
+        )
+        self.client.force_login(candidate)
+        response = self.client.get(reverse("meetings:queue"))
+        self.assertEqual(response.status_code, 403)
+
+    # Agendamento de triagem (/agendamentos/triagem/<protocol>/)
+    def test_view_screening_schedule_get(self) -> None:
+        self.client.force_login(self.secretariat)
+        proj = self.project_awaiting()
+        response = self.client.get(
+            reverse("meetings:screening_schedule", args=[proj.protocol])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["application"], proj)
+
+    def test_view_screening_schedule_post_online(self) -> None:
+        self.client.force_login(self.secretariat)
+        proj = self.project_awaiting()
+        response = self.client.post(
+            reverse("meetings:screening_schedule", args=[proj.protocol]),
+            {
+                "scheduled_date": "2099-01-01",
+                "scheduled_time": "10:00",
+                "meeting_mode": "online",
+                "virtual_link": "https://meet.example.com/sala",
+            },
+        )
+        self.assertRedirects(response, reverse("meetings:queue"))
+        proj.refresh_from_db()
+        self.assertEqual(
+            proj.lifecycle_status,
+            ServiceApplication.LifecycleStatus.AWAITING_SCREENING_RESULT,
+        )
+        self.assertEqual(ProjectScreening.objects.filter(application=proj).count(), 1)
+
+    def test_view_screening_schedule_post_presencial_exige_local(self) -> None:
+        self.client.force_login(self.secretariat)
+        proj = self.project_awaiting()
+        response = self.client.post(
+            reverse("meetings:screening_schedule", args=[proj.protocol]),
+            {
+                "scheduled_date": "2099-01-01",
+                "scheduled_time": "10:00",
+                "meeting_mode": "in_person",
+                "place": "",
+            },
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(ProjectScreening.objects.filter(application=proj).count(), 0)
+
+    def test_view_screening_schedule_cancel(self) -> None:
+        self.client.force_login(self.secretariat)
+        proj = self.project_awaiting()
+        screening = self.schedule_project(proj)
+        response = self.client.post(
+            reverse("meetings:screening_schedule", args=[proj.protocol]),
+            {"action": "cancel"},
+        )
+        self.assertRedirects(response, reverse("meetings:queue"))
+        screening.refresh_from_db()
+        self.assertEqual(screening.state, ProjectScreening.State.CANCELED)
+
+    # Agendamento de reunião de consulta (/agendamentos/reuniao/<protocol>/)
+    def test_view_consultation_schedule_post_online(self) -> None:
+        self.client.force_login(self.secretariat)
+        cons = self.consultation_awaiting()
+        response = self.client.post(
+            reverse("meetings:consultation_schedule", args=[cons.protocol]),
+            {
+                "scheduled_date": "2099-01-01",
+                "scheduled_time": "10:00",
+                "meeting_mode": "online",
+                "virtual_link": "https://meet.example.com/sala",
+            },
+        )
+        self.assertRedirects(response, reverse("meetings:queue"))
+        cons.refresh_from_db()
+        self.assertEqual(
+            cons.lifecycle_status,
+            ServiceApplication.LifecycleStatus.AWAITING_CONSULTATION_RESULT,
+        )
+        self.assertEqual(ConsultationMeeting.objects.filter(application=cons).count(), 1)
+
+    def test_view_consultation_schedule_cancel(self) -> None:
+        self.client.force_login(self.secretariat)
+        cons = self.consultation_awaiting()
+        meeting = self.consultation_service.schedule_consultation(
+            application=cons,
+            scheduled_by=self.secretariat,
+            scheduled_date=FUTURE_DATE,
+            scheduled_time=FUTURE_TIME,
+            meeting_mode="online",
+            virtual_link="https://meet.example.com/sala",
+        )
+        response = self.client.post(
+            reverse("meetings:consultation_schedule", args=[cons.protocol]),
+            {"action": "cancel"},
+        )
+        self.assertRedirects(response, reverse("meetings:queue"))
+        meeting.refresh_from_db()
+        self.assertEqual(meeting.state, ConsultationMeeting.State.CANCELED)
+
+    # Decisão de triagem (/agendamentos/triagem/<id>/decisao/)
+    def test_view_screening_decision_aprovado_como_projeto(self) -> None:
+        self.client.force_login(self.teacher)
+        proj = self.project_awaiting()
+        screening = self.schedule_project(proj)
+        response = self.client.post(
+            reverse("meetings:screening_decision", args=[screening.pk]),
+            {"decision": "approved_as_project", "decision_note": "Aprovado"},
+        )
+        self.assertRedirects(response, reverse("meetings:queue"))
+        proj.refresh_from_db()
+        self.assertEqual(
+            proj.lifecycle_status,
+            ServiceApplication.LifecycleStatus.APPROVED_AS_PROJECT,
+        )
+        fee = proj.fee_requirements.get(fee_type=FeeRequirement.FeeType.PROJECT_FEE)
+        self.assertEqual(fee.amount, Decimal("250.00"))
+
+    def test_view_screening_decision_nao_aprovado(self) -> None:
+        self.client.force_login(self.teacher)
+        proj = self.project_awaiting()
+        screening = self.schedule_project(proj)
+        response = self.client.post(
+            reverse("meetings:screening_decision", args=[screening.pk]),
+            {"decision": "not_approved", "decision_note": "Recusado"},
+        )
+        self.assertRedirects(response, reverse("meetings:queue"))
+        proj.refresh_from_db()
+        self.assertEqual(
+            proj.lifecycle_status, ServiceApplication.LifecycleStatus.NOT_APPROVED
+        )
+
+    def test_view_screening_feedback_bloqueado_antes_do_evento(self) -> None:
+        self.client.force_login(self.teacher)
+        proj = self.project_awaiting()
+        screening = self.schedule_project(proj)
+        response = self.client.post(
+            reverse("meetings:screening_decision", args=[screening.pk]),
+            {"submit_feedback": "1", "teacher_feedback": "screening_completed"},
+        )
+        self.assertEqual(response.status_code, 400)
+        screening.refresh_from_db()
+        self.assertIsNone(screening.teacher_feedback)
+
+    def test_view_screening_feedback_registrado_apos_evento(self) -> None:
+        self.client.force_login(self.teacher)
+        proj = self.project_awaiting()
+        screening = self.schedule_project(proj, scheduled_date=PAST_DATE)
+        response = self.client.post(
+            reverse("meetings:screening_decision", args=[screening.pk]),
+            {"submit_feedback": "1", "teacher_feedback": "screening_completed"},
+        )
+        self.assertRedirects(response, reverse("meetings:queue"))
+        screening.refresh_from_db()
+        self.assertEqual(
+            screening.teacher_feedback,
+            ProjectScreening.TeacherFeedback.SCREENING_COMPLETED,
+        )
+
+    # Decisão de reunião de consulta (/agendamentos/reuniao/<id>/decisao/)
+    def test_view_consultation_decision_aprovado(self) -> None:
+        self.client.force_login(self.teacher)
+        cons = self.consultation_awaiting()
+        meeting = self.consultation_service.schedule_consultation(
+            application=cons,
+            scheduled_by=self.secretariat,
+            scheduled_date=FUTURE_DATE,
+            scheduled_time=FUTURE_TIME,
+            meeting_mode="online",
+            virtual_link="https://meet.example.com/sala",
+        )
+        response = self.client.post(
+            reverse("meetings:consultation_decision", args=[meeting.pk]),
+            {"decision": "approved_as_consultation", "decision_note": "Aprovado"},
+        )
+        self.assertRedirects(response, reverse("meetings:queue"))
+        cons.refresh_from_db()
+        self.assertEqual(
+            cons.lifecycle_status,
+            ServiceApplication.LifecycleStatus.APPROVED_AS_CONSULTATION,
+        )

@@ -237,7 +237,9 @@ class ScreeningDecisionView(RoleRequiredMixin, View):
             "decision_form": MeetingDecisionForm(
                 decision_choices=ProjectScreening.Decision.choices
             ),
-            "feedback_form": TeacherFeedbackForm(),
+            "feedback_form": TeacherFeedbackForm(
+                teacher_feedback_choices=ProjectScreening.TeacherFeedback.choices
+            ),
         }
         context.update(kwargs)
         return context
@@ -282,7 +284,10 @@ class ScreeningDecisionView(RoleRequiredMixin, View):
         return redirect("meetings:queue")
 
     def _handle_feedback(self, request, screening: ProjectScreening):
-        form = TeacherFeedbackForm(request.POST)
+        form = TeacherFeedbackForm(
+            request.POST,
+            teacher_feedback_choices=ProjectScreening.TeacherFeedback.choices,
+        )
         if not form.is_valid():
             return render(
                 request,
@@ -325,7 +330,9 @@ class ConsultationDecisionView(RoleRequiredMixin, View):
             "decision_form": MeetingDecisionForm(
                 decision_choices=ConsultationMeeting.Decision.choices
             ),
-            "feedback_form": TeacherFeedbackForm(),
+            "feedback_form": TeacherFeedbackForm(
+                teacher_feedback_choices=ConsultationMeeting.TeacherFeedback.choices
+            ),
         }
         context.update(kwargs)
         return context
@@ -370,7 +377,10 @@ class ConsultationDecisionView(RoleRequiredMixin, View):
         return redirect("meetings:queue")
 
     def _handle_feedback(self, request, meeting: ConsultationMeeting):
-        form = TeacherFeedbackForm(request.POST)
+        form = TeacherFeedbackForm(
+            request.POST,
+            teacher_feedback_choices=ConsultationMeeting.TeacherFeedback.choices,
+        )
         if not form.is_valid():
             return render(
                 request,

@@ -6,6 +6,7 @@ from typing import Any
 from django.core import mail
 from django.core.management import call_command
 from django.test import TestCase, override_settings
+from django.urls import reverse
 from django.utils import timezone
 
 from applications.models import ApplicationEvent, ServiceApplication
@@ -314,3 +315,122 @@ class LegacyClaimScenarioTests(TestCase):
             self.application.dataset_audit_state,
             ServiceApplication.DatasetAuditState.AWAITING_SUBMISSION,
         )
+
+
+@EAGER_EMAIL
+class LegacyClaimViewTests(TestCase):
+    """Testes das telas de resgate e gestão de resgates (apps/imports/views.py)."""
+
+    def setUp(self) -> None:
+        self.candidate = User.objects.create_user(
+            username="candidate_view",
+            email="carla@example.com",
+            password="pass",
+            role=User.Role.CANDIDATE,
+        )
+        self.secretariat = User.objects.create_user(
+            username="secretaria_view",
+            email="secretaria@example.com",
+            password="pass",
+            role=User.Role.SECRETARIAT,
+        )
+        self.term = AcademicTerm.objects.create(year=2025, period="first")
+        self.service = LegacyClaimService()
+        report = LegacyImporter().import_records([LEGACY_RECORD])
+        self.application = report.created[0]
+
+    # /vincular-inscricao/
+    def test_view_claim_request_get(self) -> None:
+        self.client.force_login(self.candidate)
+        response = self.client.get(reverse("imports:claim_request"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_claim_request_post_cria_claim_e_redireciona(self) -> None:
+        self.client.force_login(self.candidate)
+        response = self.client.post(
+            reverse("imports:claim_request"),
+            {"protocol": self.application.protocol, "contact_email_or_tax_id": "carla@example.com"},
+        )
+        self.assertRedirects(response, reverse("imports:claim_confirm"))
+        claim = LegacyOwnershipClaim.objects.get(application=self.application)
+        self.assertIsNotNone(claim.pk)
+        self.assertEqual(len(mail.outbox), 1)
+
+    # /vincular-inscricao/confirmar/
+    def test_view_claim_confirm_get_sem_sessao_redireciona(self) -> None:
+        self.client.force_login(self.candidate)
+        response = self.client.get(reverse("imports:claim_confirm"))
+        self.assertRedirects(response, reverse("imports:claim_request"))
+
+    def test_view_claim_confirm_post_codigo_correto_vincula(self) -> None:
+        self.client.force_login(self.candidate)
+        claim, token = self.service.request_claim(
+            user=self.candidate,
+            protocol=self.application.protocol,
+            contact_email_or_tax_id="carla@example.com",
+        )
+        session = self.client.session
+        session["pending_claim_id"] = claim.pk
+        session.save()
+        response = self.client.post(
+            reverse("imports:claim_confirm"),
+            {"code": token},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.application.refresh_from_db()
+        self.assertEqual(self.application.owner, self.candidate)
+        claim.refresh_from_db()
+        self.assertEqual(claim.status, LegacyOwnershipClaim.Status.VERIFIED)
+
+    def test_view_claim_confirm_post_codigo_incorreto(self) -> None:
+        self.client.force_login(self.candidate)
+        claim, _token = self.service.request_claim(
+            user=self.candidate,
+            protocol=self.application.protocol,
+            contact_email_or_tax_id="carla@example.com",
+        )
+        session = self.client.session
+        session["pending_claim_id"] = claim.pk
+        session.save()
+        response = self.client.post(
+            reverse("imports:claim_confirm"),
+            {"code": "000000"},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.application.refresh_from_db()
+        self.assertIsNone(self.application.owner_id)
+
+    # /gestao/resgates/
+    def test_view_claim_queue_exibe_solicitacoes(self) -> None:
+        self.client.force_login(self.secretariat)
+        claim, _token = self.service.request_claim(
+            user=self.candidate,
+            protocol=self.application.protocol,
+            contact_email_or_tax_id="carla@example.com",
+        )
+        response = self.client.get(reverse("imports:claim_queue"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, claim.protocol)
+
+    def test_view_claim_queue_requer_secretaria(self) -> None:
+        self.client.force_login(self.candidate)
+        response = self.client.get(reverse("imports:claim_queue"))
+        self.assertEqual(response.status_code, 403)
+
+    # /gestao/resgates/<id>/aprovar/
+    def test_view_claim_approve_manual(self) -> None:
+        self.client.force_login(self.secretariat)
+        claim, _token = self.service.request_claim(
+            user=self.candidate,
+            protocol=self.application.protocol,
+            contact_email_or_tax_id="carla@example.com",
+        )
+        response = self.client.post(
+            reverse("imports:claim_approve", args=[claim.pk]),
+            {"review_note": "Documento validado."},
+        )
+        self.assertRedirects(response, reverse("imports:claim_queue"))
+        claim.refresh_from_db()
+        self.application.refresh_from_db()
+        self.assertEqual(claim.status, LegacyOwnershipClaim.Status.MANUALLY_APPROVED)
+        self.assertEqual(self.application.owner, self.candidate)
