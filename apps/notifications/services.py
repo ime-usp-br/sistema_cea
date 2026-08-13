@@ -135,6 +135,24 @@ class NotificationService:
             application.pk,
         )
 
+    def notify_bank_slip_failure(
+        self, application: ServiceApplication, error_message: str
+    ) -> None:
+        """Alerta a equipe CEA sobre falha na integração SOAP de boletos.
+
+        Equivale ao Mailable ``NotifyCEABoletoFailure`` do sistema legado: quando
+        o serviço de boletos está indisponível, o candidato fica sem o boleto e a
+        secretaria precisa ser notificada proativamente (paridade com o Laravel).
+        """
+        context = self._base_context(application)
+        context["error_message"] = error_message
+        self._enqueue(
+            "bank_slip_generation_failure",
+            self.center_email,
+            context,
+            application.pk,
+        )
+
     @staticmethod
     def _base_context(application: ServiceApplication) -> dict[str, Any]:
         return {

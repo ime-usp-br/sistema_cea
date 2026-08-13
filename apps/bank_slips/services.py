@@ -8,6 +8,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from files.services import create_file_asset_from_bytes
+from notifications.services import NotificationService
 from payments.models import FeeRequirement, PaymentInstrument
 from payments.services import (
     PaymentOrchestrationService,
@@ -80,7 +81,13 @@ class BankSlipPaymentService:
             "nomeSacado": nome,
             "instrucoesObjetoCobranca": "Pagamento referente à taxa de inscrição.",
         }
-        result = self.gateway.gerar_boleto(payload)
+        try:
+            result = self.gateway.gerar_boleto(payload)
+        except Exception as exc:
+            # Paridade com o legado (NotifyCEABoletoFailure): alerta a equipe CEA
+            # quando o gateway SOAP está indisponível e repassa o erro.
+            NotificationService().notify_bank_slip_failure(application, str(exc))
+            raise
         reference = str(result.get("codigoIDBoleto", ""))
         if not reference:
             raise BankSlipDomainError("O gateway não retornou um codigoIDBoleto válido.")

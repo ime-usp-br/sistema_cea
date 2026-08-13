@@ -128,6 +128,12 @@ class ProjectScreeningService:
         mode = meeting_mode or screening.meeting_mode
         link = virtual_link if virtual_link is not None else screening.virtual_link
         local = place if place is not None else screening.place
+        if mode == MEETING_MODE_ONLINE:
+            # Trocar para Online limpa qualquer local presencial anterior.
+            local = None
+        elif mode == MEETING_MODE_IN_PERSON:
+            # Trocar para Presencial limpa o link online anterior.
+            link = None
         _validate_meeting_mode_fields(meeting_mode=mode, virtual_link=link, place=local)
         with transaction.atomic():
             screening.scheduled_date = scheduled_date
@@ -384,6 +390,10 @@ class ConsultationMeetingService:
         mode = meeting_mode or meeting.meeting_mode
         link = virtual_link if virtual_link is not None else meeting.virtual_link
         local = place if place is not None else meeting.place
+        if mode == MEETING_MODE_ONLINE:
+            local = None
+        elif mode == MEETING_MODE_IN_PERSON:
+            link = None
         _validate_meeting_mode_fields(meeting_mode=mode, virtual_link=link, place=local)
         with transaction.atomic():
             meeting.scheduled_date = scheduled_date

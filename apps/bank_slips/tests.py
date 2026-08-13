@@ -2,6 +2,7 @@ import base64
 import tempfile
 from unittest.mock import patch
 
+from django.core import mail
 from django.test import TestCase, override_settings
 
 from applications.models import ServiceApplication
@@ -9,9 +10,12 @@ from applications.services import ApplicationSubmissionService
 from bank_slips.gateways import BankSlipGatewayError
 from bank_slips.models import BankSlipPaymentInstrument
 from bank_slips.services import BankSlipDomainError, BankSlipPaymentService
+from notifications.models import NotificationDispatch
 from payments.models import FeeRequirement, PaymentInstrument
 from terms.models import AcademicTerm
 from users.models import User
+
+EAGER = override_settings(CELERY_TASK_ALWAYS_EAGER=True)
 
 _PDF_BYTES = b"%PDF-1.4 mock boleto content"
 _PDF_B64 = base64.b64encode(_PDF_BYTES).decode("ascii")
@@ -277,6 +281,43 @@ class BankSlipScenarioTests(TestCase):
             self.service.simulate_payment(slip)
         slip.payment_instrument.refresh_from_db()
         self.assertEqual(slip.payment_instrument.state, PaymentInstrument.State.PAID)
+
+    # TS-BSL-011 — Falha SOAP notifica a equipe CEA (NotifyCEABoletoFailure)
+    # ------------------------------------------------------------------
+
+    @EAGER
+    def test_TS_BSL_011_falha_soap_notifica_equipe_cea(self) -> None:
+        application = self.create_consultation()
+        with patch(
+            "bank_slips.gateways.BankSlipGateway.gerar_boleto",
+            side_effect=BankSlipGatewayError("timeout"),
+        ), self.assertRaises(BankSlipGatewayError):
+            self.service.generate_bank_slip_for_fee(
+                fee_requirement=self.get_fee(application),
+                created_by=self.candidate,
+            )
+        self.assertEqual(BankSlipPaymentInstrument.objects.count(), 0)
+        dispatch = NotificationDispatch.objects.get(
+            template__code="bank_slip_generation_failure"
+        )
+        self.assertEqual(dispatch.recipient_email, "cea@ime.usp.br")
+        self.assertEqual(
+            dispatch.application_id,
+            application.pk,
+        )
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("timeout", mail.outbox[0].body)
+
+    @EAGER
+    def test_TS_BSL_011_sucesso_nao_notifica_falha(self) -> None:
+        application = self.create_consultation()
+        self.generate_slip(application)
+        self.assertEqual(
+            NotificationDispatch.objects.filter(
+                template__code="bank_slip_generation_failure"
+            ).count(),
+            0,
+        )
 
 
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp(prefix="cea-bsl-media-"))

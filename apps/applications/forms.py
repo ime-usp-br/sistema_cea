@@ -1,5 +1,6 @@
 from django import forms
 from django.forms.models import ModelChoiceIterator
+from django.utils import timezone
 
 from terms.models import AcademicTerm
 
@@ -273,6 +274,21 @@ class ApplicationForm(forms.Form):
                     self.add_error(
                         field_name,
                         "Este campo é obrigatório para inscrições de Projeto.",
+                    )
+            term = cleaned_data.get("term")
+            if term is not None:
+                today = timezone.localdate()
+                if term.submission_start_date and today < term.submission_start_date:
+                    self.add_error(
+                        "term",
+                        "O período de inscrição para Projetos ainda não começou "
+                        "(inscrição fora do período).",
+                    )
+                if term.submission_end_date and today > term.submission_end_date:
+                    self.add_error(
+                        "term",
+                        "O período de inscrição para Projetos já foi encerrado "
+                        "(inscrição fora do período).",
                     )
 
         purposes = {

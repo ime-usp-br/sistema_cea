@@ -66,5 +66,17 @@
     {% else %}
     <div class="field-value">Nenhuma seleção.</div>
     {% endif %}
+
+    {% if application.wants_refund_receipt %}
+    <h2>Recibo para Reembolso</h2>
+    <div class="field"><span class="field-label">Observações do recibo:</span> <div class="field-value">{{ application.refund_receipt_details|default:"—" }}</div></div>
+    <h2>Dados Bancários</h2>
+    <div class="field"><span class="field-label">Titular:</span> <span class="field-value">{{ application.refund_account_holder_name|default:"—" }}</span></div>
+    <div class="field"><span class="field-label">CPF/CNPJ do titular:</span> <span class="field-value">{{ application.refund_account_holder_tax_id|default:"—" }}</span></div>
+    <div class="field"><span class="field-label">Banco:</span> <span class="field-value">{{ application.refund_bank_name|default:"—" }}</span></div>
+    <div class="field"><span class="field-label">Agência:</span> <span class="field-value">{{ application.refund_branch_number|default:"—" }}</span></div>
+    <div class="field"><span class="field-label">Conta:</span> <span class="field-value">{{ application.refund_bank_account_number|default:"—" }}</span></div>
+    <div class="field"><span class="field-label">Tipo de conta:</span> <span class="field-value">{{ application.get_refund_bank_account_type_display|default:"—" }}</span></div>
+    {% endif %}
 </body>
 </html>

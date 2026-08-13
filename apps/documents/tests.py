@@ -124,6 +124,32 @@ class DocumentRenderingServiceTests(TestCase):
         self.assertIn("&lt; &gt;", html)
         self.assertIn("acentuação: ção", html)
 
+    # TS-NFR-006
+    def test_TS_NFR_006_pdf_contem_dados_bancarios_e_de_reembolso(self) -> None:
+        self.application.refund_bank_name = "Banco do Brasil"
+        self.application.refund_branch_number = "1234"
+        self.application.refund_bank_account_number = "99999-X"
+        self.application.refund_receipt_details = (
+            "Aos cuidados do departamento financeiro do Instituto XYZ"
+        )
+        self.application.wants_refund_receipt = True
+        self.application.save()
+
+        html = self._html("render_application_full_pdf")
+        self.assertIn("Banco do Brasil", html)
+        self.assertIn("1234", html)
+        self.assertIn("99999-X", html)
+        self.assertIn("Aos cuidados do departamento financeiro", html)
+
+    # TS-NFR-006 (variação) — sem recibo, bloco não é impresso
+    def test_TS_NFR_006_sem_recibo_nao_imprime_dados_bancarios(self) -> None:
+        self.application.wants_refund_receipt = False
+        self.application.save()
+
+        html = self._html("render_application_full_pdf")
+        self.assertNotIn("Dados Bancários", html)
+        self.assertNotIn("Recibo para Reembolso", html)
+
 
 class DocumentDownloadViewTests(TestCase):
     def setUp(self) -> None:

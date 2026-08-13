@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from applications.factories import build_valid_form_payload
 from applications.models import ServiceApplication
@@ -95,3 +96,39 @@ class ApplicationFormFakerTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("catalog_options", response.context["form"].errors)
         self.assertEqual(ServiceApplication.objects.count(), 0)
+
+    # TS-APP-024
+    def test_TS_APP_024_bloqueio_inscricao_projeto_fora_do_periodo(self) -> None:
+        """Rejeita Projeto quando o termo está fora da janela de submissão (Gap 1)."""
+        past_date = timezone.localdate() - timezone.timedelta(days=1)
+        self.term.submission_start_date = past_date - timezone.timedelta(days=30)
+        self.term.submission_end_date = past_date
+        self.term.save()
+
+        payload = build_valid_form_payload(
+            modality="project", term_pk=self.term.pk
+        )
+        response = self._post(payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("term", response.context["form"].errors)
+        self.assertTrue(
+            any(
+                "fora do período" in str(err).lower()
+                for err in response.context["form"].errors["term"]
+            )
+        )
+        self.assertEqual(ServiceApplication.objects.count(), 0)
+
+    # TS-APP-024 (variação) — Consulta em fluxo contínuo não é bloqueada
+    def test_TS_APP_024_consulta_nao_e_bloqueada_fora_do_periodo(self) -> None:
+        past_date = timezone.localdate() - timezone.timedelta(days=1)
+        self.term.submission_start_date = past_date - timezone.timedelta(days=30)
+        self.term.submission_end_date = past_date
+        self.term.save()
+
+        payload = build_valid_form_payload(
+            modality="consultation", term_pk=self.term.pk
+        )
+        response = self._post(payload)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(ServiceApplication.objects.count(), 1)

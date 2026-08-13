@@ -132,6 +132,57 @@ class MeetingScenarioTests(TestCase):
             application.events.filter(event_code="meeting.screening_scheduled").exists()
         )
 
+    # TS-MEET-013
+    def test_TS_MEET_013_reagendamento_trocando_modo_limpa_campos_corretamente(self) -> None:
+        """Trocar Online -> Presencial limpa o link antigo sem disparar erro (Gap 2)."""
+        application = self.project_awaiting_scheduling()
+        screening = self.schedule_project(
+            application,
+            meeting_mode="online",
+            virtual_link="https://meet.google.com/abc",
+            place=None,
+        )
+
+        rescheduled = self.screening_service.reschedule_screening(
+            screening=screening,
+            rescheduled_by=self.secretariat,
+            scheduled_date=FUTURE_DATE,
+            scheduled_time=FUTURE_TIME,
+            meeting_mode="in_person",
+            virtual_link=None,
+            place="Sala 1 - IME",
+        )
+
+        rescheduled.refresh_from_db()
+        self.assertEqual(rescheduled.meeting_mode, "in_person")
+        self.assertEqual(rescheduled.place, "Sala 1 - IME")
+        self.assertIsNone(rescheduled.virtual_link)
+
+    # TS-MEET-013 (consulta) — mesma transição no fluxo de reuniões
+    def test_TS_MEET_013_reagendamento_consulta_troca_para_online_limpa_local(self) -> None:
+        application = self.consultation_awaiting_scheduling()
+        meeting = self.schedule_consultation(
+            application,
+            meeting_mode="in_person",
+            virtual_link=None,
+            place="Sala 1 - IME",
+        )
+
+        rescheduled = self.consultation_service.reschedule_consultation(
+            meeting=meeting,
+            rescheduled_by=self.secretariat,
+            scheduled_date=FUTURE_DATE,
+            scheduled_time=FUTURE_TIME,
+            meeting_mode="online",
+            virtual_link="https://meet.google.com/xyz",
+            place=None,
+        )
+
+        rescheduled.refresh_from_db()
+        self.assertEqual(rescheduled.meeting_mode, "online")
+        self.assertEqual(rescheduled.virtual_link, "https://meet.google.com/xyz")
+        self.assertIsNone(rescheduled.place)
+
     # TS-MEET-002
     def test_TS_MEET_002_bloquear_triagem_para_consulta(self) -> None:
         application = self.consultation_awaiting_scheduling()
