@@ -1,3 +1,4 @@
+import contextlib
 from decimal import Decimal
 from typing import Any
 
@@ -40,6 +41,47 @@ def record_application_event(
         description=description,
         metadata=metadata,
     )
+
+
+def cancel_external_charge(instrument: PaymentInstrument) -> None:
+    """Cancela (best-effort) a cobrança externa ativa no gateway.
+
+    Paridade com o legado: quando um instrumento deixa de ser o ativo
+    (mudança de modalidade ou confirmação manual de pagamento), a cobrança
+    antiga — em especial o boleto registrado — deve ser baixada no banco para
+    evitar que o candidato pague em duplicidade (DDA do banco).
+
+    O cancelamento é *best-effort* (``try/except``), seguindo o padrão do
+    Laravel ``try { $fee->cancelarBoleto(); } catch (...)``: se o gateway estiver
+    indisponível, o fluxo local não deve ser bloqueado. O estado local também é
+    atualizado para ``CANCELED`` mantendo a consistência interna. Pix é ignorado
+    aqui pois expira por validade no gateway.
+    """
+    from bank_slips.gateways import BankSlipGateway
+    from bank_slips.models import BankSlipPaymentInstrument
+
+    if instrument.method != PaymentInstrument.Method.BANK_SLIP:
+        return
+    slip = BankSlipPaymentInstrument.objects.filter(
+        payment_instrument=instrument
+    ).first()
+    if slip is None or not slip.bank_slip_reference:
+        return
+    if instrument.state in (
+        PaymentInstrument.State.PAID,
+        PaymentInstrument.State.MANUAL_CONFIRMED,
+    ):
+        return
+    with contextlib.suppress(Exception):  # noqa: BLE001 - cancelamento best-effort
+        BankSlipGateway().cancelar_boleto(slip.bank_slip_reference)
+    if instrument.state != PaymentInstrument.State.CANCELED:
+        instrument.state = PaymentInstrument.State.CANCELED
+        instrument.active_unique_fee_token = None
+        instrument.save(update_fields=["state", "active_unique_fee_token", "updated_at"])
+    if slip.bank_status != BankSlipPaymentInstrument.BankStatus.CANCELED:
+        slip.bank_status = BankSlipPaymentInstrument.BankStatus.CANCELED
+        slip.cancellation_date = timezone.now().date()
+        slip.save(update_fields=["bank_status", "cancellation_date", "updated_at"])
 
 
 def refresh_payment_state(application: ServiceApplication) -> str | None:
@@ -248,6 +290,21 @@ class ManualPaymentService:
         application = fee.application
         now = timezone.now()
         with transaction.atomic():
+            # Paridade com o legado: ao confirmar pagamento manual, boleto/Pix
+            # ativo na mesma taxa deve ser baixado no gateway para evitar
+            # pagamento em duplicidade (Gap C). Inclui boletos SUPERSEDED, pois
+            # continuam válidos no DDA mesmo após a troca de forma de pagamento.
+            for slip_instrument in fee.payment_instruments.filter(
+                method=PaymentInstrument.Method.BANK_SLIP,
+                state__in=[
+                    PaymentInstrument.State.ACTIVE,
+                    PaymentInstrument.State.CREATED,
+                    PaymentInstrument.State.SUPERSEDED,
+                    PaymentInstrument.State.FAILED,
+                    PaymentInstrument.State.REQUIRES_REVIEW,
+                ],
+            ).exclude(pk=instrument.pk):
+                cancel_external_charge(slip_instrument)
             confirmation = ManualPaymentConfirmation.objects.create(
                 payment_instrument=instrument,
                 confirmed_by=confirmed_by,
@@ -402,10 +459,50 @@ class ModalityChangeService:
             self._notify_modality_change(application)
 
     def _notify_modality_change(self, application: ServiceApplication) -> None:
-        """Notifica o candidato sobre a mudança de modalidade (NotifyServiceChange)."""
+        """Notifica o candidato sobre a mudança de modalidade (NotifyServiceChange).
+
+        Paridade com o legado: anexa o PDF do boleto ativo da inscrição ao e-mail
+        (Gap B), quando disponível.
+        """
         from notifications.services import NotificationService
 
-        NotificationService().notify_modality_changed(application)
+        attachments = self._modality_change_attachments(application)
+        NotificationService().notify_modality_changed(
+            application, attachments=attachments
+        )
+
+    def _modality_change_attachments(
+        self, application: ServiceApplication
+    ) -> list[dict[str, Any]] | None:
+        """Monta o anexo do PDF do boleto ativo da inscrição, se houver."""
+        from django.core.files.storage import default_storage
+
+        from bank_slips.models import BankSlipPaymentInstrument
+
+        slip = (
+            BankSlipPaymentInstrument.objects.select_related(
+                "payment_instrument__fee_requirement", "pdf_asset"
+            )
+            .filter(
+                payment_instrument__fee_requirement__application=application,
+                pdf_asset__isnull=False,
+            )
+            .order_by("-payment_instrument__created_at")
+            .first()
+        )
+        if slip is None or slip.pdf_asset is None:
+            return None
+        try:
+            content = default_storage.open(slip.pdf_asset.storage_key, "rb").read()
+        except FileNotFoundError:
+            return None
+        return [
+            {
+                "filename": slip.pdf_asset.original_filename,
+                "content": content,
+                "mimetype": "application/pdf",
+            }
+        ]
 
     @staticmethod
     def _total_paid(application: ServiceApplication) -> Decimal:
@@ -425,6 +522,9 @@ class ModalityChangeService:
                 PaymentInstrument.State.CREATED,
             ]
         ):
+            # Paridade com o legado: baixa o boleto antigo no banco via SOAP
+            # antes de marcar o instrumento como CANCELADO (Gap A).
+            cancel_external_charge(instrument)
             instrument.state = PaymentInstrument.State.CANCELED
             instrument.active_unique_fee_token = None
             instrument.save(

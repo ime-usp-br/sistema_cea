@@ -1,6 +1,7 @@
 import tempfile
 from datetime import timedelta
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError, transaction
@@ -13,6 +14,7 @@ from applications.models import ApplicationEvent, ServiceApplication
 from applications.services import ApplicationSubmissionService
 from audits.services import DatasetAuditService
 from bank_slips.models import BankSlipPaymentInstrument
+from bank_slips.services import BankSlipPaymentService
 from payments.models import (
     FeeRequirement,
     ManualPaymentConfirmation,
@@ -676,3 +678,90 @@ class PaymentScenarioTests(TestCase):
         self.client.force_login(self.secretariat)
         response = self.client.get(reverse("payments:overdue_list"))
         self.assertEqual(response.status_code, 200)
+
+    # ------------------------------------------------------------------
+    # 14d. Regressão: cancelamento externo no gateway (Gaps A e C)
+    # ------------------------------------------------------------------
+
+    def _generate_active_slip(self, fee: FeeRequirement) -> BankSlipPaymentInstrument:
+        service = BankSlipPaymentService()
+        with patch(
+            "bank_slips.gateways.BankSlipGateway.gerar_boleto",
+            return_value={"codigoIDBoleto": "BOL-GAP-001"},
+        ):
+            return service.generate_bank_slip_for_fee(
+                fee_requirement=fee, created_by=self.candidate
+            )
+
+    def test_TS_MOD_GAP_001_mudanca_de_modalidade_cancela_boleto_via_soap(self) -> None:
+        """Paridade Laravel: converter Projeto -> Consulta baixa o boleto no banco."""
+        application = self.create_project()
+        self.approve_project_audit(application)
+        app_fee = application.fee_requirements.get(
+            fee_type=FeeRequirement.FeeType.APPLICATION_FEE
+        )
+        slip = self._generate_active_slip(app_fee)
+
+        with patch(
+            "bank_slips.gateways.BankSlipGateway.cancelar_boleto"
+        ) as mock_cancelar:
+            self.modality_service.convert_to_consultation(application=application)
+            mock_cancelar.assert_called_once_with(slip.bank_slip_reference)
+
+        slip.refresh_from_db()
+        self.assertEqual(
+            slip.payment_instrument.state, PaymentInstrument.State.CANCELED
+        )
+
+    def test_TS_MOD_GAP_001b_cancelamento_externo_nao_bloqueia_fluxo(self) -> None:
+        """Falha no gateway não impede a mudança de modalidade (best-effort)."""
+        application = self.create_project()
+        self.approve_project_audit(application)
+        app_fee = application.fee_requirements.get(
+            fee_type=FeeRequirement.FeeType.APPLICATION_FEE
+        )
+        slip = self._generate_active_slip(app_fee)
+
+        with patch(
+            "bank_slips.gateways.BankSlipGateway.cancelar_boleto",
+            side_effect=RuntimeError("SOAP indisponível"),
+        ):
+            self.modality_service.convert_to_consultation(application=application)
+
+        application.refresh_from_db()
+        self.assertEqual(
+            application.modality, ServiceApplication.Modality.CONSULTATION
+        )
+        slip.refresh_from_db()
+        self.assertEqual(
+            slip.payment_instrument.state, PaymentInstrument.State.CANCELED
+        )
+
+    def test_TS_MAN_GAP_001_confirmacao_manual_cancela_boleto_externo(self) -> None:
+        """Pagamento manual baixa o boleto/Pix ativo no gateway (anti-duplicidade)."""
+        application = self.create_consultation()
+        fee = application.fee_requirements.get(
+            fee_type=FeeRequirement.FeeType.APPLICATION_FEE
+        )
+        slip = self._generate_active_slip(fee)
+
+        manual = self.payment_service.create_payment_instrument(
+            fee_requirement=fee, method="manual", created_by=self.secretariat
+        )
+        slip.refresh_from_db()
+        self.assertEqual(slip.payment_instrument.state, PaymentInstrument.State.SUPERSEDED)
+
+        with patch(
+            "bank_slips.gateways.BankSlipGateway.cancelar_boleto"
+        ) as mock_cancelar:
+            self.manual_service.confirm_manual_payment(
+                instrument=manual, confirmed_by=self.secretariat
+            )
+            mock_cancelar.assert_called_once_with(slip.bank_slip_reference)
+
+        slip.refresh_from_db()
+        self.assertEqual(slip.payment_instrument.state, PaymentInstrument.State.CANCELED)
+        manual.refresh_from_db()
+        self.assertEqual(
+            manual.state, PaymentInstrument.State.MANUAL_CONFIRMED
+        )

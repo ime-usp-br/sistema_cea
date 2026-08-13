@@ -1,3 +1,5 @@
+import os
+
 from django import forms
 from django.forms.models import ModelChoiceIterator
 from django.utils import timezone
@@ -8,6 +10,29 @@ from .models import CatalogOption, ServiceApplication
 from .validators import validate_br_tax_id
 
 MAX_TOTAL_ATTACHMENT_SIZE = 8 * 1024 * 1024
+
+# Extensões consideradas seguras para upload de anexos de inscrição.
+ALLOWED_ATTACHMENT_EXTENSIONS = {
+    ".pdf", ".doc", ".docx", ".odt", ".rtf", ".txt",
+    ".xls", ".xlsx", ".ods", ".csv",
+    ".png", ".jpg", ".jpeg", ".gif", ".tiff", ".zip",
+}
+
+# MIME types proibidos (executáveis/scripts) mesmo que a extensão seja benigna.
+BLOCKED_ATTACHMENT_MIME_TYPES = {
+    "application/x-executable",
+    "application/x-msdownload",
+    "application/x-msdos-program",
+    "application/x-sh",
+    "application/x-php",
+    "application/x-python-code",
+    "application/x-msi",
+    "application/java-archive",
+    "text/html",
+    "application/javascript",
+    "text/x-php",
+    "application/x-javascript",
+}
 
 YES_NO_CHOICES = [("true", "Sim"), ("false", "Não")]
 
@@ -232,6 +257,20 @@ class ApplicationForm(forms.Form):
         total = sum(upload.size for upload in files)
         if total > MAX_TOTAL_ATTACHMENT_SIZE:
             raise forms.ValidationError("O total de anexos excede o limite de 8 MB.")
+        for upload in files:
+            name = (getattr(upload, "name", "") or "").lower()
+            extension = os.path.splitext(name)[1]
+            content_type = (getattr(upload, "content_type", "") or "").lower()
+            if extension not in ALLOWED_ATTACHMENT_EXTENSIONS:
+                raise forms.ValidationError(
+                    "Tipo de arquivo não permitido. Envie apenas documentos "
+                    "(PDF, DOC, planilhas, imagens ou texto)."
+                )
+            if content_type in BLOCKED_ATTACHMENT_MIME_TYPES:
+                raise forms.ValidationError(
+                    "Tipo de arquivo não permitido. Envie apenas documentos "
+                    "(PDF, DOC, planilhas, imagens ou texto)."
+                )
         return files
 
     def clean(self):

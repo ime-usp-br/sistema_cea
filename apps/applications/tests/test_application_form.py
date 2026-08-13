@@ -1,8 +1,10 @@
+import tempfile
 from typing import cast
 
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import HttpResponse
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -15,6 +17,7 @@ from users.factories import UserFactory
 User = get_user_model()
 
 
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp(prefix="cea-appform-media-"))
 class ApplicationFormFakerTest(TestCase):
     """Simula o preenchimento literal do formulário de inscrição.
 
@@ -129,6 +132,55 @@ class ApplicationFormFakerTest(TestCase):
         payload = build_valid_form_payload(
             modality="consultation", term_pk=self.term.pk
         )
+        response = self._post(payload)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(ServiceApplication.objects.count(), 1)
+
+    # TS-FILE-GAP-001 — Segurança: rejeita extensões/MIME types executáveis.
+    def test_TS_FILE_GAP_001_rejeita_arquivos_com_mime_types_nao_permitidos(self) -> None:
+        payload = build_valid_form_payload(
+            modality="consultation", term_pk=self.term.pk
+        )
+        bad_file = SimpleUploadedFile(
+            "script.sh",
+            b"#!/bin/bash\nrm -rf /",
+            content_type="application/x-sh",
+        )
+        payload["attachments"] = [bad_file]
+        response = self._post(payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("attachments", response.context["form"].errors)
+        self.assertIn(
+            "tipo de arquivo não permitido",
+            str(response.context["form"].errors["attachments"]).lower(),
+        )
+        self.assertEqual(ServiceApplication.objects.count(), 0)
+
+    def test_TS_FILE_GAP_001b_rejeita_extensao_perigosa_mesmo_sem_mime(self) -> None:
+        payload = build_valid_form_payload(
+            modality="consultation", term_pk=self.term.pk
+        )
+        bad_file = SimpleUploadedFile(
+            "malware.exe",
+            b"MZ\x90\x00\x03",
+            content_type="application/octet-stream",
+        )
+        payload["attachments"] = [bad_file]
+        response = self._post(payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("attachments", response.context["form"].errors)
+        self.assertEqual(ServiceApplication.objects.count(), 0)
+
+    def test_TS_FILE_GAP_001c_aceita_pdf_valido(self) -> None:
+        payload = build_valid_form_payload(
+            modality="consultation", term_pk=self.term.pk
+        )
+        good_file = SimpleUploadedFile(
+            "documento.pdf",
+            b"%PDF-1.4 conteudo",
+            content_type="application/pdf",
+        )
+        payload["attachments"] = [good_file]
         response = self._post(payload)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(ServiceApplication.objects.count(), 1)

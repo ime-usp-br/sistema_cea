@@ -316,6 +316,46 @@ class LegacyClaimScenarioTests(TestCase):
             ServiceApplication.DatasetAuditState.AWAITING_SUBMISSION,
         )
 
+    @EAGER_EMAIL
+    def test_TS_CLAIM_GAP_001_novo_pedido_de_resgate_invalida_tokens_anteriores(self):
+        """Novo pedido não acumula códigos válidos: o anterior é invalidado."""
+        claim_1, token_1 = self.service.request_claim(
+            user=self.candidate,
+            protocol=self.application.protocol,
+            contact_email_or_tax_id="carla@example.com",
+        )
+        claim_2, token_2 = self.service.request_claim(
+            user=self.candidate,
+            protocol=self.application.protocol,
+            contact_email_or_tax_id="carla@example.com",
+        )
+
+        claim_1.refresh_from_db()
+        self.assertEqual(claim_1.status, LegacyOwnershipClaim.Status.REJECTED)
+        self.assertIsNone(claim_1.verification_token_hash)
+        self.assertIsNone(claim_1.code_expires_at)
+
+        claim_2.refresh_from_db()
+        self.assertIn(
+            claim_2.status,
+            {LegacyOwnershipClaim.Status.PENDING, LegacyOwnershipClaim.Status.CODE_SENT},
+        )
+
+        # Usar o token antigo deve falhar.
+        with self.assertRaises(LegacyClaimError):
+            self.service.confirm_claim(
+                user=self.candidate, claim_id=claim_1.pk, code=token_1
+            )
+        self.application.refresh_from_db()
+        self.assertIsNone(self.application.owner_id)
+
+        # O token novo continua válido.
+        self.service.confirm_claim(
+            user=self.candidate, claim_id=claim_2.pk, code=token_2
+        )
+        self.application.refresh_from_db()
+        self.assertEqual(self.application.owner, self.candidate)
+
 
 @EAGER_EMAIL
 class LegacyClaimViewTests(TestCase):

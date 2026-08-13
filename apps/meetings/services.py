@@ -197,6 +197,10 @@ class ProjectScreeningService:
         decision_note: str | None = None,
     ) -> ProjectScreening:
         application = screening.application
+        if screening.state == ProjectScreening.State.CANCELED:
+            raise MeetingDomainError(
+                "Triagens canceladas não podem receber decisão."
+            )
         if (
             application.lifecycle_status
             != ServiceApplication.LifecycleStatus.AWAITING_SCREENING_RESULT
@@ -232,6 +236,10 @@ class ProjectScreeningService:
         recorded_by: Any,
         teacher_feedback: str,
     ) -> ProjectScreening:
+        if screening.state == ProjectScreening.State.CANCELED:
+            raise MeetingDomainError(
+                "Triagens canceladas não podem receber feedback."
+            )
         now = timezone.now()
         scheduled_dt = _combine_aware(screening.scheduled_date, screening.scheduled_time)
         if now <= scheduled_dt:

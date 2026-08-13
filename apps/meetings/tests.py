@@ -435,6 +435,52 @@ class MeetingScenarioTests(TestCase):
         meeting.refresh_from_db()
         self.assertIsNone(meeting.teacher_feedback)
 
+    # TS-MEET-GAP-001 — Docente não pode decidir/feedbackar triagem CANCELADA.
+    def test_TS_MEET_GAP_001_decisao_bloqueada_em_triagem_cancelada(self) -> None:
+        application = self.project_awaiting_scheduling()
+        screening = self.schedule_project(application)
+        self.screening_service.cancel_screening(
+            screening=screening, canceled_by=self.secretariat
+        )
+        screening.refresh_from_db()
+        self.assertEqual(screening.state, ProjectScreening.State.CANCELED)
+
+        with self.assertRaises(MeetingDomainError):
+            self.screening_service.record_decision(
+                screening=screening,
+                decided_by=self.teacher,
+                decision="approved_as_project",
+            )
+        screening.refresh_from_db()
+        self.assertIsNone(screening.decision)
+        self.assertEqual(screening.state, ProjectScreening.State.CANCELED)
+
+    def test_TS_MEET_GAP_001b_feedback_bloqueado_em_triagem_cancelada(self) -> None:
+        application = self.project_awaiting_scheduling()
+        screening = self.screening_service.schedule_screening(
+            application=application,
+            scheduled_by=self.secretariat,
+            scheduled_date=PAST_DATE,
+            scheduled_time=PAST_TIME,
+            meeting_mode="online",
+            virtual_link="https://meet.example.com/sala",
+        )
+        self.screening_service.cancel_screening(
+            screening=screening, canceled_by=self.secretariat
+        )
+        screening.refresh_from_db()
+        self.assertEqual(screening.state, ProjectScreening.State.CANCELED)
+
+        with self.assertRaises(MeetingDomainError):
+            self.screening_service.record_feedback(
+                screening=screening,
+                recorded_by=self.teacher,
+                teacher_feedback="screening_completed",
+            )
+        screening.refresh_from_db()
+        self.assertIsNone(screening.teacher_feedback)
+        self.assertEqual(screening.state, ProjectScreening.State.CANCELED)
+
     # TS-MEET-014 — Consulta aprovada como Projeto gera Taxa de Projeto (Gap 2)
     def test_TS_MEET_014_consulta_aprovada_como_projeto_gera_taxa_de_projeto(self) -> None:
         """

@@ -1,3 +1,4 @@
+import ipaddress
 import re
 from typing import Any
 from urllib.parse import urlparse
@@ -34,8 +35,48 @@ class DatasetAuditError(ValueError):
     """Erro de domínio para falhas de validação no fluxo de auditoria."""
 
 
+# Hostnames que nunca devem ser acessados via SSRF.
+_FORBIDDEN_HOSTNAMES = {"localhost", "localhost.localdomain", "metadata.google.internal"}
+
+# IPs/redes proibidos: loopback, link-local, privados e reservados (SSRF).
+def _is_forbidden_ip(host: str) -> bool:
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return (
+        address.is_loopback
+        or address.is_link_local
+        or address.is_private
+        or address.is_reserved
+        or address.is_multicast
+        or address.is_unspecified
+    )
+
+
+def _assert_host_not_forbidden(host: str) -> None:
+    """Bloqueia hosts de loopback/IPs internos (proteção contra SSRF, TS-AUD-GAP-001)."""
+    lower = host.lower()
+    if lower in _FORBIDDEN_HOSTNAMES:
+        raise DatasetAuditError(
+            "A URL externa não pode apontar para endereços de rede internos."
+        )
+    if lower.endswith((".local", ".internal", ".localhost")):
+        raise DatasetAuditError(
+            "A URL externa não pode apontar para endereços de rede internos."
+        )
+    if _is_forbidden_ip(lower):
+        raise DatasetAuditError(
+            "A URL externa não pode apontar para endereços de rede internos."
+        )
+
+
 def validate_external_url(url: str) -> str:
-    """Valida o formato seguro de uma URL externa (HTTP/HTTPS) (TS-AUD-006)."""
+    """Valida o formato seguro de uma URL externa (HTTP/HTTPS) (TS-AUD-006).
+
+    Além do protocolo, bloqueia hosts de loopback/redes locais para mitigar
+    Server-Side Request Forgery (TS-AUD-GAP-001).
+    """
     if not isinstance(url, str) or not url:
         raise DatasetAuditError("A URL externa é obrigatória para o canal por link.")
     if len(url) > URL_MAX_LENGTH:
@@ -49,6 +90,8 @@ def validate_external_url(url: str) -> str:
         raise DatasetAuditError("A URL externa deve utilizar o protocolo HTTP ou HTTPS.")
     if not parsed.netloc:
         raise DatasetAuditError("A URL externa não possui um domínio válido.")
+    host = parsed.hostname or ""
+    _assert_host_not_forbidden(host)
     if not _URL_PATH_SAFE_RE.match(parsed.path or ""):
         raise DatasetAuditError("A URL externa contém caracteres inválidos.")
     return url

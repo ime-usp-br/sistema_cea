@@ -137,12 +137,17 @@ class NotificationService:
             application.pk,
         )
 
-    def notify_modality_changed(self, application: ServiceApplication) -> None:
+    def notify_modality_changed(
+        self,
+        application: ServiceApplication,
+        attachments: list[dict[str, Any]] | None = None,
+    ) -> None:
         """Notifica o candidato sobre mudança de modalidade pela secretaria.
 
         Equivale ao Mailable ``NotifyServiceChange`` do sistema legado (TS-NOT-011):
         quando a secretaria altera a modalidade, o candidato deve ser informado da
-        nova dívida/condição via e-mail.
+        nova dívida/condição via e-mail. ``attachments`` carrega o PDF do novo
+        boleto (paridade com o ``attachData()`` do legado, Gap B).
         """
         context = self._base_context(application)
         context["new_modality"] = application.get_modality_display()
@@ -151,6 +156,7 @@ class NotificationService:
             application.contact_email,
             context,
             application.pk,
+            attachments=attachments,
         )
 
     def notify_bank_slip_regenerated(

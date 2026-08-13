@@ -459,3 +459,34 @@ class AuditScenarioTests(TestCase):
         )
         with self.assertRaises(DatasetAuditError):
             validate_external_url("")
+
+    # TS-AUD-GAP-001 — SSRF: bloqueia loopback e endereços de rede local/interna.
+    def test_TS_AUD_GAP_001_link_externo_nao_pode_apontar_para_localhost_ssrf(self) -> None:
+        application = self.create_project()
+        bad_urls = [
+            "http://localhost/admin",
+            "http://127.0.0.1:8000",
+            "http://169.254.169.254/latest/meta-data/",
+            "http://10.0.0.5/",
+            "http://172.16.0.10/",
+            "http://192.168.1.1/",
+            "http://[::1]/",
+            "http://metadata.google.internal/",
+        ]
+        for bad_url in bad_urls:
+            with self.subTest(url=bad_url), self.assertRaises(
+                DatasetAuditError, msg=f"A URL {bad_url} deveria ser bloqueada."
+            ):
+                self.submit_link(application, url=bad_url)
+        self.assertEqual(DatasetAuditSubmission.objects.count(), 0)
+
+    def test_TS_AUD_GAP_001b_url_publica_continua_aceita(self) -> None:
+        """Garante que a proteção SSRF não rejeita URLs públicas legítimas."""
+        application = self.create_project()
+        submission = self.submit_link(
+            application, url="https://drive.example.com/dados"
+        )
+        self.assertEqual(submission.submission_channel, "external_link")
+        self.assertEqual(
+            submission.external_url, "https://drive.example.com/dados"
+        )

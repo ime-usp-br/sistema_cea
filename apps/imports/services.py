@@ -62,6 +62,10 @@ class LegacyClaimService:
         if application.owner_id is not None:
             raise LegacyClaimError("Esta inscrição já possui um dono vinculado.")
 
+        # Invalida pedidos anteriores ainda ativos para a mesma inscrição
+        # (TS-CLAIM-GAP-001): evita acúmulo de códigos válidos e e-mails/spam.
+        self._invalidate_previous_claims(application)
+
         token = self._generate_code()
         now = timezone.now()
         claim = LegacyOwnershipClaim.objects.create(
@@ -209,6 +213,28 @@ class LegacyClaimService:
 
     def _generate_code(self) -> str:
         return f"{secrets.randbelow(10 ** CODE_LENGTH):0{CODE_LENGTH}d}"
+
+    def _invalidate_previous_claims(self, application: ServiceApplication) -> None:
+        """Rejeita pedidos de resgate anteriores ainda ativos da mesma inscrição."""
+        active = LegacyOwnershipClaim.objects.filter(
+            application=application,
+            status__in=[
+                LegacyOwnershipClaim.Status.PENDING,
+                LegacyOwnershipClaim.Status.CODE_SENT,
+            ],
+        )
+        for claim in active:
+            claim.status = LegacyOwnershipClaim.Status.REJECTED
+            claim.verification_token_hash = None
+            claim.code_expires_at = None
+            claim.save(
+                update_fields=[
+                    "status",
+                    "verification_token_hash",
+                    "code_expires_at",
+                    "updated_at",
+                ]
+            )
 
     def _send_code_email(self, claim: LegacyOwnershipClaim, token: str) -> None:
         legacy_email = (
