@@ -1,4 +1,5 @@
 import base64
+import contextlib
 from datetime import timedelta
 from decimal import Decimal
 from typing import Any
@@ -236,6 +237,56 @@ class BankSlipPaymentService:
                 description=f"Boleto {slip.bank_slip_reference} cancelado.",
                 metadata={"bank_slip_reference": slip.bank_slip_reference},
             )
+
+    def regenerate_slip(
+        self,
+        slip: BankSlipPaymentInstrument,
+        created_by: Any = None,
+        notify_template_code: str = "payment_slip_regenerated",
+    ) -> BankSlipPaymentInstrument:
+        """Cancela um boleto vencido e emite um novo, notificando o candidato.
+
+        Porta do comando ``RegenerateAndNotifyPaymentFailure`` do legado: o boleto
+        antigo é cancelado no gateway, o instrumento é marcado como ``SUPERSEDED``
+        e um novo boleto é gerado para a mesma taxa.
+        """
+        instrument = slip.payment_instrument
+        if instrument.state == PaymentInstrument.State.PAID:
+            raise BankSlipDomainError(
+                "Um boleto pago não pode ser regenerado."
+            )
+        fee = instrument.fee_requirement
+        application = fee.application
+        # Cancelamento é best-effort: se o gateway estiver indisponível, a
+        # regeneração ainda deve prosseguir para não travar o candidato.
+        with contextlib.suppress(Exception):
+            self.gateway.cancelar_boleto(slip.bank_slip_reference)
+        with transaction.atomic():
+            if instrument.state == PaymentInstrument.State.ACTIVE:
+                instrument.state = PaymentInstrument.State.SUPERSEDED
+                instrument.active_unique_fee_token = None
+                instrument.save(
+                    update_fields=["state", "active_unique_fee_token", "updated_at"]
+                )
+            slip.bank_status = BankSlipPaymentInstrument.BankStatus.CANCELED
+            slip.cancellation_date = timezone.now().date()
+            slip.save(
+                update_fields=["bank_status", "cancellation_date", "updated_at"]
+            )
+        new_slip = self.generate_bank_slip_for_fee(
+            fee_requirement=fee, created_by=created_by
+        )
+        NotificationService().notify_bank_slip_regenerated(
+            application, notify_template_code
+        )
+        record_application_event(
+            application=application,
+            event_code="bank_slip.regenerated",
+            actor=created_by,
+            description=f"Boleto {slip.bank_slip_reference} regenerado.",
+            metadata={"new_reference": new_slip.bank_slip_reference},
+        )
+        return new_slip
 
     def simulate_payment(self, slip: BankSlipPaymentInstrument) -> None:
         """Simula o pagamento de um boleto em desenvolvimento (TS-BSL-010)."""

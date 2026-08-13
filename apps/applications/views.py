@@ -1,15 +1,31 @@
 from typing import cast
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import redirect
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
+from django.views import View
 from django.views.generic import DetailView, FormView, TemplateView
 
 from users.models import User
 
 from .forms import ApplicationForm
 from .models import ServiceApplication
-from .services import ApplicationSubmissionService
+from .services import ApplicationSubmissionService, TermTransferService
+
+
+class RoleRequiredMixin(LoginRequiredMixin):
+    """Exige que o usuário autenticado possua um dos papéis listados."""
+
+    allowed_roles: frozenset[str] = frozenset()
+
+    def dispatch(self, request, *args, **kwargs):
+        user = cast(User, request.user)
+        if not user.is_authenticated:
+            return self.handle_no_permission()
+        if user.role not in self.allowed_roles and not user.is_superuser:
+            raise PermissionDenied("Você não tem permissão para acessar esta área.")
+        return super().dispatch(request, *args, **kwargs)
 
 
 class CandidateDashboardView(LoginRequiredMixin, TemplateView):
@@ -78,5 +94,21 @@ class ApplicationDetailView(LoginRequiredMixin, DetailView):
     slug_url_kwarg = "protocol"
 
     def get_queryset(self):
-        owner = cast(User, self.request.user)
-        return ServiceApplication.objects.filter(owner=owner)
+        user = cast(User, self.request.user)
+        if user.role in {User.Role.SECRETARIAT, User.Role.ADMINISTRATOR} or user.is_superuser:
+            return ServiceApplication.objects.all()
+        return ServiceApplication.objects.filter(owner=user)
+
+
+class TransferSemesterView(RoleRequiredMixin, View):
+    """Secretaria transfere uma inscrição para o próximo semestre (TS-TRM-006)."""
+
+    allowed_roles = frozenset({User.Role.SECRETARIAT, User.Role.ADMINISTRATOR})
+
+    def post(self, request, protocol: str):
+        application = get_object_or_404(ServiceApplication, protocol=protocol)
+        user = cast(User, request.user)
+        TermTransferService().transfer_to_next_semester(
+            application, decided_by=user
+        )
+        return redirect(reverse("applications:detail", args=[protocol]))

@@ -336,6 +336,7 @@ class ModalityChangeService:
                 actor=decided_by,
                 description=note or "Inscrição convertida para Consulta.",
             )
+            self._notify_modality_change(application)
 
     def convert_to_project(
         self,
@@ -386,6 +387,13 @@ class ModalityChangeService:
                 actor=decided_by,
                 description=note or "Inscrição convertida para Projeto.",
             )
+            self._notify_modality_change(application)
+
+    def _notify_modality_change(self, application: ServiceApplication) -> None:
+        """Notifica o candidato sobre a mudança de modalidade (NotifyServiceChange)."""
+        from notifications.services import NotificationService
+
+        NotificationService().notify_modality_changed(application)
 
     def _replace_application_fee(
         self, app_fee: FeeRequirement, new_base: Decimal
@@ -493,3 +501,50 @@ class RefundRequestService:
         for fee in application.fee_requirements.all():
             total += fee.paid_amount
         return total
+
+
+class OverdueBillingService:
+    """Painel de inadimplência: boletos vencidos e cobrança em massa.
+
+    Porta do ``ApplicationController@overdueIndex`` e
+    ``ApplicationController@sendOverdueReminders`` do sistema legado.
+    """
+
+    def get_overdue_slips(self):
+        """Lista boletos vencidos ainda não pagos."""
+        from bank_slips.models import BankSlipPaymentInstrument
+
+        today = timezone.localdate()
+        return (
+            BankSlipPaymentInstrument.objects.select_related(
+                "payment_instrument__fee_requirement__application"
+            )
+            .filter(
+                due_date__lt=today,
+                bank_status=BankSlipPaymentInstrument.BankStatus.EMITTED,
+                payment_instrument__state__in=[
+                    PaymentInstrument.State.ACTIVE,
+                    PaymentInstrument.State.CREATED,
+                ],
+            )
+            .order_by("due_date")
+        )
+
+    def send_overdue_reminders(self, actor: Any = None) -> int:
+        """Dispara e-mails de cobrança para todos os boletos vencidos."""
+        from notifications.services import NotificationService
+
+        notification_service = NotificationService()
+        sent = 0
+        for slip in self.get_overdue_slips():
+            application = slip.payment_instrument.fee_requirement.application
+            notification_service.notify_overdue_reminder(application)
+            record_application_event(
+                application=application,
+                event_code="payment.overdue_reminder_sent",
+                actor=actor,
+                description="Cobrança de boleto vencido enviada.",
+                metadata={"bank_slip_reference": slip.bank_slip_reference},
+            )
+            sent += 1
+        return sent

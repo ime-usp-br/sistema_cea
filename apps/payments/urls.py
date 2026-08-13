@@ -3,6 +3,8 @@ from django.urls import path
 from .views import (
     FeePaymentView,
     ManualPaymentConfirmationView,
+    OverdueBillingListView,
+    OverdueReminderView,
     RefundActionView,
     RefundRequestCreateView,
     RefundRequestListView,
@@ -32,4 +34,6 @@ urlpatterns = [
         RefundActionView.as_view(),
         name="refund_action",
     ),
+    path("cobrancas/vencidos/", OverdueBillingListView.as_view(), name="overdue_list"),
+    path("cobrancas/vencidos/lembrete/", OverdueReminderView.as_view(), name="overdue_remind"),
 ]

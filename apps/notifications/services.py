@@ -135,6 +135,53 @@ class NotificationService:
             application.pk,
         )
 
+    def notify_modality_changed(self, application: ServiceApplication) -> None:
+        """Notifica o candidato sobre mudança de modalidade pela secretaria.
+
+        Equivale ao Mailable ``NotifyServiceChange`` do sistema legado (TS-NOT-011):
+        quando a secretaria altera a modalidade, o candidato deve ser informado da
+        nova dívida/condição via e-mail.
+        """
+        context = self._base_context(application)
+        context["new_modality"] = application.get_modality_display()
+        self._enqueue(
+            "service_modality_changed",
+            application.contact_email,
+            context,
+            application.pk,
+        )
+
+    def notify_bank_slip_regenerated(
+        self, application: ServiceApplication, template_code: str
+    ) -> None:
+        """Notifica o candidato sobre um boleto reemitido.
+
+        ``template_code`` diferencia a regeneração automática (cron/Worker,
+        ``payment_failure_regenerated``) da regeneração manual pela secretaria
+        (``payment_slip_regenerated``), em paridade com o legado.
+        """
+        context = self._base_context(application)
+        self._enqueue(
+            template_code,
+            application.contact_email,
+            context,
+            application.pk,
+        )
+
+    def notify_overdue_reminder(self, application: ServiceApplication) -> None:
+        """Envia cobrança de boleto vencido ao candidato.
+
+        Equivale ao Mailable ``NotifyOverdueBankSlip`` do sistema legado
+        (``ApplicationController@sendOverdueReminders``).
+        """
+        context = self._base_context(application)
+        self._enqueue(
+            "overdue_payment_reminder",
+            application.contact_email,
+            context,
+            application.pk,
+        )
+
     def notify_bank_slip_failure(
         self, application: ServiceApplication, error_message: str
     ) -> None:

@@ -13,6 +13,7 @@ from .models import FeeRequirement, PaymentInstrument, RefundRequest
 from .services import (
     ManualPaymentService,
     ModalityChangeService,
+    OverdueBillingService,
     PaymentOrchestrationService,
     RefundRequestService,
 )
@@ -21,6 +22,7 @@ _fee_service = ModalityChangeService()
 _payment_service = PaymentOrchestrationService()
 _manual_service = ManualPaymentService()
 _refund_service = RefundRequestService()
+_overdue_service = OverdueBillingService()
 
 
 class RoleRequiredMixin(LoginRequiredMixin):
@@ -221,3 +223,31 @@ class RefundActionView(RoleRequiredMixin, View):
         elif action == "execute":
             _refund_service.execute(refund_request=refund, executed_by=user)
         return redirect("payments:refund_list")
+
+
+class OverdueBillingListView(RoleRequiredMixin, View):
+    """Painel de inadimplência: boletos vencidos e cobrança em massa.
+
+    Porta do ``ApplicationController@overdueIndex`` do sistema legado.
+    """
+
+    allowed_roles = frozenset({User.Role.SECRETARIAT, User.Role.ADMINISTRATOR})
+    template_name = "payments/overdue_list.html"
+
+    def get(self, request):
+        slips = _overdue_service.get_overdue_slips()
+        return render(request, self.template_name, {"slips": slips})
+
+
+class OverdueReminderView(RoleRequiredMixin, View):
+    """Secretaria dispara e-mails de cobrança para os boletos vencidos.
+
+    Porta do ``ApplicationController@sendOverdueReminders`` do sistema legado.
+    """
+
+    allowed_roles = frozenset({User.Role.SECRETARIAT, User.Role.ADMINISTRATOR})
+
+    def post(self, request):
+        user = cast(User, request.user)
+        _overdue_service.send_overdue_reminders(actor=user)
+        return redirect("payments:overdue_list")

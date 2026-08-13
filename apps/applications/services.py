@@ -11,6 +11,7 @@ from files.services import create_file_asset
 from .models import (
     ApplicationAttachment,
     ApplicationCatalogSelection,
+    ApplicationEvent,
     CatalogOption,
     ServiceApplication,
 )
@@ -18,6 +19,65 @@ from .models import (
 MAX_PROTOCOL_ATTEMPTS = 10
 
 User = get_user_model()
+
+
+class TermTransferError(RuntimeError):
+    """Erro de domínio da transferência de semestre."""
+
+
+class TermTransferService:
+    """Transfere inscrições entre semestres letivos.
+
+    Porta do ``ApplicationController@transferToNextSemester`` (manual) e do
+    ``SemesterController::migratePendingApplications`` (automático) do legado.
+    A Secretaria transfere inscrições de candidatos cujas triagens atrasaram
+    para o próximo período (``transfer_pending``).
+    """
+
+    @staticmethod
+    def _sort_key(term: Any) -> tuple[int, int]:
+        period_rank = 0 if term.period == "first" else 1
+        return (term.year, period_rank)
+
+    def get_next_term(self, current_term: Any):
+        """Retorna o semestre imediatamente posterior ao atual, se existir."""
+        from terms.models import AcademicTerm
+
+        ordered = sorted(AcademicTerm.objects.all(), key=self._sort_key)
+        for index, term in enumerate(ordered):
+            if term.pk == current_term.pk:
+                if index + 1 < len(ordered):
+                    return ordered[index + 1]
+                break
+        raise TermTransferError(
+            "Não há um próximo semestre disponível para a transferência."
+        )
+
+    def transfer_to_next_semester(
+        self,
+        application: ServiceApplication,
+        decided_by: Any = None,
+        note: str | None = None,
+    ) -> ServiceApplication:
+        """Transfere a inscrição para o próximo semestre (TS-TRM-006)."""
+        with transaction.atomic():
+            next_term = self.get_next_term(application.term)
+            application.term = next_term
+            application.transfer_pending = False
+            application.lifecycle_status = (
+                ServiceApplication.LifecycleStatus.TRANSFERRED
+            )
+            application.save(
+                update_fields=["term", "transfer_pending", "lifecycle_status", "updated_at"]
+            )
+            ApplicationEvent.objects.create(
+                application=application,
+                event_code="term.transferred",
+                actor=decided_by,
+                description=note or f"Inscrição transferida para o semestre {next_term}.",
+                metadata={"next_term_id": next_term.pk},
+            )
+        return application
 
 
 class ProtocolGenerationError(RuntimeError):

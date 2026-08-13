@@ -1,0 +1,50 @@
+{% extends "base/base.html" %}
+
+{% block title %}Cobranças Manuais{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Cobranças Manuais</h1>
+        <p class="page-subtitle">Boletos vencidos e inadimplentes agrupados para cobrança em massa.</p>
+    </div>
+    <form method="post" action="{% url 'payments:overdue_remind' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary">Enviar lembretes de cobrança</button>
+    </form>
+</div>
+
+{% if slips %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Protocolo</th>
+                    <th>Candidato</th>
+                    <th>Modalidade</th>
+                    <th>Valor</th>
+                    <th>Vencimento</th>
+                    <th>Boleto</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for slip in slips %}
+                    <tr>
+                        <td>{{ slip.payment_instrument.fee_requirement.application.protocol }}</td>
+                        <td>{{ slip.payment_instrument.fee_requirement.application.researcher_name }}</td>
+                        <td>{{ slip.payment_instrument.fee_requirement.application.get_modality_display }}</td>
+                        <td>R$ {{ slip.document_amount|default:slip.payment_instrument.amount }}</td>
+                        <td>{{ slip.due_date|date:"d/m/Y" }}</td>
+                        <td>{{ slip.bank_slip_reference }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="empty-state">
+        <p>Não há boletos vencidos pendentes.</p>
+    </div>
+{% endif %}
+{% endblock %}

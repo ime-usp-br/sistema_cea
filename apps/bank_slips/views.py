@@ -1,6 +1,7 @@
 from typing import cast
 
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
 from django.core.files.storage import default_storage
 from django.http import FileResponse, Http404, HttpRequest
 from django.shortcuts import get_object_or_404, redirect, render
@@ -14,6 +15,20 @@ from .models import BankSlipPaymentInstrument
 from .services import BankSlipPaymentService
 
 _slip_service = BankSlipPaymentService()
+
+
+class RoleRequiredMixin(LoginRequiredMixin):
+    """Exige que o usuário autenticado possua um dos papéis listados."""
+
+    allowed_roles: frozenset[str] = frozenset()
+
+    def dispatch(self, request, *args, **kwargs):
+        user = cast(User, request.user)
+        if not user.is_authenticated:
+            return self.handle_no_permission()
+        if user.role not in self.allowed_roles and not user.is_superuser:
+            raise PermissionDenied("Você não tem permissão para acessar esta área.")
+        return super().dispatch(request, *args, **kwargs)
 
 
 class BaseBankSlipView(LoginRequiredMixin, View):
@@ -86,3 +101,20 @@ class BankSlipDownloadPdfView(LoginRequiredMixin, View):
             default_storage.open(asset.storage_key, "rb"),
             content_type="application/pdf",
         )
+
+
+class AdminRegenerateBankSlipView(RoleRequiredMixin, View):
+    """Secretaria reemite um boleto e notifica o candidato.
+
+    Porta do ``ApplicationController@regenerateBoleto`` do sistema legado:
+    permite à Secretaria regenerar forçadamente um boleto e notificar o usuário.
+    """
+
+    allowed_roles = frozenset({User.Role.SECRETARIAT, User.Role.ADMINISTRATOR})
+
+    def post(self, request: HttpRequest, slip_id: int):
+        slip = get_object_or_404(BankSlipPaymentInstrument, pk=slip_id)
+        user = cast(User, request.user)
+        _slip_service.regenerate_slip(slip, created_by=user)
+        protocol = slip.payment_instrument.fee_requirement.application.protocol
+        return redirect("applications:detail", protocol=protocol)
