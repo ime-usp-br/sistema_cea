@@ -61,6 +61,15 @@ class GenerateBankSlipView(BaseBankSlipView):
                 created_by=cast(User, request.user),
             )
         except Exception:
+            # Paridade com o ``NotifyInscribedAboutApplication`` do legado: se a
+            # integração SOAP falhar, o candidato não deve ficar sem explicação.
+            # Envia a confirmação de submissão com o aviso de instabilidade do
+            # boleto (o alerta à equipe CEA já ocorre dentro do serviço).
+            from notifications.services import NotificationService
+
+            NotificationService().notify_application_submitted(
+                application, boleto_failed=True
+            )
             return redirect("payments:fee_payment", protocol=application.protocol)
         return redirect("bank_slips:detail", protocol=application.protocol)
 

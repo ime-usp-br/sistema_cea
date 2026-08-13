@@ -359,6 +359,7 @@ class ModalityChangeService:
     ) -> None:
         """Converte a inscrição para a modalidade Consulta."""
         with transaction.atomic():
+            self._cancel_scheduled_screenings(application, decided_by)
             application.modality = ServiceApplication.Modality.CONSULTATION
             application.dataset_audit_required = False
             application.dataset_audit_state = None
@@ -468,6 +469,31 @@ class ModalityChangeService:
                 description=note or "Inscrição convertida para Projeto.",
             )
             self._notify_modality_change(application)
+
+    @staticmethod
+    def _cancel_scheduled_screenings(application: ServiceApplication, canceled_by: Any) -> None:
+        """Cancela triagens agendadas antes da conversão para Consulta.
+
+        Paridade com o Laravel: ao trocar a modalidade de Projeto para Consulta,
+        o sistema "reseta" os status, mas triagens previamente agendadas
+        (``SCHEDULED``/``RESCHEDULED``) não podem ficar órfãs no banco. Cada
+        triagem pendente é cancelada via ``ProjectScreeningService.cancel_screening``,
+        registrando o evento de auditoria correspondente.
+        """
+        from meetings.models import ProjectScreening
+        from meetings.services import ProjectScreeningService
+
+        screenings = ProjectScreening.objects.filter(application=application).exclude(
+            state__in=[
+                ProjectScreening.State.CANCELED,
+                ProjectScreening.State.COMPLETED,
+            ]
+        )
+        if not screenings.exists():
+            return
+        service = ProjectScreeningService()
+        for screening in screenings:
+            service.cancel_screening(screening=screening, canceled_by=canceled_by)
 
     def _notify_modality_change(self, application: ServiceApplication) -> None:
         """Notifica o candidato sobre a mudança de modalidade (NotifyServiceChange).

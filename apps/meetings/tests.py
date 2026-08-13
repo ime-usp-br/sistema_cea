@@ -613,6 +613,43 @@ class MeetingScenarioTests(TestCase):
             ).exists()
         )
 
+    # TS-MOD-GAP-003 — triagem agendada é cancelada ao converter Projeto -> Consulta
+    def test_TS_MOD_GAP_003_mudanca_de_modalidade_cancela_triagem_agendada(self) -> None:
+        """Paridade com o Laravel: mudar Projeto para Consulta não deixa a triagem
+        agendada órfã no banco — ela deve ser cancelada via ProjectScreeningService."""
+        from payments.services import ModalityChangeService
+
+        application = self.project_awaiting_scheduling()
+        screening = self.schedule_project(application)
+        self.assertEqual(
+            screening.state, ProjectScreening.State.SCHEDULED
+        )
+        application.refresh_from_db()
+        self.assertEqual(
+            application.lifecycle_status,
+            ServiceApplication.LifecycleStatus.AWAITING_SCREENING_RESULT,
+        )
+
+        ModalityChangeService().convert_to_consultation(
+            application=application, decided_by=self.secretariat
+        )
+
+        screening.refresh_from_db()
+        application.refresh_from_db()
+        self.assertEqual(
+            screening.state,
+            ProjectScreening.State.CANCELED,
+            "A triagem agendada deveria ter sido cancelada na conversão para Consulta.",
+        )
+        self.assertEqual(application.modality, ServiceApplication.Modality.CONSULTATION)
+        self.assertEqual(
+            application.lifecycle_status,
+            ServiceApplication.LifecycleStatus.AWAITING_PAYMENT,
+        )
+        self.assertTrue(
+            application.events.filter(event_code="meeting.screening_canceled").exists()
+        )
+
 
 class MeetingViewTests(TestCase):
     """Testes das telas de agendamento, decisão e feedback (apps/meetings/views.py)."""

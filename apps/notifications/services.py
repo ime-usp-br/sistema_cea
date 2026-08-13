@@ -22,24 +22,44 @@ class NotificationService:
         context_data: dict[str, Any],
         application_id: int | None = None,
         attachments: list[dict[str, Any]] | None = None,
+        context_overrides: dict[str, Any] | None = None,
+        bcc: list[str] | None = None,
     ) -> None:
+        merged_context = {**context_data, **(context_overrides or {})}
         send_notification_task.delay(
             template_code=template_code,
             recipient_email=recipient_email,
-            context_data=context_data,
+            context_data=merged_context,
             application_id=application_id,
             attachments=attachments,
+            bcc=bcc,
         )
 
-    def notify_application_submitted(self, application: ServiceApplication) -> None:
-        """Notifica o candidato (e a equipe CEA) sobre a submissão (TS-NOT-001)."""
+    def notify_application_submitted(
+        self,
+        application: ServiceApplication,
+        boleto_failed: bool = False,
+    ) -> None:
+        """Notifica o candidato (e a equipe CEA) sobre a submissão (TS-NOT-001).
+
+        ``boleto_failed`` ativa o aviso de instabilidade no e-mail do candidato
+        (paridade com o ``NotifyInscribedAboutApplication`` do legado): quando a
+        integração SOAP de boletos falha durante a emissão, o candidato recebe a
+        confirmação de submissão acompanhada de um alerta de que o boleto ainda
+        será enviado, evitando pânico e chamados de suporte. Nesse caso apenas o
+        candidato é notificado (a equipe CEA já foi alertada via
+        ``notify_bank_slip_failure``).
+        """
         context = self._base_context(application)
         self._enqueue(
             "application_submitted_candidate",
             application.contact_email,
             context,
             application.pk,
+            context_overrides={"boleto_failed": bool(boleto_failed)},
         )
+        if boleto_failed:
+            return
         self._enqueue(
             "application_submitted_center",
             self.center_email,
@@ -223,12 +243,17 @@ class NotificationService:
         ``NotifyUserNewBoleto`` que usava ``attachData()``).
         """
         context = self._base_context(application)
+        # Paridade com o ``RegenerateAndNotifyPaymentFailure`` do legado: ao
+        # reemitir o boleto automaticamente, a equipe CEA recebe a cópia oculta
+        # (``$mail->bcc(env('MAIL_CEA'))``) para manter visibilidade das
+        # reemissões automáticas.
         self._enqueue(
             template_code,
             application.contact_email,
             context,
             application.pk,
             attachments=attachments,
+            bcc=[self.center_email],
         )
 
     def notify_overdue_reminder(self, application: ServiceApplication) -> None:

@@ -18,6 +18,7 @@ def send_notification_task(
     context_data: dict[str, Any],
     application_id: int | None = None,
     attachments: list[Attachment] | None = None,
+    bcc: list[str] | None = None,
 ) -> NotificationDispatch | None:
     """Envia um e-mail a partir de um template canônico ativo.
 
@@ -53,6 +54,7 @@ def send_notification_task(
             body=body,
             from_email=settings.DEFAULT_FROM_EMAIL,
             to=[recipient_email],
+            bcc=bcc or [],
         )
         # Paridade com o legado: ``->attachData()`` dos Mailables permitia anexar
         # o Boleto em PDF e a Ficha. O ``send_mail`` nativo não suporta anexos,

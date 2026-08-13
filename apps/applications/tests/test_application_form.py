@@ -231,6 +231,22 @@ class ApplicationFormFakerTest(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(ServiceApplication.objects.count(), 1)
 
+    # TS-APP-009d — arquivo com EXATAMENTE 8388608 bytes (8MB) deve ser aceito
+    def test_TS_APP_009d_anexo_exatamente_no_limite_e_aceito(self) -> None:
+        """Boundary test: a validação usa `>` (não `>=`), logo 8MB exatos passam."""
+        payload = build_valid_form_payload(
+            modality="consultation", term_pk=self.term.pk
+        )
+        boundary_file = SimpleUploadedFile(
+            "limite.pdf",
+            b"x" * (8 * 1024 * 1024),
+            content_type="application/pdf",
+        )
+        payload["attachments"] = [boundary_file]
+        response = self._post(payload)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(ServiceApplication.objects.count(), 1)
+
     # TS-APP-GAP-001 — paridade Laravel: instituição é um campo obrigatório
     def test_TS_APP_GAP_001_institution_name_e_obrigatorio(self) -> None:
         payload = build_valid_form_payload(

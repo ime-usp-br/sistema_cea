@@ -540,6 +540,87 @@ class BankSlipScenarioTests(TestCase):
         )
         self.assertEqual(response.status_code, 403)
 
+    # TS-BSL-GAP-006 — poller periódico de boletos (paridade Console/Kernel.php)
+    def test_TS_BSL_GAP_006b_poller_de_polling_exportado_no_celery(self) -> None:
+        from bank_slips.tasks import sync_pending_bank_slips_task
+
+        application = self.create_consultation()
+        fee = self.get_fee(application)
+        inst = PaymentInstrument.objects.create(
+            fee_requirement=fee,
+            method=PaymentInstrument.Method.BANK_SLIP,
+            state=PaymentInstrument.State.ACTIVE,
+            amount=Decimal("140.00"),
+        )
+        BankSlipPaymentInstrument.objects.create(
+            payment_instrument=inst,
+            bank_slip_reference="BOL-POLL-1",
+            bank_status=BankSlipPaymentInstrument.BankStatus.EMITTED,
+            document_amount=Decimal("140.00"),
+        )
+        with patch(
+            "bank_slips.gateways.BankSlipGateway.obter_situacao", return_value="P"
+        ):
+            synced = sync_pending_bank_slips_task()
+        self.assertGreaterEqual(synced, 1)
+        inst.refresh_from_db()
+        self.assertEqual(inst.state, PaymentInstrument.State.PAID)
+
+    # TS-BSL-GAP-007 — regeneração automática avisa a equipe CEA (BCC)
+    @EAGER
+    def test_TS_BSL_GAP_007_regeneracao_automatica_avisa_equipe_cea(self) -> None:
+        """Paridade com o Laravel (RegenerateAndNotifyPaymentFailure):
+        a cron regenera o boleto vencido e a equipe CEA recebe a cópia oculta."""
+        from bank_slips.tasks import regenerate_overdue_bank_slips_task
+
+        application = self.create_consultation()
+        self._overdue_slip(application, "vencido-gap7")
+
+        with patch(
+            "bank_slips.gateways.BankSlipGateway.cancelar_boleto", return_value=True
+        ), patch(
+            "bank_slips.gateways.BankSlipGateway.gerar_boleto",
+            return_value=SLIP_RESULT,
+        ):
+            regenerate_overdue_bank_slips_task()
+
+        notified_cea = any(
+            "cea@ime.usp.br" in (email.bcc or []) for email in mail.outbox
+        )
+        self.assertTrue(
+            notified_cea,
+            "A equipe do CEA não foi colocada em cópia (BCC) na regeneração automática.",
+        )
+
+    # TS-NOT-GAP-003 — falha do boleto gera aviso de instabilidade no e-mail
+    @EAGER
+    def test_TS_NOT_GAP_003_aviso_no_email_se_boleto_falhar_na_geracao(self) -> None:
+        """Paridade com o ``NotifyInscribedAboutApplication``: se o SOAP cair ao
+        gerar o boleto, o candidato recebe a confirmação com alerta de instabilidade."""
+        application = self.create_consultation()
+        self.client.force_login(self.candidate)
+        with patch(
+            "bank_slips.gateways.BankSlipGateway.gerar_boleto",
+            side_effect=BankSlipGatewayError("SOAP OFF"),
+        ):
+            response = self.client.post(
+                reverse("bank_slips:generate", args=[application.protocol])
+            )
+        self.assertEqual(response.status_code, 302)
+        # A equipe CEA foi alertada e o candidato recebeu o aviso de instabilidade
+        center_fail = NotificationDispatch.objects.get(
+            template__code="bank_slip_generation_failure"
+        )
+        self.assertEqual(center_fail.recipient_email, "cea@ime.usp.br")
+        candidate_email = next(
+            email for email in mail.outbox if email.to == ["ana@example.com"]
+        )
+        self.assertIn(
+            "instabilidade momentânea",
+            candidate_email.body.lower(),
+            "O e-mail ao candidato não alertou sobre a falha do boleto.",
+        )
+
     # TS-BSL-GAP-005 — duplo clique "Gerar Boleto" é idempotente (1 ativo por taxa)
     def test_TS_BSL_GAP_005_duplo_click_nao_duplica_boleto(self) -> None:
         application = self.create_consultation()

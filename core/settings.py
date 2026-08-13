@@ -197,6 +197,21 @@ CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+CELERY_BEAT_SCHEDULE = {
+    # Paridade com o cron do legado (Console/Kernel.php, a cada 15 min): varre
+    # os boletos emitidos e consulta a situação no gateway, desbloqueando o
+    # fluxo quando o candidato paga o boleto sem acessar o sistema.
+    "sync-pending-bank-slips": {
+        "task": "bank_slips.tasks.sync_pending_bank_slips_task",
+        "schedule": 900.0,
+    },
+    # Paridade com o comando RegenerateAndNotifyPaymentFailure do legado:
+    # reemite boletos vencidos e notifica os candidatos automaticamente.
+    "regenerate-overdue-bank-slips": {
+        "task": "bank_slips.tasks.regenerate_overdue_bank_slips_task",
+        "schedule": 3600.0,
+    },
+}
 
 
 # ---- E-mail (notificações) ----

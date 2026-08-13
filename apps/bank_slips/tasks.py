@@ -47,3 +47,38 @@ def regenerate_overdue_bank_slips_task() -> int:
         )
         regenerated += 1
     return regenerated
+
+
+@shared_task
+def sync_pending_bank_slips_task() -> int:
+    """Consulta o gateway (SOAP ``obterSituacao``) para boletos pendentes.
+
+    Paridade com o cron do legado (``Console/Kernel.php``): a cada ciclo, varre
+    os boletos ainda EMITIDOS (status 'E') com instrumento ativo e consulta a
+    situação no banco/banco-santander em background. Se o candidato pagou o
+    boleto sem acessar o sistema, este poller é o que desbloqueia o fluxo,
+    avançando a inscrição (ex.: para ``AWAITING_SCREENING_SCHEDULING``).
+
+    Retorna a quantidade de boletos sincronizados no ciclo.
+    """
+    from .services import BankSlipPaymentService
+
+    service = BankSlipPaymentService()
+    pending = (
+        BankSlipPaymentInstrument.objects.select_related(
+            "payment_instrument__fee_requirement__application"
+        )
+        .filter(
+            bank_status=BankSlipPaymentInstrument.BankStatus.EMITTED,
+            payment_instrument__state__in=[
+                PaymentInstrument.State.ACTIVE,
+                PaymentInstrument.State.CREATED,
+            ],
+        )
+        .exclude(payment_instrument__state=PaymentInstrument.State.PAID)
+    )
+    synced = 0
+    for slip in pending:
+        service.sync_bank_slip_status(slip)
+        synced += 1
+    return synced
