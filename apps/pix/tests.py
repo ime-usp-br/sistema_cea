@@ -1,3 +1,4 @@
+import base64
 import tempfile
 from datetime import timedelta
 from unittest.mock import patch
@@ -15,7 +16,8 @@ from users.models import User
 
 PIX_RESULT = {
     "idfpix": "pix-abc-123",
-    "qr_code_payload": "00020126580014br.gov.bcb.pix0136a4bbf0-000000",
+    "qrCode": "00020126580014br.gov.bcb.pix0136a4bbf0-000000",
+    "qrCodeImgBase64": base64.b64encode(b"qr-png").decode("ascii"),
     "status": "ativo",
     "expiracao": 3600,
 }
@@ -100,7 +102,7 @@ class PixScenarioTests(TestCase):
         pix = self.generate_pix(application)
         pix.refresh_from_db()
         self.assertEqual(pix.pix_reference, "pix-abc-123")
-        self.assertEqual(pix.qr_code_payload, PIX_RESULT["qr_code_payload"])
+        self.assertEqual(pix.qr_code_payload, PIX_RESULT["qrCode"])
         asset = pix.qr_code_image_asset
         self.assertIsNotNone(asset)
         assert asset is not None
@@ -265,6 +267,21 @@ class PixScenarioTests(TestCase):
     def test_TS_PIX_009_periodo_maior_que_30_dias_rejeitado(self) -> None:
         with self.assertRaises(PixPaymentDomainError):
             self.service.reconcile_completed_pix("2026-01-01", "2026-03-15")
+
+    def test_TS_PIX_009_listarconcluidos_usa_dtaini_dtafim(self) -> None:
+        captured: dict[str, str] = {}
+
+        def fake_list(dtaini: str, dtafim: str) -> list:
+            captured["dtaini"] = dtaini
+            captured["dtafim"] = dtafim
+            return []
+
+        with patch(
+            "pix.gateways.PixGateway.list_completed_pix", side_effect=fake_list
+        ):
+            self.service.reconcile_completed_pix("2026-01-01", "2026-01-10")
+        self.assertEqual(captured["dtaini"], "01/01/2026 00:00:00")
+        self.assertEqual(captured["dtafim"], "10/01/2026 23:59:59")
 
     # ------------------------------------------------------------------
     # TS-PIX-010 — Simulação de pagamento em desenvolvimento

@@ -58,15 +58,19 @@ class PixGateway:
         except httpx.HTTPError as exc:
             raise PixGatewayError(f"Falha ao consultar Pix: {exc}") from exc
 
-    def list_completed_pix(self, start_date: str, end_date: str) -> list[dict[str, Any]]:
-        """GET /pix/listarConcluidos — lista Pix pagos em um período."""
+    def list_completed_pix(self, dtaini: str, dtafim: str) -> list[dict[str, Any]]:
+        """GET /pix/listarConcluidos — lista Pix pagos em um período.
+
+        Contrato WSPIX (docs/PIX.md): os parâmetros são ``dtaini`` e ``dtafim``
+        no formato ``dd/MM/aaaa hh:mm:ss``.
+        """
         import httpx
 
         try:
             with httpx.Client(timeout=30) as client:
                 response = client.get(
                     f"{self.base_url}/listarConcluidos",
-                    params={"dataInicial": start_date, "dataFinal": end_date},
+                    params={"dtaini": dtaini, "dtafim": dtafim},
                     headers=self._headers(),
                 )
                 response.raise_for_status()

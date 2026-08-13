@@ -9,7 +9,6 @@ from applications.services import ApplicationSubmissionService
 from bank_slips.gateways import BankSlipGatewayError
 from bank_slips.models import BankSlipPaymentInstrument
 from bank_slips.services import BankSlipDomainError, BankSlipPaymentService
-from files.models import FileAsset
 from payments.models import FeeRequirement, PaymentInstrument
 from terms.models import AcademicTerm
 from users.models import User
@@ -20,7 +19,6 @@ _PDF_B64 = base64.b64encode(_PDF_BYTES).decode("ascii")
 SLIP_RESULT = {
     "codigoIDBoleto": "boleto-001",
     "valorDesconto": None,
-    "pdfBase64": _PDF_B64,
 }
 
 
@@ -200,10 +198,17 @@ class BankSlipScenarioTests(TestCase):
     def test_TS_BSL_006_pdf_gerado_e_armazenado(self) -> None:
         application = self.create_consultation()
         slip = self.generate_slip(application)
-        asset = FileAsset.objects.filter(purpose="bank_slip_pdf").first()
+        # O PDF é obtido sob demanda via obterBoleto (docs/BOLETO.md), campo boletoPDF.
+        with patch(
+            "bank_slips.gateways.BankSlipGateway.obter_boleto_pdf",
+            return_value=_PDF_B64,
+        ):
+            self.service.fetch_pdf(slip)
+        slip.refresh_from_db()
+        asset = slip.pdf_asset
         self.assertIsNotNone(asset)
         assert asset is not None
-        self.assertEqual(slip.pdf_asset_id, asset.id)
+        self.assertEqual(asset.purpose, "bank_slip_pdf")
         self.assertEqual(asset.content_type, "application/pdf")
 
     # ------------------------------------------------------------------
@@ -307,10 +312,14 @@ class BankSlipPdfViewTests(TestCase):
     def test_download_pdf_endpoint_retorna_pdf(self) -> None:
         slip = self.create_slip()
         self.client.force_login(self.candidate)
-        response = self.client.get(f"/boleto/{slip.pk}/pdf/")
+        with patch(
+            "bank_slips.gateways.BankSlipGateway.obter_boleto_pdf",
+            return_value=_PDF_B64,
+        ):
+            response = self.client.get(f"/boleto/{slip.pk}/pdf/")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "application/pdf")
-        response.close()
+        slip.refresh_from_db()
         from django.core.files.storage import default_storage
 
         assert slip.pdf_asset is not None

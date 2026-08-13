@@ -100,11 +100,6 @@ class BankSlipPaymentService:
                 discount_amount=result.get("valorDesconto") or Decimal("0.00"),
                 registration_date=now.date(),
             )
-            pdf_b64 = result.get("pdfBase64")
-            if pdf_b64:
-                pdf = self._store_pdf(application, created_by, reference, str(pdf_b64))
-                slip.pdf_asset = pdf
-                slip.save(update_fields=["pdf_asset", "updated_at"])
             record_application_event(
                 application=application,
                 event_code="bank_slip.generated",
@@ -244,15 +239,24 @@ class BankSlipPaymentService:
         self._confirm_paid(slip)
 
     def fetch_pdf(self, slip: BankSlipPaymentInstrument):
-        """Baixa e armazena o PDF do boleto via gateway (TS-BSL-006)."""
+        """Baixa e armazena o PDF do boleto via ``obterBoleto`` (TS-BSL-006).
+
+        Contrato WS-Boleto (docs/BOLETO.md): o método ``obterBoleto`` retorna o
+        campo ``boletoPDF`` com o PDF em Base64.
+        """
         if slip.pdf_asset is not None:
             return slip.pdf_asset
-        pdf_b64 = self.gateway.obter_boleto_pdf(slip.bank_slip_reference)
+        result = self.gateway.obter_boleto_pdf(slip.bank_slip_reference)
+        pdf_b64 = (
+            result.get("boletoPDF") or result.get("pdfBase64")
+            if isinstance(result, dict)
+            else result
+        )
         asset = self._store_pdf(
             slip.payment_instrument.fee_requirement.application,
             None,
             slip.bank_slip_reference,
-            pdf_b64,
+            str(pdf_b64),
         )
         if asset is not None:
             slip.pdf_asset = asset

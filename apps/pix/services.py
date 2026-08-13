@@ -50,6 +50,22 @@ def _qrcode_png_bytes(_payload: str) -> bytes:
     return _QR_PLACEHOLDER_PNG
 
 
+def _qrcode_image_content(result: dict[str, Any], payload: str) -> bytes:
+    """Extrai a imagem do QR Code retornada pelo gateway.
+
+    Contrato WSPIX (docs/PIX.md): ``POST /pix/gerar`` retorna ``qrCodeImgBase64``
+    com a imagem do QR Code codificada em Base64. Em dev/teste (sem a imagem),
+    usa-se o placeholder.
+    """
+    raw = result.get("qrCodeImgBase64")
+    if raw:
+        try:
+            return base64.b64decode(raw)
+        except (ValueError, TypeError):
+            pass
+    return _qrcode_png_bytes(payload)
+
+
 class PixPaymentService:
     """Orquestra a geração, consulta e recebimento de pagamentos Pix."""
 
@@ -123,18 +139,20 @@ class PixPaymentService:
             pix = PixPaymentInstrument.objects.create(
                 payment_instrument=payment_instrument,
                 pix_reference=pix_reference,
-                qr_code_payload=str(result.get("qr_code_payload", "")),
+                qr_code_payload=str(
+                    result.get("qrCode") or result.get("qr_code_payload") or ""
+                ),
                 external_status=str(result.get("status", "ativo")),
                 generated_at=generated_at,
                 expires_at=expires_at,
                 payer_name=result.get("payer_name") or nome,
                 payer_tax_id=result.get("payer_tax_id") or doc,
-                bank_return_code=result.get("bank_return_code"),
+                bank_return_code=result.get("retornoBancario"),
             )
             image = create_file_asset_from_bytes(
                 application=application,
                 uploaded_by=created_by,
-                content=_qrcode_png_bytes(pix.qr_code_payload),
+                content=_qrcode_image_content(result, pix.qr_code_payload),
                 filename=f"qrcode-pix-{protocol}.png",
                 content_type="image/png",
                 purpose="pix_qrcode_image",
@@ -326,16 +344,20 @@ class PixPaymentService:
         from datetime import datetime
 
         try:
-            start = datetime.strptime(start_date, "%Y-%m-%d").date()
-            end = datetime.strptime(end_date, "%Y-%m-%d").date()
+            start = datetime.strptime(start_date, "%Y-%m-%d")
+            end = datetime.strptime(end_date, "%Y-%m-%d")
         except ValueError as exc:
             raise PixPaymentDomainError("Datas inválidas para reconciliação.") from exc
-        if (end - start).days > settings.PIX_RECONCILIATION_MAX_DAYS:
+        if (end.date() - start.date()).days > settings.PIX_RECONCILIATION_MAX_DAYS:
             raise PixPaymentDomainError(
                 "O período de reconciliação não pode exceder "
                 f"{settings.PIX_RECONCILIATION_MAX_DAYS} dias."
             )
-        completed = self.gateway.list_completed_pix(start_date, end_date)
+        # Contrato WSPIX (docs/PIX.md): listarConcluidos usa dtaini/dtafim no
+        # formato dd/MM/aaaa hh:mm:ss.
+        dtaini = start.strftime("%d/%m/%Y 00:00:00")
+        dtafim = end.strftime("%d/%m/%Y 23:59:59")
+        completed = self.gateway.list_completed_pix(dtaini, dtafim)
         count = 0
         for item in completed:
             ref = str(item.get("idfpix", ""))
