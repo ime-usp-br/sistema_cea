@@ -306,3 +306,29 @@ class NotificationScenarioTests(TestCase):
         attachment_names = [att[0] for att in email_cea.attachments]
         self.assertTrue(any("ficha-" in name for name in attachment_names))
         self.assertIn("dados_do_aluno.pdf", attachment_names)
+
+    # TS-MOD-GAP-002 — fluxo real: conversão não gera boleto; e-mail orienta o painel
+    @EAGER
+    def test_TS_MOD_GAP_002_mudanca_modalidade_sem_boleto_previo_nao_anexa_pdf(self) -> None:
+        """Sem boleto prévio, o e-mail de mudança de modalidade não anexa PDF."""
+        FeeRequirement.objects.create(
+            application=self.application,
+            fee_type=FeeRequirement.FeeType.APPLICATION_FEE,
+            base_amount=Decimal("80.00"),
+            adjustment_amount=Decimal("0.00"),
+            amount=Decimal("80.00"),
+            reason="Taxa de inscrição",
+        )
+
+        ModalityChangeService().convert_to_consultation(application=self.application)
+
+        emails = mail.outbox
+        self.assertGreater(len(emails), 0)
+        email = emails[-1]
+        self.assertEqual(
+            email.subject,
+            f"Sua inscrição {self.application.protocol} foi alterada para Consulta",
+        )
+        # O Django não gera boleto automaticamente: o candidato escolhe o método
+        self.assertEqual(len(email.attachments), 0)
+        self.assertIn("Acesse o sistema para visualizar", email.body)

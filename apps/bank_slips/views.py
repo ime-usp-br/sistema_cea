@@ -1,3 +1,4 @@
+import contextlib
 from typing import cast
 
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -117,4 +118,33 @@ class AdminRegenerateBankSlipView(RoleRequiredMixin, View):
         user = cast(User, request.user)
         _slip_service.regenerate_slip(slip, created_by=user)
         protocol = slip.payment_instrument.fee_requirement.application.protocol
+        return redirect("applications:detail", protocol=protocol)
+
+
+class AdminGenerateBankSlipView(RoleRequiredMixin, View):
+    """Secretaria força a emissão do boleto primário de uma inscrição.
+
+    Porta do botão "Gerar Boleto (Manual)" do sistema legado (Gap D): permite
+    gerar um boleto para uma inscrição que ainda não possui boleto ativo (ex.:
+    falha na 1ª geração ou emissão forçada), sem depender de um ``slip_id``
+    existente. Reutiliza o boleto ativo se já houver um.
+    """
+
+    allowed_roles = frozenset({User.Role.SECRETARIAT, User.Role.ADMINISTRATOR})
+
+    def post(self, request: HttpRequest, protocol: str):
+        application = get_object_or_404(ServiceApplication, protocol=protocol)
+        user = cast(User, request.user)
+        fee = (
+            application.fee_requirements.filter(
+                fee_type=FeeRequirement.FeeType.APPLICATION_FEE
+            )
+            .order_by("-created_at")
+            .first()
+        )
+        if fee is not None and not fee.is_paid:
+            with contextlib.suppress(Exception):  # noqa: BLE001
+                _slip_service.generate_bank_slip_for_fee(
+                    fee_requirement=fee, created_by=user
+                )
         return redirect("applications:detail", protocol=protocol)

@@ -53,4 +53,28 @@
         </p>
     {% endif %}
 {% endif %}
+
+{% if user.is_authenticated and user.role == "secretariat" or user.role == "administrator" or user.is_superuser %}
+    <div class="card">
+        <div class="card-header"><h2 class="card-title">Ações da secretaria</h2></div>
+        <div class="card-body">
+            <form method="post" action="{% url 'bank_slips:admin_generate' object.protocol %}"
+                  style="display:inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">
+                    Gerar Boleto (Manual)
+                </button>
+            </form>
+            {% for slip in slips %}
+                <form method="post" action="{% url 'bank_slips:admin_regenerate' slip.pk %}"
+                      style="display:inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-ghost">
+                        Regenerar boleto #{{ slip.pk }}
+                    </button>
+                </form>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
 {% endblock %}

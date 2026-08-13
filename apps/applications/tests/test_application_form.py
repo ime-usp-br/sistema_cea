@@ -230,3 +230,14 @@ class ApplicationFormFakerTest(TestCase):
         response = self._post(payload)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(ServiceApplication.objects.count(), 1)
+
+    # TS-APP-GAP-001 — paridade Laravel: instituição é um campo obrigatório
+    def test_TS_APP_GAP_001_institution_name_e_obrigatorio(self) -> None:
+        payload = build_valid_form_payload(
+            modality="consultation", term_pk=self.term.pk
+        )
+        payload["institution_name"] = ""
+        response = self._post(payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("institution_name", response.context["form"].errors)
+        self.assertEqual(ServiceApplication.objects.count(), 0)

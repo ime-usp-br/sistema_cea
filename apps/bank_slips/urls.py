@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    AdminGenerateBankSlipView,
     AdminRegenerateBankSlipView,
     BankSlipDetailView,
     BankSlipDownloadPdfView,
@@ -14,6 +15,11 @@ urlpatterns = [
         "pagamento/inscricao/<str:protocol>/boleto/gerar/",
         GenerateBankSlipView.as_view(),
         name="generate",
+    ),
+    path(
+        "aplicacao/<str:protocol>/boleto/gerar-admin/",
+        AdminGenerateBankSlipView.as_view(),
+        name="admin_generate",
     ),
     path(
         "pagamento/inscricao/<str:protocol>/boleto/",

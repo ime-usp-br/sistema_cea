@@ -274,6 +274,11 @@ class BankSlipPaymentService:
         # regeneração ainda deve prosseguir para não travar o candidato.
         with contextlib.suppress(Exception):
             self.gateway.cancelar_boleto(slip.bank_slip_reference)
+        # Todo o processo (substituição do boleto antigo + geração do novo)
+        # acontece dentro da MESMA transação. Se a emissão do novo boleto
+        # falhar (ex.: WS-Boleto offline), o rollback desfaz o cancelamento do
+        # antigo, garantindo que o candidato nunca fique sem instrumento ativo
+        # (Gap Transacional — paridade com o comportamento resiliente do legado).
         with transaction.atomic():
             if instrument.state == PaymentInstrument.State.ACTIVE:
                 instrument.state = PaymentInstrument.State.SUPERSEDED
@@ -286,9 +291,9 @@ class BankSlipPaymentService:
             slip.save(
                 update_fields=["bank_status", "cancellation_date", "updated_at"]
             )
-        new_slip = self.generate_bank_slip_for_fee(
-            fee_requirement=fee, created_by=created_by
-        )
+            new_slip = self.generate_bank_slip_for_fee(
+                fee_requirement=fee, created_by=created_by
+            )
         attachments = None
         pdf_attachment = self._build_pdf_attachment(new_slip)
         if pdf_attachment is not None:

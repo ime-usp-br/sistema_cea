@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 from django.core import mail
 from django.test import TestCase, override_settings
+from django.urls import reverse
 from django.utils import timezone
 
 from applications.models import ServiceApplication
@@ -401,6 +402,164 @@ class BankSlipScenarioTests(TestCase):
         mock_regenerate.assert_called_once()
         args, _ = mock_regenerate.call_args
         self.assertEqual(args[0].bank_slip_reference, "vencido-inscricao")
+
+    # TS-BSL-GAP-002 — falha SOAP na reemissão NÃO pode deixar o antigo cancelado
+    @EAGER
+    def test_TS_BSL_GAP_002_regeneracao_falha_soap_rollback_parcial(self) -> None:
+        """Falha ao gerar o novo boleto deve reverter o cancelamento do antigo."""
+        application = self.create_consultation()
+        fee = self.get_fee(application)
+        slip_antigo = self.generate_slip(application)
+
+        with patch(
+            "bank_slips.gateways.BankSlipGateway.gerar_boleto",
+            side_effect=BankSlipGatewayError("SOAP Offline temporariamente"),
+        ), self.assertRaises(BankSlipGatewayError):
+            self.service.regenerate_slip(
+                slip=slip_antigo, created_by=self.candidate
+            )
+
+        slip_antigo.refresh_from_db()
+        instrumento_antigo = slip_antigo.payment_instrument
+        instrumento_antigo.refresh_from_db()
+        # O antigo deve permanecer ATIVO (rollback da substituição)
+        self.assertEqual(
+            instrumento_antigo.state,
+            PaymentInstrument.State.ACTIVE,
+            "O instrumento antigo foi cancelado sem gerar um substituto (rollback ausente).",
+        )
+        self.assertEqual(
+            slip_antigo.bank_status, BankSlipPaymentInstrument.BankStatus.EMITTED
+        )
+        # Apenas 1 instrumento ativo na taxa (sem fantasma cancelado)
+        self.assertEqual(
+            fee.payment_instruments.filter(
+                state=PaymentInstrument.State.ACTIVE
+            ).count(),
+            1,
+        )
+
+    # TS-BSL-GAP-004 — falha no MEIO da cron não desfaz boletos já processados
+    @EAGER
+    def test_TS_BSL_GAP_004_falha_no_meio_da_cron_nao_desfaz_processados(self) -> None:
+        """Exceção no 2º boleto não faz rollback do 1º (emails/jobs já disparados)."""
+        from bank_slips.tasks import regenerate_overdue_bank_slips_task
+
+        app1 = self.create_consultation()
+        app2 = self.create_consultation()
+        self._overdue_slip(app1, "vencido-1")
+        self._overdue_slip(app2, "vencido-2")
+
+        with patch(
+            "bank_slips.gateways.BankSlipGateway.cancelar_boleto", return_value=True
+        ), patch(
+            "bank_slips.gateways.BankSlipGateway.gerar_boleto",
+            side_effect=[SLIP_RESULT, BankSlipGatewayError("SOAP offline")],
+        ), self.assertRaises(BankSlipGatewayError):
+            regenerate_overdue_bank_slips_task()
+
+        slips1 = BankSlipPaymentInstrument.objects.filter(
+            payment_instrument__fee_requirement__application=app1
+        )
+        slips2 = BankSlipPaymentInstrument.objects.filter(
+            payment_instrument__fee_requirement__application=app2
+        )
+        all_slips = BankSlipPaymentInstrument.objects.filter(
+            payment_instrument__fee_requirement__application__in=[app1, app2]
+        )
+        # 2 originais + 1 regenerado = 3 (o erro no meio NÃO reverteu o processado)
+        self.assertEqual(all_slips.count(), 3)
+        # exatamente um app foi regenerado (tem 2 boletos); o outro ficou com 1
+        regenerated = sum(1 for c in (slips1.count(), slips2.count()) if c == 2)
+        self.assertEqual(regenerated, 1)
+        # cada app mantém exatamente 1 instrumento ATIVO (sem fantasma cancelado)
+        for app in (app1, app2):
+            self.assertEqual(
+                BankSlipPaymentInstrument.objects.filter(
+                    payment_instrument__fee_requirement__application=app,
+                    payment_instrument__state=PaymentInstrument.State.ACTIVE,
+                ).count(),
+                1,
+            )
+
+    def _overdue_slip(
+        self, application: ServiceApplication, reference: str
+    ) -> BankSlipPaymentInstrument:
+        fee = self.get_fee(application)
+        instrument = PaymentInstrument.objects.create(
+            fee_requirement=fee,
+            method=PaymentInstrument.Method.BANK_SLIP,
+            state=PaymentInstrument.State.ACTIVE,
+            amount=Decimal("140.00"),
+        )
+        return BankSlipPaymentInstrument.objects.create(
+            payment_instrument=instrument,
+            bank_slip_reference=reference,
+            due_date=timezone.localdate() - timedelta(days=2),
+            bank_status=BankSlipPaymentInstrument.BankStatus.EMITTED,
+            document_amount=Decimal("140.00"),
+        )
+
+    # TS-BSL-GAP-003 — secretaria gera boleto primário sem slip existente (Gap D)
+    def test_TS_BSL_GAP_003_admin_gera_boleto_primario(self) -> None:
+        secretariat = User.objects.create_user(
+            username="secretaria_bsl",
+            email="sec_bsl@example.com",
+            password="pass",
+            role=User.Role.SECRETARIAT,
+        )
+        application = self.create_consultation()
+        self.assertFalse(
+            BankSlipPaymentInstrument.objects.filter(
+                payment_instrument__fee_requirement__application=application
+            ).exists()
+        )
+        self.client.force_login(secretariat)
+        with patch(
+            "bank_slips.gateways.BankSlipGateway.gerar_boleto",
+            return_value=SLIP_RESULT,
+        ):
+            response = self.client.post(
+                reverse("bank_slips:admin_generate", args=[application.protocol])
+            )
+        self.assertEqual(response.status_code, 302)
+        slip = BankSlipPaymentInstrument.objects.get(
+            payment_instrument__fee_requirement__application=application
+        )
+        slip.payment_instrument.refresh_from_db()
+        self.assertEqual(
+            slip.payment_instrument.state, PaymentInstrument.State.ACTIVE
+        )
+
+    # TS-BSL-GAP-003b — candidato NÃO pode forçar geração administrativa
+    def test_TS_BSL_GAP_003b_candidato_nao_acessa_geracao_admin(self) -> None:
+        application = self.create_consultation()
+        self.client.force_login(self.candidate)
+        response = self.client.post(
+            reverse("bank_slips:admin_generate", args=[application.protocol])
+        )
+        self.assertEqual(response.status_code, 403)
+
+    # TS-BSL-GAP-005 — duplo clique "Gerar Boleto" é idempotente (1 ativo por taxa)
+    def test_TS_BSL_GAP_005_duplo_click_nao_duplica_boleto(self) -> None:
+        application = self.create_consultation()
+        with patch(
+            "bank_slips.gateways.BankSlipGateway.gerar_boleto",
+            return_value=SLIP_RESULT,
+        ):
+            first = self.service.generate_bank_slip_for_fee(
+                fee_requirement=self.get_fee(application), created_by=self.candidate
+            )
+            second = self.service.generate_bank_slip_for_fee(
+                fee_requirement=self.get_fee(application), created_by=self.candidate
+            )
+        self.assertEqual(first.pk, second.pk)
+        self.assertEqual(
+            self.get_fee(application)
+            .payment_instruments.filter(state=PaymentInstrument.State.ACTIVE)
+            .count(),
+            1,
+        )
 
 
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp(prefix="cea-bsl-media-"))

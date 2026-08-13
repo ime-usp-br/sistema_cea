@@ -163,7 +163,11 @@ class ApplicationForm(forms.Form):
     contact_phone = forms.CharField(max_length=50, required=False, label="Telefones para contato")
     has_whatsapp = forms.BooleanField(required=False, label="WhatsApp")
     tax_id = forms.CharField(max_length=20, required=False, label="CPF/CNPJ")
-    institution_name = forms.CharField(max_length=255, required=False, label="Instituição/Unidade")
+    # Paridade com o legado (StoreApplicationRequest::institution => required):
+    # a origem institucional é essencial para métricas e relatórios do CEA.
+    institution_name = forms.CharField(
+        max_length=255, required=True, label="Instituição/Unidade"
+    )
     course_name = forms.CharField(max_length=255, required=False, label="Curso")
     mentor_name = forms.CharField(max_length=255, required=False, label="Colaborador(es) ou orientador")
     catalog_options = forms.ModelMultipleChoiceField(

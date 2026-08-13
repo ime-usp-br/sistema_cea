@@ -99,6 +99,21 @@ class ApplicationDetailView(LoginRequiredMixin, DetailView):
             return ServiceApplication.objects.all()
         return ServiceApplication.objects.filter(owner=user)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        application = self.object
+        # Boletos da inscrição para as ações administrativas (Gap D).
+        from bank_slips.models import BankSlipPaymentInstrument
+
+        context["slips"] = list(
+            BankSlipPaymentInstrument.objects.select_related("payment_instrument")
+            .filter(
+                payment_instrument__fee_requirement__application=application
+            )
+            .order_by("-created_at")
+        )
+        return context
+
 
 class TransferSemesterView(RoleRequiredMixin, View):
     """Secretaria transfere uma inscrição para o próximo semestre (TS-TRM-006)."""
