@@ -1,9 +1,12 @@
 import base64
 import tempfile
+from datetime import timedelta
+from decimal import Decimal
 from unittest.mock import patch
 
 from django.core import mail
 from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from applications.models import ServiceApplication
 from applications.services import ApplicationSubmissionService
@@ -341,6 +344,63 @@ class BankSlipScenarioTests(TestCase):
             ).count(),
             0,
         )
+
+    # TS-BSL-GAP-001 — escopo da cron: regenerar apenas Taxa de Inscrição
+    def test_TS_BSL_GAP_001_regeneracao_automatica_apenas_para_taxa_de_inscricao(self) -> None:
+        """Paridade com o Laravel: a cron NÃO regenere Taxa de Projeto/Complemento."""
+        from bank_slips.tasks import regenerate_overdue_bank_slips_task
+
+        application = self.create_consultation()
+
+        # 1. Taxa de Inscrição vencida
+        app_fee = self.get_fee(application)
+        inst_app = PaymentInstrument.objects.create(
+            fee_requirement=app_fee,
+            method=PaymentInstrument.Method.BANK_SLIP,
+            state=PaymentInstrument.State.ACTIVE,
+            amount=Decimal("140.00"),
+        )
+        BankSlipPaymentInstrument.objects.create(
+            payment_instrument=inst_app,
+            bank_slip_reference="vencido-inscricao",
+            due_date=timezone.localdate() - timedelta(days=2),
+            bank_status=BankSlipPaymentInstrument.BankStatus.EMITTED,
+            document_amount=Decimal("140.00"),
+        )
+
+        # 2. Taxa de Projeto vencida (R$ 250,00) — NÃO deve ser regenerada
+        proj_fee = FeeRequirement.objects.create(
+            application=application,
+            fee_type=FeeRequirement.FeeType.PROJECT_FEE,
+            base_amount=Decimal("250.00"),
+            adjustment_amount=Decimal("0.00"),
+            amount=Decimal("250.00"),
+            reason="Projeto",
+        )
+        inst_proj = PaymentInstrument.objects.create(
+            fee_requirement=proj_fee,
+            method=PaymentInstrument.Method.BANK_SLIP,
+            state=PaymentInstrument.State.ACTIVE,
+            amount=Decimal("250.00"),
+        )
+        BankSlipPaymentInstrument.objects.create(
+            payment_instrument=inst_proj,
+            bank_slip_reference="vencido-projeto",
+            due_date=timezone.localdate() - timedelta(days=2),
+            bank_status=BankSlipPaymentInstrument.BankStatus.EMITTED,
+            document_amount=Decimal("250.00"),
+        )
+
+        with patch(
+            "bank_slips.services.BankSlipPaymentService.regenerate_slip"
+        ) as mock_regenerate:
+            regenerated_count = regenerate_overdue_bank_slips_task()
+
+        # Deve regenerar 1 (apenas a de inscrição)
+        self.assertEqual(regenerated_count, 1)
+        mock_regenerate.assert_called_once()
+        args, _ = mock_regenerate.call_args
+        self.assertEqual(args[0].bank_slip_reference, "vencido-inscricao")
 
 
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp(prefix="cea-bsl-media-"))

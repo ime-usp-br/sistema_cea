@@ -172,6 +172,10 @@ class ProjectScreeningService:
         application = screening.application
         if screening.state == ProjectScreening.State.CANCELED:
             raise MeetingDomainError("Esta triagem já foi cancelada.")
+        if screening.state == ProjectScreening.State.COMPLETED:
+            raise MeetingDomainError(
+                "Triagens concluídas não podem ser canceladas."
+            )
         with transaction.atomic():
             screening.state = ProjectScreening.State.CANCELED
             screening.save(update_fields=["state", "updated_at"])
@@ -440,6 +444,10 @@ class ConsultationMeetingService:
         application = meeting.application
         if meeting.state == ConsultationMeeting.State.CANCELED:
             raise MeetingDomainError("Esta reunião já foi cancelada.")
+        if meeting.state == ConsultationMeeting.State.COMPLETED:
+            raise MeetingDomainError(
+                "Reuniões concluídas não podem ser canceladas."
+            )
         with transaction.atomic():
             meeting.state = ConsultationMeeting.State.CANCELED
             meeting.save(update_fields=["state", "updated_at"])

@@ -184,3 +184,49 @@ class ApplicationFormFakerTest(TestCase):
         response = self._post(payload)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(ServiceApplication.objects.count(), 1)
+
+    # TS-APP-009b — soma de MÚLTIPLOS anexos acima do limite de 8 MB
+    def test_TS_APP_009b_soma_de_multiplos_anexos_excede_limite(self) -> None:
+        """Garante que a soma total de arquivos (e não só um arquivo) não passe de 8MB."""
+        payload = build_valid_form_payload(
+            modality="consultation", term_pk=self.term.pk
+        )
+        file1 = SimpleUploadedFile(
+            "arq1.pdf",
+            b"x" * (int(4.5 * 1024 * 1024)),
+            content_type="application/pdf",
+        )
+        file2 = SimpleUploadedFile(
+            "arq2.pdf",
+            b"x" * (int(4.5 * 1024 * 1024)),
+            content_type="application/pdf",
+        )
+        payload["attachments"] = [file1, file2]
+        response = self._post(payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("attachments", response.context["form"].errors)
+        self.assertIn(
+            "excede o limite de 8 MB",
+            str(response.context["form"].errors["attachments"]),
+        )
+        self.assertEqual(ServiceApplication.objects.count(), 0)
+
+    # TS-APP-009c — soma de MÚLTIPLOS anexos dentro do limite é aceita
+    def test_TS_APP_009c_soma_de_multiplos_anexos_dentro_do_limite(self) -> None:
+        payload = build_valid_form_payload(
+            modality="consultation", term_pk=self.term.pk
+        )
+        file1 = SimpleUploadedFile(
+            "arq1.pdf",
+            b"x" * (3 * 1024 * 1024),
+            content_type="application/pdf",
+        )
+        file2 = SimpleUploadedFile(
+            "arq2.pdf",
+            b"x" * (3 * 1024 * 1024),
+            content_type="application/pdf",
+        )
+        payload["attachments"] = [file1, file2]
+        response = self._post(payload)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(ServiceApplication.objects.count(), 1)

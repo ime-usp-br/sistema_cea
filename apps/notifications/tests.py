@@ -3,11 +3,12 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from django.core import mail
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 
 from applications.models import ApplicationEvent, ServiceApplication
 from bank_slips.services import BankSlipPaymentService
-from files.services import create_file_asset_from_bytes
+from files.services import create_file_asset, create_file_asset_from_bytes
 from notifications.models import NotificationDispatch, NotificationTemplate
 from notifications.services import NotificationService
 from notifications.tasks import send_notification_task
@@ -273,3 +274,35 @@ class NotificationScenarioTests(TestCase):
         name, _content, mimetype = email.attachments[0]
         self.assertEqual(name, "boleto-BOL-NOT-GAP.pdf")
         self.assertEqual(mimetype, "application/pdf")
+
+    # TS-NOT-GAP-002 — Paridade Laravel: e-mail do CEA anexa ficha PDF + uploads.
+    @EAGER
+    @override_settings(MEDIA_ROOT=tempfile.mkdtemp(prefix="cea-notif-media-"))
+    def test_TS_NOT_GAP_002_email_nova_inscricao_deve_conter_pdf_ficha_e_anexos(self) -> None:
+        upload = SimpleUploadedFile(
+            "dados_do_aluno.pdf",
+            b"%PDF-1.4 test",
+            content_type="application/pdf",
+        )
+        create_file_asset(
+            application=self.application,
+            uploaded_by=self.candidate,
+            uploaded_file=upload,
+            purpose="application_attachment",
+        )
+
+        self.service.notify_application_submitted(self.application)
+
+        emails = [mail for mail in mail.outbox if mail.to == [self.service.center_email]]
+        self.assertEqual(len(emails), 1)
+
+        email_cea = emails[0]
+        # Deve ter 2 anexos: a ficha em PDF (gerada) + o arquivo (dados_do_aluno.pdf)
+        self.assertEqual(
+            len(email_cea.attachments),
+            2,
+            "O e-mail para o CEA não anexou a ficha e/ou os documentos do candidato.",
+        )
+        attachment_names = [att[0] for att in email_cea.attachments]
+        self.assertTrue(any("ficha-" in name for name in attachment_names))
+        self.assertIn("dados_do_aluno.pdf", attachment_names)

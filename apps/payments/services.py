@@ -289,6 +289,17 @@ class ManualPaymentService:
         fee = instrument.fee_requirement
         application = fee.application
         now = timezone.now()
+        # Paridade com o Laravel (ApplicationController@confirmManualPayment):
+        # a secretaria só pode confirmar o depósito de um boleto já vencido
+        # (hoje ou no passado). Confirmar antes do vencimento pode gerar
+        # conflito de DDA se o aluno pagar no banco no mesmo dia (Gap C).
+        from bank_slips.models import BankSlipPaymentInstrument
+
+        slip = BankSlipPaymentInstrument.objects.filter(
+            payment_instrument=instrument
+        ).first()
+        if slip is not None and slip.due_date is not None and slip.due_date > timezone.localdate():
+            raise PaymentDomainError("Este boleto ainda não está vencido")
         with transaction.atomic():
             # Paridade com o legado: ao confirmar pagamento manual, boleto/Pix
             # ativo na mesma taxa deve ser baixado no gateway para evitar

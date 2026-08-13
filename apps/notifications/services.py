@@ -45,7 +45,55 @@ class NotificationService:
             self.center_email,
             context,
             application.pk,
+            attachments=self._application_submitted_center_attachments(application),
         )
+
+    def _application_submitted_center_attachments(
+        self, application: ServiceApplication
+    ) -> list[dict[str, Any]]:
+        """Monta os anexos do e-mail do CEA: ficha em PDF + arquivos do candidato.
+
+        Paridade com os Mailables ``NotifyCEAAboutApplication`` e
+        ``NotifyInscribedAboutApplication`` do legado (Gap A): gera a ficha de
+        inscrição via ``DocumentRenderingService`` e anexa todos os ``FileAsset``
+        de ``application_attachment`` enviados pelo candidato.
+        """
+        from django.core.files.storage import default_storage
+
+        from documents.services import DocumentRenderingService
+        from files.models import FileAsset
+
+        attachments: list[dict[str, Any]] = []
+        try:
+            pdf = DocumentRenderingService().render_application_full_pdf(application)
+            attachments.append(
+                {
+                    "filename": f"ficha-{application.protocol}.pdf",
+                    "content": pdf,
+                    "mimetype": "application/pdf",
+                }
+            )
+        except Exception:  # noqa: BLE001 - falha de renderização não impede o envio
+            pass
+        for asset in (
+            application.file_assets.filter(
+                purpose=FileAsset.Purpose.APPLICATION_ATTACHMENT
+            )
+            .order_by("created_at")
+            .iterator()
+        ):
+            try:
+                content = default_storage.open(asset.storage_key, "rb").read()
+            except FileNotFoundError:
+                continue
+            attachments.append(
+                {
+                    "filename": asset.original_filename,
+                    "content": content,
+                    "mimetype": asset.content_type or "application/octet-stream",
+                }
+            )
+        return attachments
 
     def notify_correction_requested(
         self, application: ServiceApplication, note: str | None = None

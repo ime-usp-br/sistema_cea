@@ -765,3 +765,79 @@ class PaymentScenarioTests(TestCase):
         self.assertEqual(
             manual.state, PaymentInstrument.State.MANUAL_CONFIRMED
         )
+
+    # TS-MAN-GAP-002 — trava temporal: pagamento manual só após/no dia do vencimento
+    def test_TS_MAN_GAP_002_nao_permite_confirmar_manual_antes_do_vencimento(self) -> None:
+        """Paridade com o Laravel: bloquear depósito de boleto ainda vigente (DDA)."""
+        application = self.create_consultation()
+        fee = application.fee_requirements.first()
+        assert fee is not None
+        instrument = self.payment_service.create_payment_instrument(
+            fee_requirement=fee, method="manual", created_by=self.secretariat
+        )
+        BankSlipPaymentInstrument.objects.create(
+            payment_instrument=instrument,
+            bank_slip_reference="boleto-futuro-123",
+            due_date=timezone.localdate() + timedelta(days=5),
+            bank_status=BankSlipPaymentInstrument.BankStatus.EMITTED,
+            document_amount=Decimal("140.00"),
+        )
+        with self.assertRaisesMessage(
+            PaymentDomainError, "Este boleto ainda não está vencido"
+        ):
+            self.manual_service.confirm_manual_payment(
+                instrument=instrument,
+                confirmed_by=self.secretariat,
+                note="Depósito prematuro",
+            )
+        instrument.refresh_from_db()
+        self.assertEqual(instrument.state, PaymentInstrument.State.ACTIVE)
+        self.assertEqual(ManualPaymentConfirmation.objects.count(), 0)
+
+    # TS-MAN-GAP-002b — permite confirmar no dia do vencimento (due_date == hoje)
+    def test_TS_MAN_GAP_002b_permite_confirmar_manual_no_vencimento(self) -> None:
+        application = self.create_consultation()
+        fee = application.fee_requirements.first()
+        assert fee is not None
+        instrument = self.payment_service.create_payment_instrument(
+            fee_requirement=fee, method="manual", created_by=self.secretariat
+        )
+        BankSlipPaymentInstrument.objects.create(
+            payment_instrument=instrument,
+            bank_slip_reference="boleto-vencendo-hoje",
+            due_date=timezone.localdate(),
+            bank_status=BankSlipPaymentInstrument.BankStatus.EMITTED,
+            document_amount=Decimal("140.00"),
+        )
+        confirmation = self.manual_service.confirm_manual_payment(
+            instrument=instrument, confirmed_by=self.secretariat
+        )
+        self.assertIsNotNone(confirmation)
+        instrument.refresh_from_db()
+        self.assertEqual(
+            instrument.state, PaymentInstrument.State.MANUAL_CONFIRMED
+        )
+
+    # TS-MAN-GAP-002c — permite confirmar quando o boleto já venceu
+    def test_TS_MAN_GAP_002c_permite_confirmar_manual_apos_vencimento(self) -> None:
+        application = self.create_consultation()
+        fee = application.fee_requirements.first()
+        assert fee is not None
+        instrument = self.payment_service.create_payment_instrument(
+            fee_requirement=fee, method="manual", created_by=self.secretariat
+        )
+        BankSlipPaymentInstrument.objects.create(
+            payment_instrument=instrument,
+            bank_slip_reference="boleto-vencido-789",
+            due_date=timezone.localdate() - timedelta(days=2),
+            bank_status=BankSlipPaymentInstrument.BankStatus.EMITTED,
+            document_amount=Decimal("140.00"),
+        )
+        confirmation = self.manual_service.confirm_manual_payment(
+            instrument=instrument, confirmed_by=self.secretariat
+        )
+        self.assertIsNotNone(confirmation)
+        instrument.refresh_from_db()
+        self.assertEqual(
+            instrument.state, PaymentInstrument.State.MANUAL_CONFIRMED
+        )

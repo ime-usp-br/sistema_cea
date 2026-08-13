@@ -293,8 +293,62 @@ class MeetingScenarioTests(TestCase):
             application.events.filter(event_code="meeting.screening_canceled").exists()
         )
 
-    # TS-MEET-009
-    def test_TS_MEET_009_decisao_aprovado_como_projeto(self) -> None:
+    # TS-MEET-GAP-002 — triagem CONCLUÍDA não pode ser cancelada (taxa órfã)
+    def test_TS_MEET_GAP_002_nao_cancela_triagem_concluida(self) -> None:
+        """Paridade Laravel: decisão final (COMPLETED) protege contra cancelamento."""
+        application = self.project_awaiting_scheduling()
+        screening = self.schedule_project(application)
+        screening = self.screening_service.record_decision(
+            screening=screening,
+            decided_by=self.teacher,
+            decision="approved_as_project",
+        )
+        self.assertEqual(screening.state, ProjectScreening.State.COMPLETED)
+
+        with self.assertRaisesMessage(
+            MeetingDomainError, "Triagens concluídas não podem ser canceladas."
+        ):
+            self.screening_service.cancel_screening(
+                screening=screening, canceled_by=self.secretariat
+            )
+
+        application.refresh_from_db()
+        self.assertEqual(
+            application.lifecycle_status,
+            ServiceApplication.LifecycleStatus.APPROVED_AS_PROJECT,
+        )
+        # A taxa de projeto (R$ 250) deve permanecer ativa na inscrição
+        self.assertTrue(
+            application.fee_requirements.filter(
+                fee_type=FeeRequirement.FeeType.PROJECT_FEE
+            ).exists()
+        )
+
+    # TS-MEET-GAP-003 — reunião CONCLUÍDA não pode ser cancelada
+    def test_TS_MEET_GAP_003_nao_cancela_reuniao_concluida(self) -> None:
+        application = self.consultation_awaiting_scheduling()
+        meeting = self.schedule_consultation(application)
+        meeting = self.consultation_service.record_decision(
+            meeting=meeting,
+            decided_by=self.teacher,
+            decision="approved_as_consultation",
+        )
+        self.assertEqual(meeting.state, ConsultationMeeting.State.COMPLETED)
+
+        with self.assertRaisesMessage(
+            MeetingDomainError, "Reuniões concluídas não podem ser canceladas."
+        ):
+            self.consultation_service.cancel_consultation(
+                meeting=meeting, canceled_by=self.secretariat
+            )
+
+        application.refresh_from_db()
+        self.assertEqual(
+            application.lifecycle_status,
+            ServiceApplication.LifecycleStatus.APPROVED_AS_CONSULTATION,
+        )
+
+
         application = self.project_awaiting_scheduling()
         screening = self.schedule_project(application)
         screening = self.screening_service.record_decision(
