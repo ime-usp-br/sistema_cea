@@ -465,6 +465,10 @@ class ConsultationMeetingService:
         decision_note: str | None = None,
     ) -> ConsultationMeeting:
         application = meeting.application
+        if meeting.state == ConsultationMeeting.State.CANCELED:
+            raise MeetingDomainError(
+                "Reuniões canceladas não podem receber decisão."
+            )
         if (
             application.lifecycle_status
             != ServiceApplication.LifecycleStatus.AWAITING_CONSULTATION_RESULT
@@ -497,6 +501,10 @@ class ConsultationMeetingService:
         recorded_by: Any,
         teacher_feedback: str,
     ) -> ConsultationMeeting:
+        if meeting.state == ConsultationMeeting.State.CANCELED:
+            raise MeetingDomainError(
+                "Reuniões canceladas não podem receber feedback."
+            )
         now = timezone.now()
         scheduled_dt = _combine_aware(meeting.scheduled_date, meeting.scheduled_time)
         if now <= scheduled_dt:

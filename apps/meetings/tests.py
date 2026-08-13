@@ -481,6 +481,52 @@ class MeetingScenarioTests(TestCase):
         self.assertIsNone(screening.teacher_feedback)
         self.assertEqual(screening.state, ProjectScreening.State.CANCELED)
 
+    # TS-MEET-GAP-001 (consulta) — mesmo bloqueio para reuniões de Consulta.
+    def test_TS_MEET_GAP_001c_decisao_bloqueada_em_reuniao_cancelada(self) -> None:
+        application = self.consultation_awaiting_scheduling()
+        meeting = self.schedule_consultation(application)
+        self.consultation_service.cancel_consultation(
+            meeting=meeting, canceled_by=self.secretariat
+        )
+        meeting.refresh_from_db()
+        self.assertEqual(meeting.state, ConsultationMeeting.State.CANCELED)
+
+        with self.assertRaises(MeetingDomainError):
+            self.consultation_service.record_decision(
+                meeting=meeting,
+                decided_by=self.teacher,
+                decision="approved_as_consultation",
+            )
+        meeting.refresh_from_db()
+        self.assertIsNone(meeting.decision)
+        self.assertEqual(meeting.state, ConsultationMeeting.State.CANCELED)
+
+    def test_TS_MEET_GAP_001d_feedback_bloqueado_em_reuniao_cancelada(self) -> None:
+        application = self.consultation_awaiting_scheduling()
+        meeting = self.consultation_service.schedule_consultation(
+            application=application,
+            scheduled_by=self.secretariat,
+            scheduled_date=PAST_DATE,
+            scheduled_time=PAST_TIME,
+            meeting_mode="online",
+            virtual_link="https://meet.example.com/sala",
+        )
+        self.consultation_service.cancel_consultation(
+            meeting=meeting, canceled_by=self.secretariat
+        )
+        meeting.refresh_from_db()
+        self.assertEqual(meeting.state, ConsultationMeeting.State.CANCELED)
+
+        with self.assertRaises(MeetingDomainError):
+            self.consultation_service.record_feedback(
+                meeting=meeting,
+                recorded_by=self.teacher,
+                teacher_feedback="consultation_completed",
+            )
+        meeting.refresh_from_db()
+        self.assertIsNone(meeting.teacher_feedback)
+        self.assertEqual(meeting.state, ConsultationMeeting.State.CANCELED)
+
     # TS-MEET-014 — Consulta aprovada como Projeto gera Taxa de Projeto (Gap 2)
     def test_TS_MEET_014_consulta_aprovada_como_projeto_gera_taxa_de_projeto(self) -> None:
         """
