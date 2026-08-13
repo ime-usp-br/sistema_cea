@@ -125,6 +125,29 @@ class BankSlipScenarioTests(TestCase):
         self.assertEqual(captured["cpfCnpj"], "98765432109")
         self.assertEqual(captured["tipoSacado"], "PF")
 
+    # Gap 4 — o payload deve enviar ativamente o informacoesBoletoSacado
+    def test_TS_BSL_002b_informacoes_boleto_sacado_no_payload(self) -> None:
+        application = self.create_consultation()
+        captured: dict = {}
+
+        def fake_gerar(payload):
+            captured.update(payload)
+            return SLIP_RESULT
+
+        with patch(
+            "bank_slips.gateways.BankSlipGateway.gerar_boleto",
+            side_effect=fake_gerar,
+        ):
+            self.service.generate_bank_slip_for_fee(
+                fee_requirement=self.get_fee(application),
+                created_by=self.candidate,
+            )
+        self.assertIn("informacoesBoletoSacado", captured)
+        self.assertEqual(
+            captured["informacoesBoletoSacado"],
+            "Dúvidas: cea@ime.usp.br",
+        )
+
     # ------------------------------------------------------------------
     # TS-BSL-003 — Consulta de situação
     # ------------------------------------------------------------------

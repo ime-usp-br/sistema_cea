@@ -5,6 +5,7 @@ from decimal import Decimal
 from typing import Any
 
 from django.conf import settings
+from django.core.files.storage import default_storage
 from django.db import transaction
 from django.utils import timezone
 
@@ -81,6 +82,7 @@ class BankSlipPaymentService:
             "cpfCnpj": cpf_cnpj,
             "nomeSacado": nome,
             "instrucoesObjetoCobranca": "Pagamento referente à taxa de inscrição.",
+            "informacoesBoletoSacado": settings.BANK_SLIP_SACADO_INFO,
         }
         try:
             result = self.gateway.gerar_boleto(payload)
@@ -120,6 +122,17 @@ class BankSlipPaymentService:
                 },
             )
         return slip
+
+    def _build_pdf_attachment(self, slip: BankSlipPaymentInstrument) -> dict[str, Any] | None:
+        """Monta o anexo do PDF do boleto (bytes) para o e-mail (paridade com ``attachData()``)."""
+        if slip.pdf_asset is None:
+            return None
+        content = default_storage.open(slip.pdf_asset.storage_key, "rb").read()
+        return {
+            "filename": slip.pdf_asset.original_filename,
+            "content": content,
+            "mimetype": "application/pdf",
+        }
 
     def _store_pdf(
         self,
@@ -276,8 +289,12 @@ class BankSlipPaymentService:
         new_slip = self.generate_bank_slip_for_fee(
             fee_requirement=fee, created_by=created_by
         )
+        attachments = None
+        pdf_attachment = self._build_pdf_attachment(new_slip)
+        if pdf_attachment is not None:
+            attachments = [pdf_attachment]
         NotificationService().notify_bank_slip_regenerated(
-            application, notify_template_code
+            application, notify_template_code, attachments=attachments
         )
         record_application_event(
             application=application,

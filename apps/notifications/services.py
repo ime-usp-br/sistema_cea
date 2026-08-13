@@ -21,12 +21,14 @@ class NotificationService:
         recipient_email: str,
         context_data: dict[str, Any],
         application_id: int | None = None,
+        attachments: list[dict[str, Any]] | None = None,
     ) -> None:
         send_notification_task.delay(
             template_code=template_code,
             recipient_email=recipient_email,
             context_data=context_data,
             application_id=application_id,
+            attachments=attachments,
         )
 
     def notify_application_submitted(self, application: ServiceApplication) -> None:
@@ -152,13 +154,19 @@ class NotificationService:
         )
 
     def notify_bank_slip_regenerated(
-        self, application: ServiceApplication, template_code: str
+        self,
+        application: ServiceApplication,
+        template_code: str,
+        attachments: list[dict[str, Any]] | None = None,
     ) -> None:
         """Notifica o candidato sobre um boleto reemitido.
 
         ``template_code`` diferencia a regeneração automática (cron/Worker,
         ``payment_failure_regenerated``) da regeneração manual pela secretaria
         (``payment_slip_regenerated``), em paridade com o legado.
+
+        ``attachments`` carrega o PDF do boleto (paridade com o Mailable
+        ``NotifyUserNewBoleto`` que usava ``attachData()``).
         """
         context = self._base_context(application)
         self._enqueue(
@@ -166,6 +174,7 @@ class NotificationService:
             application.contact_email,
             context,
             application.pk,
+            attachments=attachments,
         )
 
     def notify_overdue_reminder(self, application: ServiceApplication) -> None:

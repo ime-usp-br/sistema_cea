@@ -113,6 +113,7 @@ class ConsultationMeeting(models.Model):
         IN_PERSON = _MeetingMode.IN_PERSON, "Presencial"
 
     class Decision(models.TextChoices):
+        APPROVED_AS_PROJECT = "approved_as_project", "Aprovado como projeto"
         APPROVED_AS_CONSULTATION = "approved_as_consultation", "Aprovado como consulta"
         NOT_APPROVED = "not_approved", "Não aprovado"
 
@@ -162,7 +163,11 @@ class ConsultationMeeting(models.Model):
             ),
             models.CheckConstraint(
                 condition=models.Q(
-                    decision__in=["approved_as_consultation", "not_approved"]
+                    decision__in=[
+                        "approved_as_project",
+                        "approved_as_consultation",
+                        "not_approved",
+                    ]
                 ),
                 name="chk_consultation_meetings_decision",
             ),

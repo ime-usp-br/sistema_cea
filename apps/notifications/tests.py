@@ -167,7 +167,7 @@ class NotificationScenarioTests(TestCase):
 
     # TS-NOT-010
     @EAGER
-    @patch("notifications.tasks.send_mail", side_effect=RuntimeError("SMTP down"))
+    @patch("django.core.mail.EmailMessage.send", side_effect=RuntimeError("SMTP down"))
     def test_TS_NOT_010_falha_de_envio_marca_failed(self, _mock_send) -> None:
         _, instrument = self._fee_and_instrument()
         self.service.notify_payment_confirmed(self.application, instrument)
@@ -185,3 +185,38 @@ class NotificationScenarioTests(TestCase):
         )
         self.assertIsNone(result)
         self.assertEqual(NotificationDispatch.objects.count(), 0)
+
+    # TS-NOT-012 — anexos suportados via EmailMessage (paridade com attachData do legado)
+    @EAGER
+    def test_TS_NOT_012_anexo_de_boleto_pdf_chega_ao_email(self) -> None:
+        NotificationTemplate.objects.update_or_create(
+            code="payment_slip_regenerated",
+            defaults={
+                "name": "Boleto regenerado",
+                "audience": NotificationTemplate.Audience.CANDIDATE,
+                "subject": "Seu boleto foi reemitido",
+                "body": "Olá {{ candidate_name }}.",
+                "is_active": True,
+            },
+        )
+        dispatch = send_notification_task(
+            "payment_slip_regenerated",
+            "candidate@example.com",
+            {"candidate_name": "Maria"},
+            self.application.pk,
+            attachments=[
+                {
+                    "filename": "boleto-123.pdf",
+                    "content": b"%PDF-1.4 dummy",
+                    "mimetype": "application/pdf",
+                }
+            ],
+        )
+        self.assertIsNotNone(dispatch)
+        self.assertEqual(dispatch.status, NotificationDispatch.Status.SENT)
+        email = mail.outbox[-1]
+        self.assertEqual(len(email.attachments), 1)
+        name, content, mimetype = email.attachments[0]
+        self.assertEqual(name, "boleto-123.pdf")
+        self.assertEqual(content, b"%PDF-1.4 dummy")
+        self.assertEqual(mimetype, "application/pdf")

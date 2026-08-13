@@ -41,6 +41,18 @@ def application_full_pdf(request: HttpRequest, protocol: str) -> HttpResponse:
 
 
 @login_required
+def application_firstpage_pdf(request: HttpRequest, protocol: str) -> HttpResponse:
+    application = get_object_or_404(
+        ServiceApplication.all_objects, protocol=protocol
+    )
+    user = request.user
+    if not _can_access(application, user):
+        return HttpResponse(status=403)
+    content = _service.render_application_firstpage_pdf(application)
+    return _pdf_response(content, f"resumo-{protocol}.pdf")
+
+
+@login_required
 def payment_receipt_pdf(request: HttpRequest, instrument_id: int) -> HttpResponse:
     instrument = get_object_or_404(PaymentInstrument, pk=instrument_id)
     application = instrument.fee_requirement.application

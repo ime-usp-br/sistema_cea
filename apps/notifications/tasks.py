@@ -2,11 +2,13 @@ from typing import Any
 
 from celery import shared_task
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage
 from django.template import Context, Template
 from django.utils import timezone
 
 from .models import NotificationDispatch, NotificationTemplate
+
+Attachment = dict[str, Any]
 
 
 @shared_task
@@ -15,6 +17,7 @@ def send_notification_task(
     recipient_email: str,
     context_data: dict[str, Any],
     application_id: int | None = None,
+    attachments: list[Attachment] | None = None,
 ) -> NotificationDispatch | None:
     """Envia um e-mail a partir de um template canônico ativo.
 
@@ -45,13 +48,22 @@ def send_notification_task(
         context = Context(context_data)
         subject = Template(template.subject).render(context)
         body = Template(template.body).render(context)
-        send_mail(
+        message = EmailMessage(
             subject=subject,
-            message=body,
+            body=body,
             from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[recipient_email],
-            fail_silently=False,
+            to=[recipient_email],
         )
+        # Paridade com o legado: ``->attachData()`` dos Mailables permitia anexar
+        # o Boleto em PDF e a Ficha. O ``send_mail`` nativo não suporta anexos,
+        # portanto usamos ``EmailMessage`` + ``attach``.
+        for attachment in attachments or []:
+            message.attach(
+                filename=attachment.get("filename"),
+                content=attachment.get("content"),
+                mimetype=attachment.get("mimetype"),
+            )
+        message.send(fail_silently=False)
     except Exception as exc:  # noqa: BLE001 - registra qualquer falha de envio
         dispatch.status = NotificationDispatch.Status.FAILED
         dispatch.error_message = str(exc)

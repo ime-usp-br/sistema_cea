@@ -150,6 +150,19 @@ class DocumentRenderingServiceTests(TestCase):
         self.assertNotIn("Dados Bancários", html)
         self.assertNotIn("Recibo para Reembolso", html)
 
+    # Gap 5 — primeira página (1 página) do aplicativo
+    def test_render_application_firstpage_pdf_contem_dados_essenciais(self) -> None:
+        html = self._html("render_application_firstpage_pdf")
+        self.assertIn("Inscrição CEA — Protocolo", html)
+        self.assertIn("Maria Pesquisadora", html)
+        self.assertIn(self.application.protocol, html)
+        self.assertIn("Projeto", html)
+
+    def test_render_application_firstpage_pdf_eh_resumo_nao_ficha_completa(self) -> None:
+        html = self._html("render_application_firstpage_pdf")
+        self.assertIn("Inscrição CEA", html)
+        self.assertNotIn("Ficha de Inscrição — Protocolo", html)
+
 
 class DocumentDownloadViewTests(TestCase):
     def setUp(self) -> None:
@@ -208,3 +221,28 @@ class DocumentDownloadViewTests(TestCase):
             )
         )
         self.assertEqual(response.status_code, 302)
+
+    def test_primeira_pagina_owner_pode_baixar(self) -> None:
+        with patch.object(
+            DocumentRenderingService, "_convert_to_pdf", staticmethod(_capture_html)
+        ):
+            self.client.force_login(self.owner)
+            response = self.client.get(
+                reverse(
+                    "documents:application_firstpage_pdf",
+                    kwargs={"protocol": self.application.protocol},
+                )
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn("attachment", response["Content-Disposition"])
+
+    def test_primeira_pagina_outro_candidato_nao_pode_baixar(self) -> None:
+        self.client.force_login(self.other)
+        response = self.client.get(
+            reverse(
+                "documents:application_firstpage_pdf",
+                kwargs={"protocol": self.application.protocol},
+            )
+        )
+        self.assertEqual(response.status_code, 403)

@@ -9,6 +9,7 @@ from django.utils import timezone
 from applications.models import ServiceApplication
 from payments.services import (
     APPLICATION_FEE_CONSULTATION,
+    CONSULTATION_TO_PROJECT_CREDIT,
     FeeCalculationService,
     record_application_event,
 )
@@ -512,13 +513,45 @@ class ConsultationMeetingService:
         application: ServiceApplication,
         decision: ConsultationMeeting.Decision,
     ) -> None:
-        if decision == ConsultationMeeting.Decision.APPROVED_AS_CONSULTATION:
+        if decision == ConsultationMeeting.Decision.APPROVED_AS_PROJECT:
+            self._apply_approved_as_project(application)
+        elif decision == ConsultationMeeting.Decision.APPROVED_AS_CONSULTATION:
             application.lifecycle_status = (
                 ServiceApplication.LifecycleStatus.APPROVED_AS_CONSULTATION
             )
+            application.save(update_fields=["lifecycle_status", "updated_at"])
         elif decision == ConsultationMeeting.Decision.NOT_APPROVED:
             application.lifecycle_status = ServiceApplication.LifecycleStatus.NOT_APPROVED
-        application.save(update_fields=["lifecycle_status", "updated_at"])
+            application.save(update_fields=["lifecycle_status", "updated_at"])
+
+    def _apply_approved_as_project(
+        self,
+        application: ServiceApplication,
+    ) -> None:
+        """Redireciona uma Consulta para o fluxo de Projeto (TS-MEET-014).
+
+        Paridade com o ``ConsultationMeetingController`` do legado: quando o
+        docente decide ``approved_as_project``, a inscrição passa a Projeto e o
+        sistema gera a Taxa de Projeto (R$ 250,00).
+        """
+        application.modality = ServiceApplication.Modality.PROJECT
+        app_fee = application.fee_requirements.filter(
+            fee_type="application_fee"
+        ).first()
+        if app_fee is not None and app_fee.is_paid:
+            application.modality_credit_amount = CONSULTATION_TO_PROJECT_CREDIT
+        self.fee_service.create_project_fee(application)
+        application.lifecycle_status = (
+            ServiceApplication.LifecycleStatus.APPROVED_AS_PROJECT
+        )
+        application.save(
+            update_fields=[
+                "modality",
+                "modality_credit_amount",
+                "lifecycle_status",
+                "updated_at",
+            ]
+        )
 
 
 def _combine_aware(scheduled_date: date, scheduled_time: time_type) -> datetime:

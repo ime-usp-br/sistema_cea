@@ -1,14 +1,18 @@
 import tempfile
+from datetime import timedelta
 from decimal import Decimal
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError, transaction
 from django.db.models import Sum
 from django.test import TestCase, override_settings
+from django.urls import reverse
+from django.utils import timezone
 
 from applications.models import ApplicationEvent, ServiceApplication
 from applications.services import ApplicationSubmissionService
 from audits.services import DatasetAuditService
+from bank_slips.models import BankSlipPaymentInstrument
 from payments.models import (
     FeeRequirement,
     ManualPaymentConfirmation,
@@ -22,6 +26,7 @@ from payments.services import (
     FeeCalculationService,
     ManualPaymentService,
     ModalityChangeService,
+    OverdueBillingService,
     PaymentDomainError,
     PaymentOrchestrationService,
     RefundRequestService,
@@ -546,3 +551,128 @@ class PaymentScenarioTests(TestCase):
         self.assertEqual(project_fee.base_amount, Decimal("250.00"))
         self.assertEqual(project_fee.adjustment_amount, Decimal("-60.00"))
         self.assertEqual(project_fee.amount, Decimal("190.00"))
+
+    # ------------------------------------------------------------------
+    # 14b. Regressão: cobrança indevida ao converter Projeto pago -> Consulta
+    # ------------------------------------------------------------------
+
+    def test_TS_MOD_006_projeto_com_taxa_de_projeto_paga_convertido_para_consulta_gera_excesso(self) -> None:
+        """
+        No Laravel, a mudança olhava para a soma de TUDO o que foi pago.
+        Se Inscrição (80) + Projeto (250) = 330, e muda para Consulta (140),
+        o sistema não deve cobrar R$ 60 extras (Gap 3).
+        """
+        application = self.create_project()
+        self.approve_project_audit(application)
+
+        # Paga taxa de inscrição (80)
+        self.create_and_pay_application_fee(application)
+
+        # Cria e Paga taxa de projeto (250)
+        project_fee = self.fee_service.create_project_fee(application)
+        assert project_fee is not None
+        PaymentInstrument.objects.create(
+            fee_requirement=project_fee,
+            method=PaymentInstrument.Method.PIX,
+            state=PaymentInstrument.State.PAID,
+            amount=Decimal("250.00"),
+        )
+
+        # Converte para Consulta
+        self.modality_service.convert_to_consultation(application=application)
+
+        supplement = application.fee_requirements.filter(
+            fee_type=FeeRequirement.FeeType.SUPPLEMENT_FEE
+        )
+        self.assertFalse(
+            supplement.exists(),
+            "Não deve gerar taxa complementar de R$ 60,00 se o usuário já pagou R$ 330,00 no total.",
+        )
+
+        # Deve ter registrado o evento de excesso
+        self.assertTrue(
+            ApplicationEvent.objects.filter(
+                application=application, event_code="modality.excess_recorded"
+            ).exists()
+        )
+
+    # ------------------------------------------------------------------
+    # 14c. Cobrança em massa / inadimplência (OverdueBillingService)
+    # ------------------------------------------------------------------
+
+    def test_TS_PAY_010_overdue_billing_service_retorna_boletos_vencidos(self) -> None:
+        """Garante que o serviço localiza boletos expirados no passado e ativos localmente."""
+        application = self.create_consultation()
+        fee = application.fee_requirements.first()
+        assert fee is not None
+
+        # Instrumento ATIVO mas vencido há 5 dias no gateway
+        instrument = PaymentInstrument.objects.create(
+            fee_requirement=fee,
+            method=PaymentInstrument.Method.BANK_SLIP,
+            state=PaymentInstrument.State.ACTIVE,
+            amount=Decimal("140.00"),
+        )
+        BankSlipPaymentInstrument.objects.create(
+            payment_instrument=instrument,
+            bank_slip_reference="boleto-vencido-123",
+            due_date=timezone.localdate() - timedelta(days=5),
+            bank_status=BankSlipPaymentInstrument.BankStatus.EMITTED,
+            document_amount=Decimal("140.00"),
+        )
+
+        service = OverdueBillingService()
+        slips = service.get_overdue_slips()
+
+        self.assertEqual(slips.count(), 1)
+        self.assertEqual(slips.first().bank_slip_reference, "boleto-vencido-123")
+
+    def test_TS_PAY_010b_overdue_billing_ignora_boletos_pagos_ou_futuros(self) -> None:
+        """Só boletos vencidos e ainda ativos entram na lista de inadimplência."""
+        application = self.create_consultation()
+        fee = application.fee_requirements.first()
+        assert fee is not None
+
+        # Pago: não deve constar.
+        paid_instrument = PaymentInstrument.objects.create(
+            fee_requirement=fee,
+            method=PaymentInstrument.Method.BANK_SLIP,
+            state=PaymentInstrument.State.PAID,
+            amount=Decimal("140.00"),
+        )
+        BankSlipPaymentInstrument.objects.create(
+            payment_instrument=paid_instrument,
+            bank_slip_reference="boleto-pago",
+            due_date=timezone.localdate() - timedelta(days=2),
+            bank_status=BankSlipPaymentInstrument.BankStatus.PAID,
+            document_amount=Decimal("140.00"),
+        )
+        # Futuro: não deve constar.
+        future_instrument = PaymentInstrument.objects.create(
+            fee_requirement=fee,
+            method=PaymentInstrument.Method.BANK_SLIP,
+            state=PaymentInstrument.State.ACTIVE,
+            amount=Decimal("140.00"),
+        )
+        BankSlipPaymentInstrument.objects.create(
+            payment_instrument=future_instrument,
+            bank_slip_reference="boleto-futuro",
+            due_date=timezone.localdate() + timedelta(days=10),
+            bank_status=BankSlipPaymentInstrument.BankStatus.EMITTED,
+            document_amount=Decimal("140.00"),
+        )
+
+        slips = OverdueBillingService().get_overdue_slips()
+        references = list(slips.values_list("bank_slip_reference", flat=True))
+        self.assertNotIn("boleto-pago", references)
+        self.assertNotIn("boleto-futuro", references)
+
+    def test_TS_PAY_011_overdue_billing_view_requer_permissao_secretaria(self) -> None:
+        """Garante a View que substitui a rota de inadimplentes no Django."""
+        self.client.force_login(self.candidate)
+        response = self.client.get(reverse("payments:overdue_list"))
+        self.assertEqual(response.status_code, 403)
+
+        self.client.force_login(self.secretariat)
+        response = self.client.get(reverse("payments:overdue_list"))
+        self.assertEqual(response.status_code, 200)

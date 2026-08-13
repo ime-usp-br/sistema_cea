@@ -435,6 +435,38 @@ class MeetingScenarioTests(TestCase):
         meeting.refresh_from_db()
         self.assertIsNone(meeting.teacher_feedback)
 
+    # TS-MEET-014 — Consulta aprovada como Projeto gera Taxa de Projeto (Gap 2)
+    def test_TS_MEET_014_consulta_aprovada_como_projeto_gera_taxa_de_projeto(self) -> None:
+        """
+        No Laravel, na reunião de Consulta, o Docente pode decidir promovê-la a
+        Projeto. Isso cria automaticamente o bankSlip de 250 (R$ 250,00).
+        """
+        application = self.consultation_awaiting_scheduling()
+        meeting = self.schedule_consultation(application)
+
+        self.consultation_service.record_decision(
+            meeting=meeting,
+            decided_by=self.teacher,
+            decision="approved_as_project",
+        )
+
+        application.refresh_from_db()
+        self.assertEqual(application.modality, ServiceApplication.Modality.PROJECT)
+        self.assertEqual(
+            application.lifecycle_status,
+            ServiceApplication.LifecycleStatus.APPROVED_AS_PROJECT,
+        )
+
+        project_fee = application.fee_requirements.get(
+            fee_type=FeeRequirement.FeeType.PROJECT_FEE
+        )
+        self.assertEqual(project_fee.amount, Decimal("250.00"))
+        self.assertTrue(
+            application.events.filter(
+                event_code="meeting.consultation_decided"
+            ).exists()
+        )
+
 
 class MeetingViewTests(TestCase):
     """Testes das telas de agendamento, decisão e feedback (apps/meetings/views.py)."""

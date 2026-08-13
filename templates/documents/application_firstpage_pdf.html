@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>Resumo da Inscrição {{ protocol }}</title>
+<style>
+    @page { size: A4; margin: 1.8cm; }
+    body { font-family: "DejaVu Sans", sans-serif; font-size: 11pt; color: #111; }
+    h1 { font-size: 15pt; color: #0b5fa5; border-bottom: 2px solid #0b5fa5; padding-bottom: 4px; }
+    h2 { font-size: 11pt; color: #0b5fa5; margin-top: 12px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 6px; }
+    th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; vertical-align: top; font-size: 10pt; }
+    th { background: #eef4fb; width: 40%; }
+</style>
+</head>
+<body>
+    <h1>Inscrição CEA — Protocolo {{ protocol }}</h1>
+
+    <table>
+        <tr><th>Pesquisador(a)</th><td>{{ application.researcher_name }}</td></tr>
+        <tr><th>E-mail</th><td>{{ application.contact_email }}</td></tr>
+        <tr><th>Telefone</th><td>{{ application.contact_phone|default:"—" }}</td></tr>
+        <tr><th>Modalidade</th><td>{{ application.get_modality_display }}</td></tr>
+        <tr><th>Período letivo</th><td>{{ application.term }}</td></tr>
+        <tr><th>Status</th><td>{{ application.get_lifecycle_status_display }}</td></tr>
+        <tr><th>Título do projeto</th><td>{{ application.project_title|default:"—" }}</td></tr>
+    </table>
+
+    <h2>Contexto</h2>
+    <p>{{ application.context_summary|default:"—" }}</p>
+
+    <h2>Objetivos gerais</h2>
+    <p>{{ application.general_objectives|default:"—" }}</p>
+
+    {% if application.wants_refund_receipt %}
+    <h2>Recibo para Reembolso</h2>
+    <p>{{ application.refund_receipt_details|default:"—" }}</p>
+    {% endif %}
+</body>
+</html>

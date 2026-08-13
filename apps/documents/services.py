@@ -22,6 +22,19 @@ class DocumentRenderingService:
         }
         return self.render_pdf("documents/application_full_pdf.html", context)
 
+    def render_application_firstpage_pdf(self, application: ServiceApplication) -> bytes:
+        """PDF resumido de 1 página com os dados essenciais da inscrição.
+
+        Porta da rota ``/applications/{protocol}/firstpageaspdf`` e do template
+        LaTeX ``latexfirstpage.blade.php`` do sistema legado, usado pela
+        Secretaria/Docentes para impressão rápida.
+        """
+        context: dict[str, Any] = {
+            "application": application,
+            "protocol": application.protocol,
+        }
+        return self.render_pdf("documents/application_firstpage_pdf.html", context)
+
     def render_payment_receipt_pdf(self, instrument: PaymentInstrument) -> bytes:
         context: dict[str, Any] = {
             "instrument": instrument,

@@ -230,3 +230,9 @@ BANK_SLIP_DUE_DAYS = env.int('BANK_SLIP_DUE_DAYS', default=3)
 BANK_SLIP_CODIGO_FONTE_RECURSO = env.int('BANK_SLIP_CODIGO_FONTE_RECURSO', default=423)
 BANK_SLIP_CODIGO_UNIDADE_DESPESA = env.int('BANK_SLIP_CODIGO_UNIDADE_DESPESA', default=1)
 BANK_SLIP_ESTRUTURA_HIERARQUICA = env('BANK_SLIP_ESTRUTURA_HIERARQUICA', default='\\DISTRIBUIDOR')
+# Texto customizado exibido no cabeçalho do PDF bancário (campo do payload
+# ``informacoesBoletoSacado`` enviado ativamente pelo legado).
+BANK_SLIP_SACADO_INFO = env(
+    'BANK_SLIP_SACADO_INFO',
+    default='Dúvidas: cea@ime.usp.br',
+)

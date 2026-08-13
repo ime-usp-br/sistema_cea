@@ -297,12 +297,24 @@ class ModalityChangeService:
             app_fee = application.fee_requirements.filter(
                 fee_type=FeeRequirement.FeeType.APPLICATION_FEE
             ).first()
-            if app_fee is not None and app_fee.is_paid:
-                paid = app_fee.paid_amount
-                if paid < APPLICATION_FEE_CONSULTATION:
+            # Paridade com o legado: o ``SUM()`` considerava TODOS os boletos com
+            # status 'P' (incluindo a Taxa de Projeto) para deduzir os R$ 140,00.
+            # Olhar apenas a taxa de inscrição gerava cobrança indevida (Gap 3).
+            total_paid = self._total_paid(application)
+            if total_paid >= APPLICATION_FEE_CONSULTATION:
+                record_application_event(
+                    application=application,
+                    event_code="modality.excess_recorded",
+                    actor=decided_by,
+                    description="Conversão sem cobrança adicional: excesso registrado.",
+                    metadata={"paid_amount": str(total_paid)},
+                )
+            elif app_fee is not None and app_fee.is_paid:
+                difference = APPLICATION_FEE_CONSULTATION - total_paid
+                if difference > 0:
                     self.fee_service.create_supplement_fee(
                         application,
-                        amount=APPLICATION_FEE_CONSULTATION - paid,
+                        amount=difference,
                     )
                 else:
                     record_application_event(
@@ -310,7 +322,7 @@ class ModalityChangeService:
                         event_code="modality.excess_recorded",
                         actor=decided_by,
                         description="Conversão sem cobrança adicional: excesso registrado.",
-                        metadata={"paid_amount": str(paid)},
+                        metadata={"paid_amount": str(total_paid)},
                     )
             elif app_fee is not None:
                 self._replace_application_fee(
@@ -394,6 +406,14 @@ class ModalityChangeService:
         from notifications.services import NotificationService
 
         NotificationService().notify_modality_changed(application)
+
+    @staticmethod
+    def _total_paid(application: ServiceApplication) -> Decimal:
+        """Soma o total efetivamente pago em TODAS as taxas da inscrição."""
+        total = Decimal("0.00")
+        for fee in application.fee_requirements.all():
+            total += fee.paid_amount
+        return total
 
     def _replace_application_fee(
         self, app_fee: FeeRequirement, new_base: Decimal
