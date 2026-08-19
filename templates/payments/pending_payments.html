@@ -1,0 +1,65 @@
+{% extends "base/base.html" %}
+
+{% block title %}Pagamentos pendentes{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
+{% block breadcrumbs %}
+    {% include "base/_breadcrumbs.html" with current_page="Pagamentos pendentes" %}
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Pagamentos pendentes</h1>
+        <p class="page-subtitle">Inscrições aguardando pagamento com taxas ainda devidas.</p>
+    </div>
+    <div class="form-actions">
+        <a href="{% url 'applications:dashboard' %}" class="btn btn-ghost">Voltar ao painel</a>
+    </div>
+</div>
+
+{% if rows %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Protocolo</th>
+                    <th>Candidato</th>
+                    <th>Modalidade</th>
+                    <th>Período</th>
+                    <th>Taxas pendentes</th>
+                    <th>Total</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'applications:detail' row.application.protocol %}">
+                                {{ row.application.protocol }}
+                            </a>
+                        </td>
+                        <td>{{ row.application.researcher_name }}</td>
+                        <td>{{ row.application.get_modality_display }}</td>
+                        <td>{{ row.application.term }}</td>
+                        <td>
+                            {% for fee in row.fees %}
+                                <div>{{ fee.get_fee_type_display }} — R$ {{ fee.amount|floatformat:2 }}</div>
+                            {% endfor %}
+                        </td>
+                        <td>R$ {{ row.total_pending|floatformat:2 }}</td>
+                        <td class="actions">
+                            <a href="{% url 'applications:detail' row.application.protocol %}" class="btn btn-sm btn-primary">Ver inscrição</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="empty-state">
+        <p>Não há inscrições com pagamento pendente.</p>
+    </div>
+{% endif %}
+{% endblock %}

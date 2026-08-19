@@ -126,8 +126,35 @@ class NavigationFlowTests(TestCase):
         )
 
     def test_TS_NAV_002_fluxo_auditoria_secretaria_sem_urls_manuais(self) -> None:
-        # Candidata submete dados de auditoria a partir da página de detalhe.
+        # Fluxo sequencial: o Projeto paga a taxa de inscrição antes de poder
+        # enviar os dados de auditoria.
         project = self._application(modality=ServiceApplication.Modality.PROJECT)
+        self.assertEqual(
+            project.lifecycle_status,
+            ServiceApplication.LifecycleStatus.AWAITING_PAYMENT,
+        )
+        from payments.models import FeeRequirement
+        from payments.services import (
+            ManualPaymentService,
+            PaymentOrchestrationService,
+        )
+
+        fee = project.fee_requirements.get(
+            fee_type=FeeRequirement.FeeType.APPLICATION_FEE
+        )
+        instrument = PaymentOrchestrationService().create_payment_instrument(
+            fee_requirement=fee, method="pix", created_by=self.candidate
+        )
+        ManualPaymentService().confirm_manual_payment(
+            instrument=instrument, confirmed_by=self.secretariat
+        )
+        project.refresh_from_db()
+        self.assertEqual(
+            project.lifecycle_status,
+            ServiceApplication.LifecycleStatus.AWAITING_DATASET_SUBMISSION,
+        )
+
+        # Candidata submete dados de auditoria a partir da página de detalhe.
         self.client.force_login(self.candidate)
         detail = self._get(reverse("applications:detail", args=[project.protocol]))
         self._assert_link_present(

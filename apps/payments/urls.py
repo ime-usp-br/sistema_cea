@@ -5,6 +5,7 @@ from .views import (
     ManualPaymentConfirmationView,
     OverdueBillingListView,
     OverdueReminderView,
+    PendingPaymentsListView,
     RefundActionView,
     RefundRequestCreateView,
     RefundRequestListView,
@@ -36,4 +37,5 @@ urlpatterns = [
     ),
     path("cobrancas/vencidos/", OverdueBillingListView.as_view(), name="overdue_list"),
     path("cobrancas/vencidos/lembrete/", OverdueReminderView.as_view(), name="overdue_remind"),
+    path("pagamentos/pendentes/", PendingPaymentsListView.as_view(), name="pending_payments"),
 ]

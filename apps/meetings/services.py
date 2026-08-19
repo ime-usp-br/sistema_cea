@@ -271,8 +271,9 @@ class ProjectScreeningService:
     ) -> None:
         if decision == ProjectScreening.Decision.APPROVED_AS_PROJECT:
             self.fee_service.create_project_fee(application)
+            # Gera a Taxa de Projeto e aguarda o pagamento antes de concluir.
             application.lifecycle_status = (
-                ServiceApplication.LifecycleStatus.APPROVED_AS_PROJECT
+                ServiceApplication.LifecycleStatus.AWAITING_PAYMENT
             )
             application.save(update_fields=["lifecycle_status", "updated_at"])
         elif decision == ProjectScreening.Decision.APPROVED_AS_CONSULTATION:
@@ -565,8 +566,10 @@ class ConsultationMeetingService:
         if app_fee is not None and app_fee.is_paid:
             application.modality_credit_amount = CONSULTATION_TO_PROJECT_CREDIT
         self.fee_service.create_project_fee(application)
+        # Fluxo sequencial: a Taxa de Projeto (R$ 250) foi criada, então a
+        # inscrição aguarda o pagamento antes de ser aprovada como projeto.
         application.lifecycle_status = (
-            ServiceApplication.LifecycleStatus.APPROVED_AS_PROJECT
+            ServiceApplication.LifecycleStatus.AWAITING_PAYMENT
         )
         application.save(
             update_fields=[

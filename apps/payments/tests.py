@@ -88,6 +88,13 @@ class PaymentScenarioTests(TestCase):
         )
 
     def approve_project_audit(self, application: ServiceApplication) -> None:
+        # Fluxo sequencial: o Projeto precisa pagar a taxa de inscrição antes
+        # de enviar os dados para auditoria. Garante o pagamento se ainda pendente.
+        fee = application.fee_requirements.filter(
+            fee_type=FeeRequirement.FeeType.APPLICATION_FEE
+        ).first()
+        if fee is not None and not fee.is_paid:
+            self.create_and_pay_application_fee(application)
         submission = self.audit_service.submit_dataset(
             application=application,
             submitted_by=self.candidate,
@@ -124,12 +131,18 @@ class PaymentScenarioTests(TestCase):
 
     def test_TS_FEE_001_taxa_de_projeto_apos_auditoria_aprovada(self) -> None:
         application = self.create_project()
-        self.assertEqual(FeeRequirement.objects.filter(application=application).count(), 0)
-        self.approve_project_audit(application)
+        # A taxa de inscrição é cobrada na criação, independentemente da auditoria.
         fee = application.fee_requirements.get(fee_type=FeeRequirement.FeeType.APPLICATION_FEE)
-        self.assertEqual(fee.fee_type, "application_fee")
         self.assertEqual(fee.base_amount, APPLICATION_FEE_PROJECT)
         self.assertEqual(fee.amount, APPLICATION_FEE_PROJECT)
+        # Aprovar a auditoria não duplica a taxa de inscrição.
+        self.approve_project_audit(application)
+        self.assertEqual(
+            application.fee_requirements.filter(
+                fee_type=FeeRequirement.FeeType.APPLICATION_FEE
+            ).count(),
+            1,
+        )
 
     def test_TS_FEE_002_taxa_de_consulta_na_submissao(self) -> None:
         application = self.create_consultation()
@@ -162,19 +175,24 @@ class PaymentScenarioTests(TestCase):
     def test_TS_FEE_005_projeto_pago_aprovado_como_consulta(self) -> None:
         application = self.create_project()
         self.approve_project_audit(application)
-        self.create_and_pay_application_fee(application)
         self.modality_service.convert_to_consultation(application=application)
         fee = application.fee_requirements.get(fee_type=FeeRequirement.FeeType.SUPPLEMENT_FEE)
         self.assertEqual(fee.base_amount, Decimal("60.00"))
         total = application.fee_requirements.aggregate(total=Sum("amount"))["total"]
         self.assertEqual(total, APPLICATION_FEE_CONSULTATION)
 
-    def test_TS_FEE_006_projeto_nao_pago_aprovado_como_consulta(self) -> None:
+    def test_TS_FEE_006_projeto_nao_pago_convertido_em_consulta(self) -> None:
+        # Fluxo sequencial: um Projeto não pago não chega à auditoria (precisa
+        # pagar antes). A conversão de um Projeto não pago acontece direto,
+        # substituindo a taxa de inscrição R$ 80,00 pela de Consulta R$ 140,00.
         application = self.create_project()
-        self.approve_project_audit(application)
         self.modality_service.convert_to_consultation(application=application)
         app_fee = application.fee_requirements.get(fee_type=FeeRequirement.FeeType.APPLICATION_FEE)
         self.assertEqual(app_fee.amount, APPLICATION_FEE_CONSULTATION)
+        self.assertEqual(
+            application.lifecycle_status,
+            ServiceApplication.LifecycleStatus.AWAITING_PAYMENT,
+        )
         self.assertFalse(
             application.fee_requirements.filter(
                 fee_type=FeeRequirement.FeeType.SUPPLEMENT_FEE
@@ -298,10 +316,16 @@ class PaymentScenarioTests(TestCase):
         )
 
     def test_TS_PAY_008_pagamento_confirmado_libera_fluxo(self) -> None:
+        # Projeto (fluxo sequencial): pagar a taxa de inscrição habilita o envio
+        # dos dados; aprovar a auditoria libera o agendamento da triagem.
         project = self.create_project()
-        self.approve_project_audit(project)
         self.create_and_pay_application_fee(project)
         project.refresh_from_db()
+        self.assertEqual(
+            project.lifecycle_status,
+            ServiceApplication.LifecycleStatus.AWAITING_DATASET_SUBMISSION,
+        )
+        self.approve_project_audit(project)
         self.assertEqual(
             project.lifecycle_status,
             ServiceApplication.LifecycleStatus.AWAITING_SCREENING_SCHEDULING,
@@ -439,7 +463,6 @@ class PaymentScenarioTests(TestCase):
     def test_TS_REF_004_conversao_em_vez_de_reembolso(self) -> None:
         application = self.create_project()
         self.approve_project_audit(application)
-        self.create_and_pay_application_fee(application)
         refunds_before = RefundRequest.objects.filter(application=application).count()
         self.modality_service.convert_to_consultation(application=application)
         self.assertEqual(
@@ -468,7 +491,6 @@ class PaymentScenarioTests(TestCase):
 
     def test_TS_MOD_001_projeto_nao_pago_convertido_em_consulta(self) -> None:
         application = self.create_project()
-        self.approve_project_audit(application)
         app_fee = application.fee_requirements.get(
             fee_type=FeeRequirement.FeeType.APPLICATION_FEE
         )
@@ -486,7 +508,6 @@ class PaymentScenarioTests(TestCase):
     def test_TS_MOD_002_projeto_pago_convertido_em_consulta(self) -> None:
         application = self.create_project()
         self.approve_project_audit(application)
-        self.create_and_pay_application_fee(application)
         self.modality_service.convert_to_consultation(application=application)
         supplement = application.fee_requirements.filter(
             fee_type=FeeRequirement.FeeType.SUPPLEMENT_FEE
@@ -528,7 +549,7 @@ class PaymentScenarioTests(TestCase):
         self.assertTrue(application.dataset_audit_required)
         self.assertEqual(
             application.lifecycle_status,
-            ServiceApplication.LifecycleStatus.AWAITING_DATASET_SUBMISSION,
+            ServiceApplication.LifecycleStatus.AWAITING_PAYMENT,
         )
         self.approve_project_audit(application)
         project_app_fee = application.fee_requirements.get(
@@ -566,9 +587,6 @@ class PaymentScenarioTests(TestCase):
         """
         application = self.create_project()
         self.approve_project_audit(application)
-
-        # Paga taxa de inscrição (80)
-        self.create_and_pay_application_fee(application)
 
         # Cria e Paga taxa de projeto (250)
         project_fee = self.fee_service.create_project_fee(application)
@@ -679,6 +697,23 @@ class PaymentScenarioTests(TestCase):
         response = self.client.get(reverse("payments:overdue_list"))
         self.assertEqual(response.status_code, 200)
 
+    def test_TS_PAY_012_pagamentos_pendentes_lista_inscricoes_com_taxa_a_pagar(self) -> None:
+        """Painel de pagamentos pendentes exige secretaria e lista inscrições com taxa devida."""
+        self.client.force_login(self.candidate)
+        response = self.client.get(reverse("payments:pending_payments"))
+        self.assertEqual(response.status_code, 403)
+
+        application = self.create_project()
+        self.client.force_login(self.secretariat)
+        response = self.client.get(reverse("payments:pending_payments"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, application.protocol)
+
+        # Pagar a taxa remove a inscrição da lista de pendentes.
+        self.create_and_pay_application_fee(application)
+        response = self.client.get(reverse("payments:pending_payments"))
+        self.assertNotContains(response, application.protocol)
+
     # ------------------------------------------------------------------
     # 14d. Regressão: cancelamento externo no gateway (Gaps A e C)
     # ------------------------------------------------------------------
@@ -696,7 +731,6 @@ class PaymentScenarioTests(TestCase):
     def test_TS_MOD_GAP_001_mudanca_de_modalidade_cancela_boleto_via_soap(self) -> None:
         """Paridade Laravel: converter Projeto -> Consulta baixa o boleto no banco."""
         application = self.create_project()
-        self.approve_project_audit(application)
         app_fee = application.fee_requirements.get(
             fee_type=FeeRequirement.FeeType.APPLICATION_FEE
         )
@@ -716,7 +750,6 @@ class PaymentScenarioTests(TestCase):
     def test_TS_MOD_GAP_001b_cancelamento_externo_nao_bloqueia_fluxo(self) -> None:
         """Falha no gateway não impede a mudança de modalidade (best-effort)."""
         application = self.create_project()
-        self.approve_project_audit(application)
         app_fee = application.fee_requirements.get(
             fee_type=FeeRequirement.FeeType.APPLICATION_FEE
         )

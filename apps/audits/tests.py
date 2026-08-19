@@ -67,6 +67,31 @@ class AuditScenarioTests(TestCase):
             contact_email="importado@example.com",
         )
 
+    def pay_application_fee(
+        self, application: ServiceApplication
+    ) -> None:
+        """Paga a taxa de inscrição (avançando o Projeto para o envio de dados).
+
+        No fluxo sequencial, o Projeto começa em ``AWAITING_PAYMENT`` e só pode
+        enviar os dados de auditoria após pagar a taxa de inscrição (R$ 80,00).
+        """
+        from payments.models import FeeRequirement
+        from payments.services import (
+            ManualPaymentService,
+            PaymentOrchestrationService,
+        )
+
+        fee = application.fee_requirements.get(
+            fee_type=FeeRequirement.FeeType.APPLICATION_FEE
+        )
+        instrument = PaymentOrchestrationService().create_payment_instrument(
+            fee_requirement=fee, method="pix", created_by=self.candidate
+        )
+        ManualPaymentService().confirm_manual_payment(
+            instrument=instrument, confirmed_by=self.secretariat
+        )
+        application.refresh_from_db()
+
     def submit_file(self, application: ServiceApplication, **kwargs) -> DatasetAuditSubmission:
         return self.service.submit_dataset(
             application=application,
@@ -96,7 +121,7 @@ class AuditScenarioTests(TestCase):
         application = self.create_project()
         self.assertEqual(
             application.lifecycle_status,
-            ServiceApplication.LifecycleStatus.AWAITING_DATASET_SUBMISSION,
+            ServiceApplication.LifecycleStatus.AWAITING_PAYMENT,
         )
         self.assertTrue(application.dataset_audit_required)
         self.assertEqual(
@@ -116,6 +141,7 @@ class AuditScenarioTests(TestCase):
     # TS-AUD-003
     def test_TS_AUD_003_envio_de_arquivo_valido(self) -> None:
         application = self.create_project()
+        self.pay_application_fee(application)
         submission = self.submit_file(application)
         self.assertEqual(submission.submission_channel, "file")
         self.assertIsNotNone(submission.file_asset_id)
@@ -133,6 +159,7 @@ class AuditScenarioTests(TestCase):
     # TS-AUD-004
     def test_TS_AUD_004_envio_de_arquivo_acima_de_10mb(self) -> None:
         application = self.create_project()
+        self.pay_application_fee(application)
         big = SimpleUploadedFile(
             "grande.csv",
             b"x" * (10 * 1024 * 1024 + 1),
@@ -151,6 +178,7 @@ class AuditScenarioTests(TestCase):
     # TS-AUD-005
     def test_TS_AUD_005_envio_de_link_externo(self) -> None:
         application = self.create_project()
+        self.pay_application_fee(application)
         submission = self.submit_link(application, url="https://drive.example.com/dados")
         self.assertEqual(submission.submission_channel, "external_link")
         self.assertEqual(submission.external_url, "https://drive.example.com/dados")
@@ -165,6 +193,7 @@ class AuditScenarioTests(TestCase):
     # TS-AUD-006
     def test_TS_AUD_006_link_externo_invalido(self) -> None:
         application = self.create_project()
+        self.pay_application_fee(application)
         with self.assertRaises(DatasetAuditError):
             self.submit_link(application, url="ftp://example.com/dados")
         with self.assertRaises(DatasetAuditError):
@@ -178,6 +207,7 @@ class AuditScenarioTests(TestCase):
         from audits.forms import DatasetSubmissionForm
 
         application = self.create_project()
+        self.pay_application_fee(application)
         with self.assertRaises(DatasetAuditError):
             self.service.submit_dataset(
                 application=application,
@@ -200,6 +230,7 @@ class AuditScenarioTests(TestCase):
     # TS-AUD-008
     def test_TS_AUD_008_submissao_nao_aceita_arquivo_e_link_simultaneos(self) -> None:
         application = self.create_project()
+        self.pay_application_fee(application)
         with self.assertRaises(DatasetAuditError):
             self.service.submit_dataset(
                 application=application,
@@ -231,6 +262,7 @@ class AuditScenarioTests(TestCase):
     # TS-AUD-009
     def test_TS_AUD_009_docente_solicita_correcao(self) -> None:
         application = self.create_project()
+        self.pay_application_fee(application)
         submission = self.submit_file(application)
         review = self.service.review_submission(
             submission=submission,
@@ -254,6 +286,7 @@ class AuditScenarioTests(TestCase):
     # TS-AUD-010
     def test_TS_AUD_010_candidato_corrige_e_reenvia(self) -> None:
         application = self.create_project()
+        self.pay_application_fee(application)
         first = self.submit_file(application)
         self.service.review_submission(
             submission=first,
@@ -280,6 +313,7 @@ class AuditScenarioTests(TestCase):
     # TS-AUD-011
     def test_TS_AUD_011_docente_aprova_auditoria(self) -> None:
         application = self.create_project()
+        self.pay_application_fee(application)
         submission = self.submit_file(application)
         review = self.service.review_submission(
             submission=submission,
@@ -290,9 +324,11 @@ class AuditScenarioTests(TestCase):
         submission.refresh_from_db()
         self.assertEqual(submission.state, DatasetAuditSubmission.State.APPROVED)
         application.refresh_from_db()
+        # Fluxo sequencial: aprovação libera o agendamento da triagem (o Projeto
+        # já pagou a taxa de inscrição antes de enviar os dados).
         self.assertEqual(
             application.lifecycle_status,
-            ServiceApplication.LifecycleStatus.AWAITING_PAYMENT,
+            ServiceApplication.LifecycleStatus.AWAITING_SCREENING_SCHEDULING,
         )
         self.assertEqual(
             application.dataset_audit_state,
@@ -306,6 +342,7 @@ class AuditScenarioTests(TestCase):
     # TS-AUD-012
     def test_TS_AUD_012_docente_rejeita_auditoria(self) -> None:
         application = self.create_project()
+        self.pay_application_fee(application)
         submission = self.submit_file(application)
         self.service.review_submission(
             submission=submission,
@@ -325,6 +362,7 @@ class AuditScenarioTests(TestCase):
     # TS-AUD-013
     def test_TS_AUD_013_secretaria_converte_em_consulta(self) -> None:
         application = self.create_project()
+        self.pay_application_fee(application)
         submission = self.submit_file(application)
         self.service.review_submission(
             submission=submission,
@@ -345,14 +383,21 @@ class AuditScenarioTests(TestCase):
             ServiceApplication.LifecycleStatus.AWAITING_PAYMENT,
         )
         self.assertFalse(application.dataset_audit_required)
-        fee = application.fee_requirements.get(
-            fee_type="application_fee", base_amount="140.00"
+        # A taxa de inscrição de Projeto (R$ 80,00) já foi paga, então a
+        # conversão cobra apenas o complemento de R$ 60,00.
+        app_fee = application.fee_requirements.get(
+            fee_type="application_fee", base_amount="80.00"
         )
-        self.assertEqual(fee.amount, Decimal("140.00"))
+        self.assertEqual(app_fee.amount, Decimal("80.00"))
+        supplement = application.fee_requirements.get(
+            fee_type="supplement_fee"
+        )
+        self.assertEqual(supplement.amount, Decimal("60.00"))
 
     # TS-AUD-014
     def test_TS_AUD_014_secretaria_rejeita_inscricao(self) -> None:
         application = self.create_project()
+        self.pay_application_fee(application)
         submission = self.submit_file(application)
         self.service.review_submission(
             submission=submission,
@@ -375,6 +420,7 @@ class AuditScenarioTests(TestCase):
     # TS-AUD-015
     def test_TS_AUD_015_secretaria_transfere_de_periodo(self) -> None:
         application = self.create_project()
+        self.pay_application_fee(application)
         submission = self.submit_file(application)
         self.service.review_submission(
             submission=submission,
@@ -415,6 +461,7 @@ class AuditScenarioTests(TestCase):
     # TS-AUD-017
     def test_TS_AUD_017_link_inacessivel_docente_solicita_correcao(self) -> None:
         application = self.create_project()
+        self.pay_application_fee(application)
         submission = self.submit_link(application, url="https://offline.example.com/dados")
         review = self.service.review_submission(
             submission=submission,
@@ -433,6 +480,7 @@ class AuditScenarioTests(TestCase):
 
     def test_TS_AUD_017b_link_inacessivel_docente_rejeita(self) -> None:
         application = self.create_project()
+        self.pay_application_fee(application)
         submission = self.submit_link(application, url="https://offline.example.com/dados")
         self.service.review_submission(
             submission=submission,
@@ -463,6 +511,7 @@ class AuditScenarioTests(TestCase):
     # TS-AUD-GAP-001 — SSRF: bloqueia loopback e endereços de rede local/interna.
     def test_TS_AUD_GAP_001_link_externo_nao_pode_apontar_para_localhost_ssrf(self) -> None:
         application = self.create_project()
+        self.pay_application_fee(application)
         bad_urls = [
             "http://localhost/admin",
             "http://127.0.0.1:8000",
@@ -483,6 +532,7 @@ class AuditScenarioTests(TestCase):
     def test_TS_AUD_GAP_001b_url_publica_continua_aceita(self) -> None:
         """Garante que a proteção SSRF não rejeita URLs públicas legítimas."""
         application = self.create_project()
+        self.pay_application_fee(application)
         submission = self.submit_link(
             application, url="https://drive.example.com/dados"
         )

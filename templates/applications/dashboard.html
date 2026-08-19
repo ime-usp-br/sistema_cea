@@ -24,8 +24,8 @@
     <div class="form-actions">
         {% if user.is_authenticated and is_candidate %}
             <a href="{% url 'imports:claim_request' %}" class="btn btn-ghost">Resgatar inscrição</a>
+            <a href="{% url 'applications:create' %}" class="btn btn-primary">Nova inscrição</a>
         {% endif %}
-        <a href="{% url 'applications:create' %}" class="btn btn-primary">Nova inscrição</a>
     </div>
 </div>
 
@@ -100,7 +100,9 @@
                         <td>{{ application.created_at|date:"d/m/Y H:i" }}</td>
                         <td class="actions">
                             <a href="{% url 'applications:detail' application.protocol %}" class="btn btn-sm btn-ghost">Ver</a>
-                            <a href="{% url 'payments:fee_payment' application.protocol %}" class="btn btn-sm btn-primary">Pagar</a>
+                            {% if is_candidate %}
+                                <a href="{% url 'payments:fee_payment' application.protocol %}" class="btn btn-sm btn-primary">Pagar</a>
+                            {% endif %}
                         </td>
                     </tr>
                 {% endfor %}

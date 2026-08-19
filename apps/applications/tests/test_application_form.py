@@ -43,7 +43,7 @@ class ApplicationFormFakerTest(TestCase):
         self.assertEqual(application.modality, ServiceApplication.Modality.PROJECT)
         self.assertEqual(
             application.lifecycle_status,
-            ServiceApplication.LifecycleStatus.AWAITING_DATASET_SUBMISSION,
+            ServiceApplication.LifecycleStatus.AWAITING_PAYMENT,
         )
         self.assertTrue(application.dataset_audit_required)
         self.assertTrue(application.catalog_selections.exists())

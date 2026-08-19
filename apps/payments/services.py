@@ -101,13 +101,27 @@ def refresh_payment_state(application: ServiceApplication) -> str | None:
 
 
 def advance_lifecycle_after_application_fee(application: ServiceApplication) -> None:
-    """Avança o fluxo da inscrição após o pagamento da taxa de inscrição (TS-PAY-008)."""
+    """Avança o fluxo da inscrição após o pagamento de uma taxa (TS-PAY-008).
+
+    Sequência do Projeto (após pagar):
+      - pagar a taxa de inscrição  -> awaiting_dataset_submission (auditoria);
+      - pagar a taxa de projeto    -> approved_as_project.
+    Consulta: ao pagar a taxa de inscrição -> awaiting_consultation_scheduling.
+    """
     if application.lifecycle_status != ServiceApplication.LifecycleStatus.AWAITING_PAYMENT:
         return
     if application.modality == ServiceApplication.Modality.PROJECT:
-        application.lifecycle_status = (
-            ServiceApplication.LifecycleStatus.AWAITING_SCREENING_SCHEDULING
-        )
+        has_project_fee = application.fee_requirements.filter(
+            fee_type=FeeRequirement.FeeType.PROJECT_FEE
+        ).exists()
+        if has_project_fee:
+            application.lifecycle_status = (
+                ServiceApplication.LifecycleStatus.APPROVED_AS_PROJECT
+            )
+        else:
+            application.lifecycle_status = (
+                ServiceApplication.LifecycleStatus.AWAITING_DATASET_SUBMISSION
+            )
     else:
         application.lifecycle_status = (
             ServiceApplication.LifecycleStatus.AWAITING_CONSULTATION_SCHEDULING
@@ -399,8 +413,18 @@ class ModalityChangeService:
                 )
             else:
                 self.fee_service.create_application_fee(application)
+            # Fluxo sequencial: se ainda houver alguma taxa pendente para
+            # Consulta (ex.: complemento de R$ 60), a inscrição aguarda o
+            # pagamento; caso contrário, avança para o agendamento.
+            pending_fees = [
+                fee
+                for fee in application.fee_requirements.all()
+                if not fee.is_waived and not fee.is_paid
+            ]
             application.lifecycle_status = (
-                ServiceApplication.LifecycleStatus.AWAITING_PAYMENT
+                ServiceApplication.LifecycleStatus.AWAITING_CONSULTATION_SCHEDULING
+                if not pending_fees
+                else ServiceApplication.LifecycleStatus.AWAITING_PAYMENT
             )
             application.save(
                 update_fields=[
@@ -426,7 +450,13 @@ class ModalityChangeService:
         decided_by: Any = None,
         note: str | None = None,
     ) -> None:
-        """Converte a inscrição para a modalidade Projeto, aplicando crédito se paga."""
+        """Converte a inscrição para a modalidade Projeto, aplicando crédito se paga.
+
+        Fluxo sequencial: um Projeto inicia aguardando o pagamento da taxa de
+        inscrição. Se essa taxa já estiver paga (ex.: Consulta paga convertida),
+        o próximo passo é enviar os dados para auditoria; caso contrário, a
+        inscrição aguarda o pagamento.
+        """
         with transaction.atomic():
             application.modality = ServiceApplication.Modality.PROJECT
             app_fee = application.fee_requirements.filter(
@@ -434,10 +464,13 @@ class ModalityChangeService:
             ).first()
             if app_fee is not None and app_fee.is_paid:
                 application.modality_credit_amount = CONSULTATION_TO_PROJECT_CREDIT
+                fee_paid = True
             elif app_fee is not None:
                 self._replace_application_fee(app_fee, APPLICATION_FEE_PROJECT)
+                fee_paid = False
             else:
                 self.fee_service.create_application_fee(application)
+                fee_paid = False
             if application.owner_id is not None:
                 application.dataset_audit_required = True
                 application.dataset_audit_state = (
@@ -445,6 +478,8 @@ class ModalityChangeService:
                 )
                 application.lifecycle_status = (
                     ServiceApplication.LifecycleStatus.AWAITING_DATASET_SUBMISSION
+                    if fee_paid
+                    else ServiceApplication.LifecycleStatus.AWAITING_PAYMENT
                 )
             else:
                 application.dataset_audit_required = False
@@ -705,3 +740,48 @@ class OverdueBillingService:
             )
             sent += 1
         return sent
+
+
+class PendingPaymentService:
+    """Painel de inscrições com taxas pendentes de pagamento."""
+
+    def list_pending_applications(self) -> list[dict[str, Any]]:
+        """Lista inscrições que ainda devem alguma taxa.
+
+        A taxa de inscrição é cobrada na criação (Projeto e Consulta),
+        independentemente da auditoria de dados. Portanto, qualquer inscrição
+        em andamento com pelo menos uma taxa não dispensada e não paga é
+        considerada pendente — incluindo Projetos ainda em auditoria.
+        """
+        applications = (
+            ServiceApplication.objects.select_related("term")
+            .exclude(
+                lifecycle_status__in=[
+                    ServiceApplication.LifecycleStatus.NOT_APPROVED,
+                    ServiceApplication.LifecycleStatus.CANCELED,
+                ]
+            )
+            .prefetch_related(
+                "fee_requirements",
+                "fee_requirements__payment_instruments",
+            )
+            .order_by("protocol")
+        )
+        rows: list[dict[str, Any]] = []
+        for app in applications:
+            pending_fees = [
+                fee
+                for fee in app.fee_requirements.all()
+                if not fee.is_waived and not fee.is_paid
+            ]
+            if not pending_fees:
+                continue
+            total = sum((fee.amount for fee in pending_fees), Decimal("0.00"))
+            rows.append(
+                {
+                    "application": app,
+                    "fees": pending_fees,
+                    "total_pending": total,
+                }
+            )
+        return rows

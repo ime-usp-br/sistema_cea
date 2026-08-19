@@ -15,6 +15,7 @@ from .services import (
     ModalityChangeService,
     OverdueBillingService,
     PaymentOrchestrationService,
+    PendingPaymentService,
     RefundRequestService,
 )
 
@@ -23,6 +24,7 @@ _payment_service = PaymentOrchestrationService()
 _manual_service = ManualPaymentService()
 _refund_service = RefundRequestService()
 _overdue_service = OverdueBillingService()
+_pending_service = PendingPaymentService()
 
 
 class RoleRequiredMixin(LoginRequiredMixin):
@@ -251,3 +253,14 @@ class OverdueReminderView(RoleRequiredMixin, View):
         user = cast(User, request.user)
         _overdue_service.send_overdue_reminders(actor=user)
         return redirect("payments:overdue_list")
+
+
+class PendingPaymentsListView(RoleRequiredMixin, View):
+    """Secretaria lista inscrições com taxas pendentes de pagamento."""
+
+    allowed_roles = frozenset({User.Role.SECRETARIAT, User.Role.ADMINISTRATOR})
+    template_name = "payments/pending_payments.html"
+
+    def get(self, request):
+        rows = _pending_service.list_pending_applications()
+        return render(request, self.template_name, {"rows": rows})

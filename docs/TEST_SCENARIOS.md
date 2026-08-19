@@ -33,7 +33,7 @@ Os testes devem considerar as seguintes regras operacionais:
 
 1. A página inicial exige login.
 2. Candidatos acessam apenas inscrições próprias.
-3. Projetos criados por usuário autenticado passam por auditoria antes do pagamento.
+3. Projetos criados por usuário autenticado pagam a taxa de inscrição antes de enviar os dados para auditoria (fluxo sequencial).
 4. Auditoria aceita arquivo de até 10 MB ou link externo.
 5. Docente pode aprovar, rejeitar ou solicitar correção.
 6. Secretaria decide auditorias rejeitadas.
@@ -113,13 +113,14 @@ Os testes devem considerar as seguintes regras operacionais:
 
 | Inscrição | Situação |
 |---|---|
-| Projeto novo com dono | aguardando envio de dados |
+| Projeto novo com dono | aguardando pagamento |
 | Consulta nova com dono | aguardando pagamento |
 | Projeto importado sem dono | histórico |
 | Consulta importada sem dono | histórico |
-| Projeto com auditoria aprovada | aguardando pagamento |
+| Projeto com taxa de inscrição paga | aguardando envio de dados |
+| Projeto com auditoria aprovada | aguardando agendamento da triagem |
 | Projeto com auditoria rejeitada | aguardando decisão |
-| Projeto pago | pronto para triagem |
+| Projeto com taxa de projeto paga | aprovado como projeto |
 | Consulta paga | pronta para reunião |
 
 ### 4.4 Taxas
@@ -252,9 +253,10 @@ Os testes devem considerar as seguintes regras operacionais:
 - `origin = created_portal`;
 - `owner_id` preenchido;
 - `modality = project`;
-- `lifecycle_status = awaiting_dataset_submission`;
+- `lifecycle_status = awaiting_payment` (fluxo sequencial: o Projeto paga a taxa de inscrição antes de enviar os dados);
 - `dataset_audit_required = true`;
-- nenhuma taxa criada imediatamente.
+- taxa de inscrição de R$ 80,00 criada imediatamente na submissão;
+- após pagar a taxa de inscrição, a inscrição passa a `awaiting_dataset_submission`.
 
 ---
 
@@ -352,8 +354,9 @@ Os testes devem considerar as seguintes regras operacionais:
 **Prioridade:** P0
 
 **Resultado esperado:**
-- Projeto criado por candidato entra em `awaiting_dataset_submission`;
-- nenhuma taxa é criada antes da aprovação da auditoria.
+- Projeto criado por candidato inicia em `awaiting_payment`;
+- após pagar a taxa de inscrição, o Projeto entra em `awaiting_dataset_submission`;
+- `dataset_audit_required = true` e `dataset_audit_state = awaiting_submission`.
 
 ---
 
@@ -481,8 +484,9 @@ Os testes devem considerar as seguintes regras operacionais:
 
 **Resultado esperado:**
 - submissão vira `approved`;
-- inscrição vira `awaiting_payment`;
-- taxa de inscrição Projeto de R$ 80,00 é criada;
+- a taxa de inscrição de R$ 80,00 já foi criada na submissão e paga antes do
+  envio dos dados (fluxo sequencial), não sendo duplicada na aprovação;
+- inscrição vira `awaiting_screening_scheduling`;
 - evento registrado.
 
 ---
@@ -504,11 +508,13 @@ Os testes devem considerar as seguintes regras operacionais:
 
 **Pré-condição:**
 - auditoria rejeitada;
-- Projeto sem pagamento.
+- Projeto com taxa de inscrição de R$ 80,00 paga (fluxo sequencial exige
+  pagamento antes do envio dos dados).
 
 **Resultado esperado:**
 - modalidade vira `consultation`;
-- taxa de inscrição de R$ 140,00 criada;
+- a taxa de inscrição de Projeto (R$ 80,00) é mantida como paga;
+- gerado complemento de R$ 60,00 para atingir a taxa de Consulta (R$ 140,00);
 - inscrição entra em `awaiting_payment`;
 - resolução registrada.
 
@@ -569,7 +575,7 @@ Os testes devem considerar as seguintes regras operacionais:
 
 # 8. Cenários de taxas e regras financeiras
 
-## TS-FEE-001 — Taxa de Projeto após auditoria aprovada
+## TS-FEE-001 — Taxa de inscrição de Projeto
 
 **Prioridade:** P0
 
@@ -577,7 +583,8 @@ Os testes devem considerar as seguintes regras operacionais:
 - `fee_type = application_fee`;
 - `base_amount = 80.00`;
 - `amount = 80.00`;
-- taxa criada somente após aprovação da auditoria.
+- taxa criada na submissão da inscrição (fluxo sequencial);
+- aprovar a auditoria não duplica a taxa de inscrição.
 
 ---
 
@@ -1174,9 +1181,11 @@ Os testes devem considerar as seguintes regras operacionais:
 **Prioridade:** P0
 
 **Resultado esperado:**
-- cobrança de Consulta substituída;
-- inscrição Projeto entra em auditoria se possuir dono;
-- após auditoria aprovada, taxa de Projeto R$ 80,00 criada;
+- cobrança de Consulta (R$ 140,00) substituída pela taxa de inscrição de
+  Projeto (R$ 80,00) na conversão;
+- inscrição Projeto entra em `awaiting_payment` (fluxo sequencial);
+- após pagar a taxa de inscrição, entra em `awaiting_dataset_submission` e em
+  auditoria se possuir dono;
 - sem crédito de modalidade.
 
 ---
@@ -1200,7 +1209,9 @@ Os testes devem considerar as seguintes regras operacionais:
 **Resultado esperado:**
 - inscrição com dono vira Projeto;
 - `dataset_audit_required = true`;
-- status entra em `awaiting_dataset_submission`.
+- se a taxa de inscrição já estiver paga, status entra em `awaiting_dataset_submission`;
+- se a taxa de inscrição estiver pendente, status entra em `awaiting_payment`
+  (fluxo sequencial: só envia os dados após pagar).
 
 ---
 
@@ -1358,8 +1369,9 @@ Os testes devem considerar as seguintes regras operacionais:
 **Prioridade:** P0
 
 **Resultado esperado:**
-- inscrição vira `approved_as_project`;
-- taxa de projeto criada;
+- cria a Taxa de Projeto (R$ 250,00);
+- inscrição vira `awaiting_payment` (aguarda o pagamento da Taxa de Projeto);
+- após pagar a Taxa de Projeto, inscrição vira `approved_as_project`;
 - se houver crédito de modalidade, valor ajustado.
 
 ---
@@ -2031,12 +2043,12 @@ Os testes devem considerar as seguintes regras operacionais:
 A regressão mínima deve incluir:
 
 1. `TS-AUTH-001` — login obrigatório.
-2. `TS-APP-002` — Projeto criado entra em auditoria.
+2. `TS-APP-002` — Projeto criado inicia aguardando pagamento (fluxo sequencial).
 3. `TS-APP-003` — Consulta criada entra em pagamento.
 4. `TS-AUD-003` — envio de arquivo válido.
 5. `TS-AUD-005` — envio de link externo.
 6. `TS-AUD-009` — docente solicita correção.
-7. `TS-AUD-011` — aprovação de auditoria gera taxa.
+7. `TS-AUD-011` — aprovação de auditoria libera o agendamento da triagem.
 8. `TS-AUD-012` — rejeição gera decisão administrativa.
 9. `TS-FEE-004` — taxa de projeto com crédito de R$ 60,00 resulta em R$ 190,00.
 10. `TS-PAY-005` — apenas um instrumento ativo por taxa.
@@ -2062,7 +2074,7 @@ A regressão mínima deve incluir:
 O sistema será considerado aderente quando:
 
 1. somente usuários autenticados acessarem inscrições;
-2. Projetos com dono passarem por auditoria antes do pagamento;
+2. Projetos com dono pagarem a taxa de inscrição antes de passarem por auditoria (fluxo sequencial);
 3. auditoria aceitar arquivo ou link externo;
 4. docente puder aprovar, rejeitar ou solicitar correção;
 5. secretaria puder decidir auditorias rejeitadas;

@@ -1,7 +1,10 @@
 from django.urls import path
 
 from .views import (
+    ApplicationDeleteView,
     ApplicationDetailView,
+    ApplicationListView,
+    ApplicationModalityChangeView,
     CandidateDashboardView,
     CreateApplicationView,
     TransferSemesterView,
@@ -12,6 +15,17 @@ app_name = "applications"
 urlpatterns = [
     path("painel/", CandidateDashboardView.as_view(), name="dashboard"),
     path("inscricoes/nova/", CreateApplicationView.as_view(), name="create"),
+    path("inscricoes/", ApplicationListView.as_view(), name="list"),
+    path(
+        "inscricoes/<str:protocol>/modalidade/",
+        ApplicationModalityChangeView.as_view(),
+        name="modality_change",
+    ),
+    path(
+        "inscricoes/<str:protocol>/excluir/",
+        ApplicationDeleteView.as_view(),
+        name="delete",
+    ),
     path(
         "inscricoes/<str:protocol>/transferir-semestre/",
         TransferSemesterView.as_view(),

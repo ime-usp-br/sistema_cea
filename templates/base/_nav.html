@@ -26,12 +26,16 @@
 
     {% if is_secretariat or is_admin %}
         <div class="nav-dropdown">
-            <button type="button" class="nav-link nav-dropdown-toggle {% if nav_active == 'meetings' or nav_active == 'refunds' or nav_active == 'overdue' or nav_active == 'claims' %}nav-active{% endif %}" aria-haspopup="true" aria-expanded="false">
+            <button type="button" class="nav-link nav-dropdown-toggle {% if nav_active == 'meetings' or nav_active == 'pending' or nav_active == 'refunds' or nav_active == 'overdue' or nav_active == 'claims' or nav_active == 'applications' %}nav-active{% endif %}" aria-haspopup="true" aria-expanded="false">
                 Operação
             </button>
             <div class="nav-dropdown-menu">
+                <a href="{% url 'applications:list' %}"
+                   class="nav-dropdown-item {% if nav_active == 'applications' %}nav-active{% endif %}">Todas as inscrições</a>
                 <a href="{% url 'meetings:queue' %}"
                    class="nav-dropdown-item {% if nav_active == 'meetings' %}nav-active{% endif %}">Agendamentos</a>
+                <a href="{% url 'payments:pending_payments' %}"
+                   class="nav-dropdown-item {% if nav_active == 'pending' %}nav-active{% endif %}">Pagamentos pendentes</a>
                 <a href="{% url 'payments:refund_list' %}"
                    class="nav-dropdown-item {% if nav_active == 'refunds' %}nav-active{% endif %}">Reembolsos</a>
                 <a href="{% url 'payments:overdue_list' %}"

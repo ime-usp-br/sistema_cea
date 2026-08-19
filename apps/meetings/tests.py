@@ -313,9 +313,10 @@ class MeetingScenarioTests(TestCase):
             )
 
         application.refresh_from_db()
+        # Fluxo sequencial: a decisão cria a Taxa de Projeto e aguarda o pagamento.
         self.assertEqual(
             application.lifecycle_status,
-            ServiceApplication.LifecycleStatus.APPROVED_AS_PROJECT,
+            ServiceApplication.LifecycleStatus.AWAITING_PAYMENT,
         )
         # A taxa de projeto (R$ 250) deve permanecer ativa na inscrição
         self.assertTrue(
@@ -361,9 +362,10 @@ class MeetingScenarioTests(TestCase):
         self.assertEqual(screening.decision, "approved_as_project")
         self.assertEqual(screening.state, ProjectScreening.State.COMPLETED)
         application.refresh_from_db()
+        # Fluxo sequencial: aguarda o pagamento da Taxa de Projeto.
         self.assertEqual(
             application.lifecycle_status,
-            ServiceApplication.LifecycleStatus.APPROVED_AS_PROJECT,
+            ServiceApplication.LifecycleStatus.AWAITING_PAYMENT,
         )
         project_fee = application.fee_requirements.get(
             fee_type=FeeRequirement.FeeType.PROJECT_FEE
@@ -598,9 +600,10 @@ class MeetingScenarioTests(TestCase):
 
         application.refresh_from_db()
         self.assertEqual(application.modality, ServiceApplication.Modality.PROJECT)
+        # Fluxo sequencial: gera a Taxa de Projeto e aguarda o pagamento.
         self.assertEqual(
             application.lifecycle_status,
-            ServiceApplication.LifecycleStatus.APPROVED_AS_PROJECT,
+            ServiceApplication.LifecycleStatus.AWAITING_PAYMENT,
         )
 
         project_fee = application.fee_requirements.get(
@@ -849,9 +852,10 @@ class MeetingViewTests(TestCase):
         )
         self.assertRedirects(response, reverse("meetings:queue"))
         proj.refresh_from_db()
+        # Fluxo sequencial: aprovado como projeto cria a Taxa de Projeto e aguarda o pagamento.
         self.assertEqual(
             proj.lifecycle_status,
-            ServiceApplication.LifecycleStatus.APPROVED_AS_PROJECT,
+            ServiceApplication.LifecycleStatus.AWAITING_PAYMENT,
         )
         fee = proj.fee_requirements.get(fee_type=FeeRequirement.FeeType.PROJECT_FEE)
         self.assertEqual(fee.amount, Decimal("250.00"))

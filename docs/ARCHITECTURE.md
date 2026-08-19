@@ -926,23 +926,21 @@ Regras:
 
 ## 14.1 Projeto
 
+O fluxo do Projeto é **estritamente sequencial**: a auditoria de dados é
+inserida entre o pagamento da taxa de inscrição e o agendamento da triagem.
+A taxa de inscrição (R$ 80,00) é criada já na submissão, mas a inscrição inicia
+aguardando o pagamento.
+
 ```text
-Login ou cadastro
+Submissão (inscrição criada; taxa de inscrição R$ 80,00; awaiting_payment)
   ↓
-Nova inscrição Projeto
+Pagamento da taxa de inscrição
   ↓
-Preenchimento do formulário
+Envio de dados para auditoria (awaiting_dataset_submission)
   ↓
-Submissão
+Análise docente (awaiting_dataset_review)
   ↓
-Envio de dados para auditoria
-  ↓
-Análise docente
-  ↓
-Se aprovado:
-    pagamento
-  ↓
-Agendamento de triagem
+Se aprovado → awaiting_screening_scheduling
 ```
 
 Se houver pedido de correção:
@@ -950,22 +948,35 @@ Se houver pedido de correção:
 ```text
 Análise docente
   ↓
-Pedido de correção
+Pedido de correção (awaiting_dataset_correction)
   ↓
-Candidato corrige
+Candidato corrige e reenvia
   ↓
-Nova análise
+Nova análise (awaiting_dataset_review)
 ```
 
 Se houver rejeição:
 
 ```text
-Rejeição docente
+Rejeição docente (dataset_rejected_pending_resolution)
   ↓
 Decisão administrativa:
     - converter em consulta
     - rejeitar
     - transferir período
+```
+
+Continuação na triagem:
+
+```text
+Agendamento de triagem (awaiting_screening_scheduling → awaiting_screening_result)
+  ↓
+Decisão da triagem:
+  - aprovado como projeto → cria Taxa de Projeto (R$ 250,00) → awaiting_payment
+       ↓
+       Pagamento da Taxa de Projeto → approved_as_project
+  - aprovado como consulta → approved_as_consultation
+  - não aprovado → not_approved
 ```
 
 ---
@@ -1012,7 +1023,9 @@ Agendamento de reunião de consulta
 ## 15.2 Fluxo de Projeto
 
 ```text
-awaiting_dataset_submission
+awaiting_payment            (taxa de inscrição R$ 80,00 criada na submissão)
+  ↓
+awaiting_dataset_submission (após pagar a taxa de inscrição)
   ↓
 awaiting_dataset_review
   ↓
@@ -1022,14 +1035,18 @@ Se correção solicitada:
     awaiting_dataset_review
   ↓
 Se aprovado:
-    awaiting_payment
-        ↓
     awaiting_screening_scheduling
         ↓
     awaiting_screening_result
         ↓
+    (aprovado como projeto) cria Taxa de Projeto R$ 250,00
+        ↓
+    awaiting_payment
+        ↓
     approved_as_project
+  ou, na triagem:
     approved_as_consultation
+  ou:
     not_approved
 ```
 
@@ -1069,7 +1086,10 @@ not_approved
 
 A auditoria é obrigatória para Projetos criados por usuários autenticados.
 
-Ela ocorre antes do pagamento da taxa de inscrição.
+Ela ocorre de forma **sequencial** após o pagamento da taxa de inscrição: o
+Projeto inicia aguardando o pagamento da taxa de inscrição; ao pagar, o
+candidato envia os dados para auditoria; e a triagem só é agendada após a
+aprovação da auditoria.
 
 ---
 
@@ -1828,10 +1848,9 @@ Estados agregados sugeridos:
 
 Quando um Projeto é aprovado na auditoria:
 
-- gerar `application_fee` de R$ 80,00;
-- candidato escolhe Pix ou boleto;
-- após pagamento confirmado:
-  - inscrição segue para `awaiting_screening_scheduling`.
+- a taxa de inscrição (R$ 80,00) já foi criada na submissão e paga antes do envio dos dados;
+- nenhuma taxa é gerada na aprovação;
+- inscrição segue para `awaiting_screening_scheduling`.
 
 ---
 
@@ -1891,21 +1910,23 @@ Taxa de projeto devida: R$ 190,00
 
 Quando uma Consulta ainda não paga se torna Projeto:
 
-- cobrança de Consulta de R$ 140,00 é substituída;
-- nenhuma cobrança de Projeto é gerada imediatamente antes da auditoria;
-- após aprovação na auditoria:
-  - gerar taxa de inscrição Projeto de R$ 80,00;
+- a cobrança de Consulta de R$ 140,00 é substituída pela taxa de inscrição de
+  Projeto de R$ 80,00 no momento da conversão;
+- a inscrição entra em `awaiting_payment` e só envia os dados para auditoria
+  após pagar a taxa de inscrição;
 - não há crédito de modalidade, pois não houve pagamento anterior.
 
 ---
 
-## 25.6 Projeto rejeitado sem pagamento
+## 25.6 Projeto rejeitado com pagamento
 
-Como a auditoria ocorre antes do pagamento para Projetos novos:
+Como o Projeto paga a taxa de inscrição antes de enviar os dados para auditoria,
+qualquer rejeição de auditoria ocorre após o pagamento:
 
-- se o Projeto for rejeitado antes do pagamento:
-  - nenhuma taxa é cobrada;
-  - inscrição é encerrada ou transferida conforme decisão administrativa.
+- a taxa de inscrição (R$ 80,00) já está paga quando o Projeto é rejeitado;
+- a secretaria decide: converter em Consulta (gerando o complemento de
+  R$ 60,00 se apropriado), reembolso, ou transferir de período;
+- a conversão recalcula taxas conforme a situação de pagamento.
 
 ---
 
@@ -2015,7 +2036,7 @@ Regra:
 
 | Situação | Ação |
 |---|---|
-| Consulta não paga | substituir cobrança por taxa de Projeto de R$ 80,00 após auditoria aprovada |
+| Consulta não paga | substituir cobrança por taxa de Projeto de R$ 80,00 na conversão; inscrição aguarda pagamento antes da auditoria |
 | Consulta paga R$ 140,00 | manter pagamento e registrar crédito de R$ 60,00 |
 | Aprovado como Projeto | gerar taxa de projeto de R$ 190,00 se crédito de R$ 60,00 existir |
 
@@ -2026,7 +2047,10 @@ Regra:
 Quando uma inscrição com usuário dono se torna Projeto:
 
 - `dataset_audit_required` é habilitado;
-- inscrição entra em `awaiting_dataset_submission`;
+- se a taxa de inscrição já estiver paga, a inscrição entra em
+  `awaiting_dataset_submission`;
+- se a taxa de inscrição ainda não estiver paga, a inscrição entra em
+  `awaiting_payment` e só envia os dados após o pagamento;
 - exceções podem ser definidas pela secretaria.
 
 Quando uma inscrição importada sem dono se torna Projeto:
@@ -3096,7 +3120,7 @@ A arquitetura é considerada aderente quando:
 1. somente usuários autenticados acessarem inscrições;
 2. candidatos acessarem apenas inscrições próprias;
 3. novas inscrições gerarem protocolo único;
-4. Projetos com usuário dono passarem por auditoria antes do pagamento;
+4. Projetos com usuário dono pagarem a taxa de inscrição antes de passarem por auditoria (fluxo sequencial);
 5. docentes conseguirem aprovar, rejeitar ou solicitar correção;
 6. secretaria conseguir decidir auditorias rejeitadas;
 7. candidatos conseguirem escolher Pix ou boleto;

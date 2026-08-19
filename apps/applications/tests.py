@@ -101,7 +101,7 @@ class ApplicationScenarioTests(TestCase):
         self.assertEqual(application.modality, ServiceApplication.Modality.PROJECT)
         self.assertEqual(
             application.lifecycle_status,
-            ServiceApplication.LifecycleStatus.AWAITING_DATASET_SUBMISSION,
+            ServiceApplication.LifecycleStatus.AWAITING_PAYMENT,
         )
         self.assertTrue(application.dataset_audit_required)
 
@@ -259,3 +259,113 @@ class ApplicationScenarioTests(TestCase):
         application.restore()
         self.assertIsNone(application.soft_deleted_at)
         self.assertIn(application, ServiceApplication.objects.all())
+
+    def test_TS_APP_011_lista_todas_inscricoes_requer_secretaria(self) -> None:
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("applications:list"))
+        self.assertEqual(response.status_code, 403)
+
+        own = self.create_application(modality="project")
+        other = ApplicationSubmissionService().create_application(
+            term=self.term,
+            owner=self.other_user,
+            modality="consultation",
+            researcher_name="Outra Pesquisadora",
+            contact_email="outra@example.com",
+        )
+        secretariat = User.objects.create_user(
+            username="secretaria1",
+            email="secretaria1@example.com",
+            password="pass",
+            role=User.Role.SECRETARIAT,
+        )
+        self.client.force_login(secretariat)
+        response = self.client.get(reverse("applications:list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, own.protocol)
+        self.assertContains(response, other.protocol)
+
+
+class ApplicationAdminViewsTests(TestCase):
+    """Testes das views administrativas novas: lista por semestre, mudança de
+    modalidade e exclusão lógica (soft delete)."""
+
+    def setUp(self) -> None:
+        self.term1 = AcademicTerm.objects.create(year=2026, period="first")
+        self.term2 = AcademicTerm.objects.create(year=2026, period="second")
+        self.candidate = User.objects.create_user(
+            username="candidate_admin",
+            email="candidate_admin@example.com",
+            password="pass",
+        )
+        self.secretariat = User.objects.create_user(
+            username="secretaria_admin",
+            email="secretaria_admin@example.com",
+            password="pass",
+            role=User.Role.SECRETARIAT,
+        )
+
+    def _create(self, term: AcademicTerm) -> ServiceApplication:
+        return ApplicationSubmissionService().create_application(
+            term=term,
+            owner=self.candidate,
+            modality="project",
+            researcher_name="Maria Pesquisadora",
+            contact_email="maria@example.com",
+        )
+
+    def test_application_list_filtra_por_semestre(self) -> None:
+        in_term1 = self._create(self.term1)
+        in_term2 = self._create(self.term2)
+        self.client.force_login(self.secretariat)
+
+        all_response = self.client.get(reverse("applications:list"))
+        self.assertEqual(all_response.status_code, 200)
+        self.assertContains(all_response, in_term1.protocol)
+        self.assertContains(all_response, in_term2.protocol)
+
+        filtered = self.client.get(
+            reverse("applications:list"), {"term": self.term1.pk}
+        )
+        self.assertEqual(filtered.status_code, 200)
+        self.assertContains(filtered, in_term1.protocol)
+        self.assertNotContains(filtered, in_term2.protocol)
+
+    def test_application_list_exige_secretaria(self) -> None:
+        self.client.force_login(self.candidate)
+        response = self.client.get(reverse("applications:list"))
+        self.assertEqual(response.status_code, 403)
+
+    def test_application_modality_change_view(self) -> None:
+        application = self._create(self.term1)
+        self.client.force_login(self.secretariat)
+        response = self.client.post(
+            reverse("applications:modality_change", args=[application.protocol])
+        )
+        self.assertRedirects(response, reverse("applications:list"))
+        application.refresh_from_db()
+        self.assertEqual(
+            application.modality, ServiceApplication.Modality.CONSULTATION
+        )
+
+    def test_application_delete_view_soft_delete(self) -> None:
+        application = self._create(self.term1)
+        self.client.force_login(self.secretariat)
+        response = self.client.post(
+            reverse("applications:delete", args=[application.protocol])
+        )
+        self.assertRedirects(response, reverse("applications:list"))
+        application.refresh_from_db()
+        self.assertIsNotNone(application.soft_deleted_at)
+        self.assertNotIn(application, ServiceApplication.objects.all())
+        self.assertIn(application, ServiceApplication.objects.all_with_deleted())
+
+    def test_application_delete_view_exige_secretaria(self) -> None:
+        application = self._create(self.term1)
+        self.client.force_login(self.candidate)
+        response = self.client.post(
+            reverse("applications:delete", args=[application.protocol])
+        )
+        self.assertEqual(response.status_code, 403)
+        application.refresh_from_db()
+        self.assertIsNone(application.soft_deleted_at)

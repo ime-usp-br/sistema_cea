@@ -2,11 +2,14 @@ from typing import cast
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views import View
 from django.views.generic import DetailView, FormView, TemplateView
 
+from payments.models import PaymentInstrument
+from payments.services import ModalityChangeService
+from terms.models import AcademicTerm
 from users.models import User
 
 from .forms import ApplicationForm
@@ -115,9 +118,105 @@ class ApplicationDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
+class ApplicationListView(RoleRequiredMixin, View):
+    """Secretaria/administrador visualiza todas as inscrições (visão geral).
+
+    Alinhada ao legado: exibe protocolo, data, modalidade, nome, e-mail, status,
+    taxas com status de cobrança e ações (ver, PDF, transferir, mudar modalidade,
+    excluir). Aceita o parâmetro ``term`` para filtrar por período letivo.
+    """
+
+    allowed_roles = frozenset({User.Role.SECRETARIAT, User.Role.ADMINISTRATOR})
+    template_name = "applications/application_list.html"
+
+    def get(self, request):
+        terms = list(AcademicTerm.objects.all())
+        term_id = request.GET.get("term") or request.GET.get("semester_id")
+
+        applications = (
+            ServiceApplication.objects.select_related("term")
+            .prefetch_related("fee_requirements__payment_instruments")
+            .order_by("-created_at")
+        )
+        if term_id:
+            applications = applications.filter(term_id=term_id)
+
+        rows = [self._row(app) for app in applications]
+        selected_term = next(
+            (t for t in terms if str(t.pk) == str(term_id)), None
+        ) if term_id else None
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "rows": rows,
+                "terms": terms,
+                "selected_term_id": term_id,
+                "selected_term": selected_term,
+            },
+        )
+
+    @staticmethod
+    def _fee_status(fee) -> str:
+        instruments = list(fee.payment_instruments.all())
+        if fee.is_waived:
+            return "Dispensada"
+        if fee.is_paid:
+            return "Pago"
+        if any(
+            item.state in (PaymentInstrument.State.ACTIVE, PaymentInstrument.State.CREATED)
+            for item in instruments
+        ):
+            return "Emitido"
+        if instruments:
+            return "Cancelado"
+        return "Não Emitido"
+
+    @classmethod
+    def _row(cls, application: ServiceApplication) -> dict:
+        return {
+            "application": application,
+            "fees_info": [
+                {
+                    "label": fee.get_fee_type_display(),
+                    "amount": fee.amount,
+                    "status": cls._fee_status(fee),
+                }
+                for fee in application.fee_requirements.all()
+            ],
+        }
+
+
+class ApplicationModalityChangeView(RoleRequiredMixin, View):
+    """Secretaria muda a modalidade de uma inscrição (Projeto <-> Consulta)."""
+
+    allowed_roles = frozenset({User.Role.SECRETARIAT, User.Role.ADMINISTRATOR})
+
+    def post(self, request, protocol: str):
+        application = get_object_or_404(ServiceApplication, protocol=protocol)
+        user = cast(User, request.user)
+        service = ModalityChangeService()
+        if application.modality == ServiceApplication.Modality.PROJECT:
+            service.convert_to_consultation(application=application, decided_by=user)
+        else:
+            service.convert_to_project(application=application, decided_by=user)
+        return redirect(reverse("applications:list"))
+
+
+class ApplicationDeleteView(RoleRequiredMixin, View):
+    """Secretaria exclui logicamente (soft delete) uma inscrição (TS-XXX)."""
+
+    allowed_roles = frozenset({User.Role.SECRETARIAT, User.Role.ADMINISTRATOR})
+
+    def post(self, request, protocol: str):
+        application = get_object_or_404(ServiceApplication, protocol=protocol)
+        application.soft_delete()
+        return redirect(reverse("applications:list"))
+
+
 class TransferSemesterView(RoleRequiredMixin, View):
     """Secretaria transfere uma inscrição para o próximo semestre (TS-TRM-006)."""
-
     allowed_roles = frozenset({User.Role.SECRETARIAT, User.Role.ADMINISTRATOR})
 
     def post(self, request, protocol: str):

@@ -143,11 +143,9 @@ class ApplicationSubmissionService:
         attachments: list[UploadedFile] | None = None,
     ) -> ServiceApplication:
         dataset_audit_required = modality == ServiceApplication.Modality.PROJECT and owner is not None
-        lifecycle_status = (
-            ServiceApplication.LifecycleStatus.AWAITING_DATASET_SUBMISSION
-            if modality == ServiceApplication.Modality.PROJECT
-            else ServiceApplication.LifecycleStatus.AWAITING_PAYMENT
-        )
+        # Ambas as modalidades começam em awaiting_payment: o candidato paga a
+        # taxa de inscrição antes de seguir (auditoria, no caso de Projeto).
+        lifecycle_status = ServiceApplication.LifecycleStatus.AWAITING_PAYMENT
         dataset_audit_state = (
             ServiceApplication.DatasetAuditState.AWAITING_SUBMISSION
             if dataset_audit_required
@@ -209,10 +207,9 @@ class ApplicationSubmissionService:
         self._add_catalog_selections(application, catalog_option_ids or [], catalog_other_text)
         for uploaded_file in attachments or []:
             self._add_attachment(application, owner, uploaded_file)
-        if application.modality == ServiceApplication.Modality.CONSULTATION:
-            from payments.services import FeeCalculationService
+        from payments.services import FeeCalculationService
 
-            FeeCalculationService().create_application_fee(application)
+        FeeCalculationService().create_application_fee(application)
         return application
 
     def _add_catalog_selections(

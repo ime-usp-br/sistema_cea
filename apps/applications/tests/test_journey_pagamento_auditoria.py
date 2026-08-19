@@ -309,21 +309,48 @@ class AuditProjectJourneyTests(TestCase):
         )
         self.assertEqual(response.status_code, 302)
 
-    # ------------------------------------------------------------------
-    # Criação de Projeto + envio de dados (arquivo e link)
-    # ------------------------------------------------------------------
+    def _pay_application_fee(self, application: ServiceApplication) -> None:
+        """Fluxo sequencial: paga a taxa de inscrição antes de enviar os dados."""
+        from payments.models import FeeRequirement
+        from payments.services import (
+            ManualPaymentService,
+            PaymentOrchestrationService,
+        )
 
-    def test_TS_AUD_jornada_projeto_comeca_aguardando_envio(self) -> None:
-        application = self._create_project_form()
-        self.assertTrue(application.dataset_audit_required)
+        fee = application.fee_requirements.get(
+            fee_type=FeeRequirement.FeeType.APPLICATION_FEE
+        )
+        instrument = PaymentOrchestrationService().create_payment_instrument(
+            fee_requirement=fee, method="pix", created_by=self.candidate
+        )
+        ManualPaymentService().confirm_manual_payment(
+            instrument=instrument, confirmed_by=self.secretariat
+        )
+        application.refresh_from_db()
         self.assertEqual(
             application.lifecycle_status,
             ServiceApplication.LifecycleStatus.AWAITING_DATASET_SUBMISSION,
         )
-        self.assertFalse(application.fee_requirements.exists())
+
+    # ------------------------------------------------------------------
+    # Criação de Projeto + envio de dados (arquivo e link)
+    # ------------------------------------------------------------------
+
+    def test_TS_AUD_jornada_projeto_comeca_aguardando_pagamento(self) -> None:
+        application = self._create_project_form()
+        self.assertTrue(application.dataset_audit_required)
+        # Fluxo sequencial: o Projeto começa aguardando o pagamento da taxa de
+        # inscrição (R$ 80,00) antes de poder enviar os dados.
+        self.assertEqual(
+            application.lifecycle_status,
+            ServiceApplication.LifecycleStatus.AWAITING_PAYMENT,
+        )
+        fee = application.fee_requirements.get(fee_type="application_fee")
+        self.assertEqual(fee.base_amount, Decimal("80.00"))
 
     def test_TS_AUD_003_jornada_envio_por_arquivo_e_fila_docente(self) -> None:
         application = self._create_project_form()
+        self._pay_application_fee(application)
 
         response = self.client.get(
             reverse("audits:submit", args=[application.protocol])
@@ -350,6 +377,7 @@ class AuditProjectJourneyTests(TestCase):
 
     def test_TS_AUD_005_jornada_envio_por_link_externo(self) -> None:
         application = self._create_project_form()
+        self._pay_application_fee(application)
         self.client.force_login(self.candidate)
 
         response = self.client.post(
@@ -380,6 +408,7 @@ class AuditProjectJourneyTests(TestCase):
 
     def test_TS_AUD_009_jornada_docente_solicita_correcao(self) -> None:
         application = self._create_project_form()
+        self._pay_application_fee(application)
         self._submit_file(application)
         submission = application.audit_submissions.get()
 
@@ -401,6 +430,7 @@ class AuditProjectJourneyTests(TestCase):
 
     def test_TS_AUD_011_jornada_docente_aprova_cria_taxa_80(self) -> None:
         application = self._create_project_form()
+        self._pay_application_fee(application)
         self._submit_file(application)
         submission = application.audit_submissions.get()
 
@@ -412,9 +442,11 @@ class AuditProjectJourneyTests(TestCase):
         self.assertEqual(response.status_code, 302)
 
         application.refresh_from_db()
+        # Fluxo sequencial: aprovação da auditoria libera o agendamento da triagem
+        # (a taxa de inscrição já foi paga antes do envio dos dados).
         self.assertEqual(
             application.lifecycle_status,
-            ServiceApplication.LifecycleStatus.AWAITING_PAYMENT,
+            ServiceApplication.LifecycleStatus.AWAITING_SCREENING_SCHEDULING,
         )
         submission.refresh_from_db()
         self.assertEqual(submission.state, "approved")
@@ -425,6 +457,7 @@ class AuditProjectJourneyTests(TestCase):
 
     def test_TS_AUD_012_jornada_docente_rejeita_para_secretaria(self) -> None:
         application = self._create_project_form()
+        self._pay_application_fee(application)
         self._submit_file(application)
         submission = application.audit_submissions.get()
 

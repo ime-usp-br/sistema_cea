@@ -10,7 +10,10 @@ from django.utils import timezone
 from applications.models import ServiceApplication
 from files.models import FileAsset
 from files.services import create_file_asset
-from payments.services import FeeCalculationService
+from payments.services import (
+    APPLICATION_FEE_CONSULTATION,
+    FeeCalculationService,
+)
 from terms.models import AcademicTerm
 
 from .models import (
@@ -305,13 +308,14 @@ class DatasetAuditService:
         elif outcome_enum == DatasetAuditReview.Outcome.APPROVED:
             submission.state = DatasetAuditSubmission.State.APPROVED
             submission.save(update_fields=["state", "updated_at"])
-            application.lifecycle_status = (
-                ServiceApplication.LifecycleStatus.AWAITING_PAYMENT
-            )
             application.dataset_audit_state = (
                 ServiceApplication.DatasetAuditState.APPROVED
             )
-            FeeCalculationService().create_application_fee(application)
+            # A inscrição já pagou a taxa de inscrição antes de enviar os dados
+            # (fluxo sequencial), então a aprovação libera o agendamento da triagem.
+            application.lifecycle_status = (
+                ServiceApplication.LifecycleStatus.AWAITING_SCREENING_SCHEDULING
+            )
         else:  # rejected
             submission.state = DatasetAuditSubmission.State.REJECTED
             submission.save(update_fields=["state", "updated_at"])
@@ -347,7 +351,27 @@ class DatasetAuditService:
                     "updated_at",
                 ]
             )
-            FeeCalculationService().create_application_fee(application)
+            # A taxa de inscrição de Projeto (R$ 80,00) já existe na inscrição.
+            # Se ainda não paga, substitui o valor pelo de Consulta (R$ 140,00);
+            # se já paga, cobra apenas o complemento (R$ 60,00); caso contrário
+            # (sem taxa), cria a taxa de inscrição de Consulta (fallback).
+            app_fee = application.fee_requirements.filter(
+                fee_type="application_fee", is_waived=False
+            ).first()
+            if app_fee is not None and not app_fee.is_paid:
+                from payments.services import ModalityChangeService
+
+                ModalityChangeService()._replace_application_fee(
+                    app_fee, APPLICATION_FEE_CONSULTATION
+                )
+            elif app_fee is not None and app_fee.is_paid:
+                difference = APPLICATION_FEE_CONSULTATION - app_fee.paid_amount
+                if difference > 0:
+                    FeeCalculationService().create_supplement_fee(
+                        application, amount=difference
+                    )
+            else:
+                FeeCalculationService().create_application_fee(application)
         elif resolution_enum == DatasetAuditResolution.Resolution.REJECT_APPLICATION:
             application.lifecycle_status = (
                 ServiceApplication.LifecycleStatus.NOT_APPROVED
