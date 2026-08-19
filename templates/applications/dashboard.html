@@ -1,6 +1,6 @@
 {% extends "base/base.html" %}
 
-{% block title %}Painel do Candidato{% endblock %}
+{% block title %}{% if is_admin or is_secretariat or is_teacher %}Painel{% else %}Painel do Candidato{% endif %}{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
 {% block breadcrumbs %}
@@ -10,8 +10,16 @@
 {% block content %}
 <div class="page-header">
     <div>
-        <h1 class="page-title">Painel do Candidato</h1>
-        <p class="page-subtitle">Acompanhe suas inscrições e seu andamento.</p>
+        {% if is_admin or is_secretariat %}
+            <h1 class="page-title">Painel Administrativo</h1>
+            <p class="page-subtitle">Gerencie inscrições, auditorias, pagamentos e relatórios.</p>
+        {% elif is_teacher %}
+            <h1 class="page-title">Painel do Docente</h1>
+            <p class="page-subtitle">Acompanhe as inscrições sob sua avaliação.</p>
+        {% else %}
+            <h1 class="page-title">Painel do Candidato</h1>
+            <p class="page-subtitle">Acompanhe suas inscrições e seu andamento.</p>
+        {% endif %}
     </div>
     <div class="form-actions">
         {% if user.is_authenticated and is_candidate %}
