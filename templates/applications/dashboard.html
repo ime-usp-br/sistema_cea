@@ -3,14 +3,67 @@
 {% block title %}Painel do Candidato{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
+{% block breadcrumbs %}
+    {% include "base/_breadcrumbs.html" with current_page="Painel" %}
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <div>
         <h1 class="page-title">Painel do Candidato</h1>
         <p class="page-subtitle">Acompanhe suas inscrições e seu andamento.</p>
     </div>
-    <a href="{% url 'applications:create' %}" class="btn btn-primary">Nova inscrição</a>
+    <div class="form-actions">
+        {% if user.is_authenticated and is_candidate %}
+            <a href="{% url 'imports:claim_request' %}" class="btn btn-ghost">Resgatar inscrição</a>
+        {% endif %}
+        <a href="{% url 'applications:create' %}" class="btn btn-primary">Nova inscrição</a>
+    </div>
 </div>
+
+{% if is_teacher or is_secretariat or is_admin %}
+    <div class="card">
+        <div class="card-header"><h2 class="card-title">Acesso rápido</h2></div>
+        <div class="card-body">
+            <div class="shortcut-grid">
+                <a href="{% url 'audits:teacher_queue' %}" class="shortcut-card">
+                    <span class="shortcut-card-title">Fila de auditoria</span>
+                    <span class="shortcut-card-desc">Analisar submissões pendentes</span>
+                </a>
+                {% if is_admin or is_secretariat %}
+                    <a href="{% url 'audits:resolution_list' %}" class="shortcut-card">
+                        <span class="shortcut-card-title">Auditorias rejeitadas</span>
+                        <span class="shortcut-card-desc">Decidir submissões rejeitadas</span>
+                    </a>
+                    <a href="{% url 'meetings:queue' %}" class="shortcut-card">
+                        <span class="shortcut-card-title">Agendamentos</span>
+                        <span class="shortcut-card-desc">Triagens e reuniões pendentes</span>
+                    </a>
+                    <a href="{% url 'payments:refund_list' %}" class="shortcut-card">
+                        <span class="shortcut-card-title">Reembolsos</span>
+                        <span class="shortcut-card-desc">Aprovar e executar reembolsos</span>
+                    </a>
+                    <a href="{% url 'payments:overdue_list' %}" class="shortcut-card">
+                        <span class="shortcut-card-title">Cobranças</span>
+                        <span class="shortcut-card-desc">Boletos vencidos e lembretes</span>
+                    </a>
+                    <a href="{% url 'imports:claim_queue' %}" class="shortcut-card">
+                        <span class="shortcut-card-title">Resgates</span>
+                        <span class="shortcut-card-desc">Aprovar vínculos de inscrições</span>
+                    </a>
+                    <a href="{% url 'reports:financial_report' %}" class="shortcut-card">
+                        <span class="shortcut-card-title">Relatório financeiro</span>
+                        <span class="shortcut-card-desc">Consolidação de receitas</span>
+                    </a>
+                    <a href="{% url 'reports:audit_report' %}" class="shortcut-card">
+                        <span class="shortcut-card-title">Relatório de auditoria</span>
+                        <span class="shortcut-card-desc">Submissões e decisões</span>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endif %}
 
 {% if applications %}
     <div class="table-responsive">
@@ -22,6 +75,7 @@
                     <th>Status</th>
                     <th>Período</th>
                     <th>Data</th>
+                    <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -36,6 +90,10 @@
                         <td><span class="badge badge-primary">{{ application.get_lifecycle_status_display }}</span></td>
                         <td>{{ application.term }}</td>
                         <td>{{ application.created_at|date:"d/m/Y H:i" }}</td>
+                        <td class="actions">
+                            <a href="{% url 'applications:detail' application.protocol %}" class="btn btn-sm btn-ghost">Ver</a>
+                            <a href="{% url 'payments:fee_payment' application.protocol %}" class="btn btn-sm btn-primary">Pagar</a>
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>

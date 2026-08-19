@@ -56,7 +56,9 @@
                     <span class="app-name">{% block app_name %}Python USP Starter Kit{% endblock %}</span>
                 </div>
 
-                {% block site_nav %}{% endblock %}
+                {% block site_nav %}
+                    {% include "base/_nav.html" %}
+                {% endblock %}
 
                 <div class="auth-info">
                     {% if user.is_authenticated %}
@@ -73,6 +75,8 @@
     </header>
 
     <main class="container content-main">
+        {% block breadcrumbs %}{% endblock %}
+
         {% if messages %}
             <ul class="messages">
                 {% for message in messages %}

@@ -1,0 +1,11 @@
+<nav class="breadcrumbs" aria-label="Trilha de navegação">
+    <a href="{% url 'applications:dashboard' %}">Painel</a>
+    {% if parent_url and parent_label %}
+        <span class="breadcrumb-sep" aria-hidden="true">›</span>
+        <a href="{{ parent_url }}">{{ parent_label }}</a>
+    {% endif %}
+    {% if current_page %}
+        <span class="breadcrumb-sep" aria-hidden="true">›</span>
+        <span class="breadcrumb-current" aria-current="page">{{ current_page }}</span>
+    {% endif %}
+</nav>

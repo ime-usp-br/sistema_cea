@@ -3,13 +3,21 @@
 {% block title %}Decisão da triagem #{{ screening.pk }}{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
+{% block breadcrumbs %}
+{% url 'meetings:queue' as parent_url %}
+{% include "base/_breadcrumbs.html" with current_page="Decisão da triagem" parent_label="Agendamentos" parent_url=parent_url %}
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <div>
         <h1 class="page-title">Decisão e feedback da triagem</h1>
-        <p class="page-subtitle">Inscrição: <strong>{{ screening.application.protocol }}</strong></p>
+        <p class="page-subtitle">Inscrição: <a href="{% url 'applications:detail' screening.application.protocol %}"><strong>{{ screening.application.protocol }}</strong></a></p>
     </div>
-    <a href="{% url 'meetings:queue' %}" class="btn btn-ghost">Voltar</a>
+    <div class="form-actions">
+        <a href="{% url 'documents:screening_summary_pdf' screening.pk %}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost">Resumo (PDF)</a>
+        <a href="{% url 'meetings:queue' %}" class="btn btn-ghost">Voltar</a>
+    </div>
 </div>
 
 <div class="card">

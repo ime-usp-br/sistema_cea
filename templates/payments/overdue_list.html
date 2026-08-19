@@ -3,16 +3,23 @@
 {% block title %}Cobranças Manuais{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
+{% block breadcrumbs %}
+    {% include "base/_breadcrumbs.html" with current_page="Cobranças manuais" %}
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <div>
         <h1 class="page-title">Cobranças Manuais</h1>
         <p class="page-subtitle">Boletos vencidos e inadimplentes agrupados para cobrança em massa.</p>
     </div>
-    <form method="post" action="{% url 'payments:overdue_remind' %}">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-primary">Enviar lembretes de cobrança</button>
-    </form>
+    <div class="form-actions">
+        <form method="post" action="{% url 'payments:overdue_remind' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary">Enviar lembretes de cobrança</button>
+        </form>
+        <a href="{% url 'applications:dashboard' %}" class="btn btn-ghost">Voltar ao painel</a>
+    </div>
 </div>
 
 {% if slips %}
@@ -26,17 +33,25 @@
                     <th>Valor</th>
                     <th>Vencimento</th>
                     <th>Boleto</th>
+                    <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
                 {% for slip in slips %}
                     <tr>
-                        <td>{{ slip.payment_instrument.fee_requirement.application.protocol }}</td>
+                        <td>
+                            <a href="{% url 'applications:detail' slip.payment_instrument.fee_requirement.application.protocol %}">
+                                {{ slip.payment_instrument.fee_requirement.application.protocol }}
+                            </a>
+                        </td>
                         <td>{{ slip.payment_instrument.fee_requirement.application.researcher_name }}</td>
                         <td>{{ slip.payment_instrument.fee_requirement.application.get_modality_display }}</td>
                         <td>R$ {{ slip.document_amount|default:slip.payment_instrument.amount }}</td>
                         <td>{{ slip.due_date|date:"d/m/Y" }}</td>
                         <td>{{ slip.bank_slip_reference }}</td>
+                        <td class="actions">
+                            <a href="{% url 'bank_slips:detail' slip.payment_instrument.fee_requirement.application.protocol %}" class="btn btn-sm btn-primary">Ver boleto</a>
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>

@@ -1,46 +1,64 @@
 {% extends "base/base.html" %}
 
-{% block title %}Bem-vindo ao Inscrições CEA{% endblock %}
+{% block title %}Inscrições CEA{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
 {% block content %}
 <div class="card">
-    <div class="card-body text-center" style="padding: 3rem 1.5rem;">
-        <h1 class="page-title">Inscrições CEA</h1>
-        <p class="page-subtitle" style="margin: 0 auto 2rem;">
-            Plataforma de inscrições para o Centro de Estudos Avançados do IME-USP.
+    <div class="card-body" style="padding: 3rem 1.5rem;">
+        <h1 class="page-title text-center">Centro de Estatística Aplicada (CEA) — IME-USP</h1>
+        <p class="page-subtitle text-center" style="margin: 0.5rem auto 2rem; max-width: 60ch;">
+            Plataforma de inscrição para as atividades de assessoria e consultoria em
+            Estatística Aplicada prestadas pelo CEA.
         </p>
 
-        <div class="grid grid-3" style="text-align: left;">
-            <div class="card" style="box-shadow: none;">
+        <p class="muted text-center" style="max-width: 72ch; margin: 0 auto 2rem;">
+            Criado em 1974, o CEA é um centro de consultoria por meio do qual professores
+            do <a href="http://www.ime.usp.br/mae" target="_blank" rel="noopener noreferrer">Departamento de Estatística</a>
+            do <a href="http://www.ime.usp.br" target="_blank" rel="noopener noreferrer">IME-USP</a>
+            prestam serviços de assessoria em Estatística Aplicada para órgãos da Universidade,
+            instituições públicas e privadas e pessoas físicas.
+        </p>
+
+        <h2 class="text-center">Conheça nossos serviços</h2>
+        <div class="grid grid-2" style="align-items: stretch; text-align: left; max-width: 960px; margin: 1rem auto 2rem;">
+            <a class="card service-card" href="https://www.ime.usp.br/cea/consultas.php" target="_blank" rel="noopener noreferrer">
                 <div class="card-body">
-                    <h3>Autenticação</h3>
-                    <p class="muted">Integração nativa com a Senha Única USP.</p>
+                    <h3 class="card-title">Consultas</h3>
+                    <p class="muted">
+                        Apresentação de sugestões para a análise de dados ou para o planejamento de
+                        estudos que envolvem análises estatísticas. Atividade pontual, realizada ao
+                        longo dos semestres letivos.
+                    </p>
+                    <span class="btn btn-primary btn-sm">Informações sobre consultas</span>
                 </div>
-            </div>
-            <div class="card" style="box-shadow: none;">
+            </a>
+            <a class="card service-card" href="https://www.ime.usp.br/cea/projetos.php" target="_blank" rel="noopener noreferrer">
                 <div class="card-body">
-                    <h3>Dados USP</h3>
-                    <p class="muted">Acesso simplificado aos sistemas corporativos via Replicado.</p>
+                    <h3 class="card-title">Projetos</h3>
+                    <p class="muted">
+                        Planejamento e/ou análise estatística completa de dados, com a produção de um
+                        relatório final detalhado. Realizados ao longo de um semestre letivo.
+                    </p>
+                    <span class="btn btn-primary btn-sm">Informações sobre projetos</span>
                 </div>
-            </div>
-            <div class="card" style="box-shadow: none;">
-                <div class="card-body">
-                    <h3>Docker Ready</h3>
-                    <p class="muted">Ambiente conteinerizado para desenvolvimento e produção.</p>
-                </div>
-            </div>
+            </a>
         </div>
 
-        {% if not user.is_authenticated %}
-            <p class="mt-3">
-                <a href="{% url 'login' %}" class="btn btn-primary">Acessar o sistema</a>
-            </p>
-        {% else %}
-            <p class="mt-3">
-                <a href="{% url 'applications:dashboard' %}" class="btn btn-primary">Ir para o painel</a>
-            </p>
-        {% endif %}
+        <p class="muted text-center" style="font-size: 0.85rem;">
+            Datas de inscrição, valores de taxas e demais informações atualizadas são divulgados no
+            site oficial do <a href="https://www.ime.usp.br/cea/index.php" target="_blank" rel="noopener noreferrer">CEA</a>.
+        </p>
+
+        <hr class="form-section-divider">
+
+        <p class="text-center mt-3">
+            <a href="{% url 'login' %}" class="btn btn-primary">Acessar o sistema</a>
+        </p>
+        <p class="text-center muted" style="font-size: 0.85rem;">
+            Entre com sua conta da Universidade de São Paulo (Senha Única) ou com seu login local
+            para preencher a ficha de inscrição.
+        </p>
     </div>
 </div>
 {% endblock %}

@@ -3,6 +3,10 @@
 {% block title %}Relatório financeiro{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
+{% block breadcrumbs %}
+    {% include "base/_breadcrumbs.html" with current_page="Relatório financeiro" %}
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <div>
@@ -12,6 +16,7 @@
     <div class="form-actions">
         <a href="{% url 'reports:financial_csv' %}" class="btn btn-secondary btn-sm">Exportar CSV</a>
         <a href="{% url 'reports:financial_xlsx' %}" class="btn btn-secondary btn-sm">Exportar XLSX</a>
+        <a href="{% url 'applications:dashboard' %}" class="btn btn-ghost">Voltar ao painel</a>
     </div>
 </div>
 
@@ -40,7 +45,11 @@
             <tbody>
                 {% for row in rows %}
                     <tr>
-                        <td>{{ row.protocol }}</td>
+                        <td>
+                            <a href="{% url 'applications:detail' row.protocol %}">
+                                {{ row.protocol }}
+                            </a>
+                        </td>
                         <td>{{ row.modality }}</td>
                         <td>{{ row.candidate }}</td>
                         <td>{{ row.email }}</td>

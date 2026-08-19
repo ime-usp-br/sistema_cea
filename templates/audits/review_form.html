@@ -3,12 +3,17 @@
 {% block title %}Revisar submissão #{{ submission.pk }}{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
+{% block breadcrumbs %}
+{% url 'audits:teacher_queue' as parent_url %}
+{% include "base/_breadcrumbs.html" with current_page="Revisar submissão #"|add:submission.pk parent_label="Fila de auditoria" parent_url=parent_url %}
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <div>
         <h1 class="page-title">Revisar submissão #{{ submission.pk }}</h1>
         <p class="page-subtitle">
-            Inscrição: <strong>{{ submission.application.protocol }}</strong> ·
+            Inscrição: <a href="{% url 'applications:detail' submission.application.protocol %}"><strong>{{ submission.application.protocol }}</strong></a> ·
             Canal: {{ submission.get_submission_channel_display }}
         </p>
     </div>

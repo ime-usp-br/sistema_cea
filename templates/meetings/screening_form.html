@@ -3,11 +3,16 @@
 {% block title %}{% if screening %}Reagendar{% else %}Agendar{% endif %} triagem — {{ application.protocol }}{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
+{% block breadcrumbs %}
+{% url 'meetings:queue' as parent_url %}
+{% include "base/_breadcrumbs.html" with current_page="Agendar triagem" parent_label="Agendamentos" parent_url=parent_url %}
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <div>
         <h1 class="page-title">{% if screening %}Reagendar{% else %}Agendar{% endif %} triagem</h1>
-        <p class="page-subtitle">Inscrição: <strong>{{ application.protocol }}</strong> — {{ application.researcher_name }}</p>
+        <p class="page-subtitle">Inscrição: <a href="{% url 'applications:detail' application.protocol %}"><strong>{{ application.protocol }}</strong></a> — {{ application.researcher_name }}</p>
     </div>
     <a href="{% url 'meetings:queue' %}" class="btn btn-ghost">Voltar à fila</a>
 </div>

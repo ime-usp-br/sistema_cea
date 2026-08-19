@@ -3,12 +3,17 @@
 {% block title %}Solicitações de reembolso{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
+{% block breadcrumbs %}
+    {% include "base/_breadcrumbs.html" with current_page="Reembolsos" %}
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <div>
         <h1 class="page-title">Solicitações de reembolso</h1>
         <p class="page-subtitle">Revise, aprove e execute os reembolsos solicitados.</p>
     </div>
+    <a href="{% url 'applications:dashboard' %}" class="btn btn-ghost">Voltar ao painel</a>
 </div>
 
 {% if refunds %}
@@ -28,7 +33,11 @@
                 {% for refund in refunds %}
                     <tr>
                         <td>{{ refund.pk }}</td>
-                        <td>{{ refund.application.protocol }}</td>
+                        <td>
+                            <a href="{% url 'applications:detail' refund.application.protocol %}">
+                                {{ refund.application.protocol }}
+                            </a>
+                        </td>
                         <td>R$ {{ refund.amount }}</td>
                         <td><span class="badge badge-warning">{{ refund.get_status_display }}</span></td>
                         <td>{{ refund.requested_by|default:"—" }}</td>

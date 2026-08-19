@@ -1,0 +1,59 @@
+{% if user.is_authenticated %}
+<nav class="site-nav" aria-label="Menu principal">
+    <a href="{% url 'applications:dashboard' %}"
+       class="nav-link {% if nav_active == 'dashboard' %}nav-active{% endif %}">Painel</a>
+
+    {% if is_candidate %}
+        <a href="{% url 'applications:create' %}" class="nav-link">Nova inscrição</a>
+        <a href="{% url 'imports:claim_request' %}" class="nav-link">Resgatar inscrição</a>
+    {% endif %}
+
+    {% if is_teacher or is_secretariat or is_admin %}
+        <div class="nav-dropdown">
+            <button type="button" class="nav-link nav-dropdown-toggle {% if nav_active == 'audit_queue' or nav_active == 'audit_rejected' %}nav-active{% endif %}" aria-haspopup="true" aria-expanded="false">
+                Auditoria
+            </button>
+            <div class="nav-dropdown-menu">
+                <a href="{% url 'audits:teacher_queue' %}"
+                   class="nav-dropdown-item {% if nav_active == 'audit_queue' %}nav-active{% endif %}">Fila de análise</a>
+                {% if is_secretariat or is_admin %}
+                    <a href="{% url 'audits:resolution_list' %}"
+                       class="nav-dropdown-item {% if nav_active == 'audit_rejected' %}nav-active{% endif %}">Rejeitadas</a>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+
+    {% if is_secretariat or is_admin %}
+        <div class="nav-dropdown">
+            <button type="button" class="nav-link nav-dropdown-toggle {% if nav_active == 'meetings' or nav_active == 'refunds' or nav_active == 'overdue' or nav_active == 'claims' %}nav-active{% endif %}" aria-haspopup="true" aria-expanded="false">
+                Operação
+            </button>
+            <div class="nav-dropdown-menu">
+                <a href="{% url 'meetings:queue' %}"
+                   class="nav-dropdown-item {% if nav_active == 'meetings' %}nav-active{% endif %}">Agendamentos</a>
+                <a href="{% url 'payments:refund_list' %}"
+                   class="nav-dropdown-item {% if nav_active == 'refunds' %}nav-active{% endif %}">Reembolsos</a>
+                <a href="{% url 'payments:overdue_list' %}"
+                   class="nav-dropdown-item {% if nav_active == 'overdue' %}nav-active{% endif %}">Cobranças</a>
+                <a href="{% url 'imports:claim_queue' %}"
+                   class="nav-dropdown-item {% if nav_active == 'claims' %}nav-active{% endif %}">Resgates</a>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if is_admin %}
+        <div class="nav-dropdown">
+            <button type="button" class="nav-link nav-dropdown-toggle {% if nav_active == 'reports_financial' or nav_active == 'reports_audit' %}nav-active{% endif %}" aria-haspopup="true" aria-expanded="false">
+                Relatórios
+            </button>
+            <div class="nav-dropdown-menu">
+                <a href="{% url 'reports:financial_report' %}"
+                   class="nav-dropdown-item {% if nav_active == 'reports_financial' %}nav-active{% endif %}">Financeiro</a>
+                <a href="{% url 'reports:audit_report' %}"
+                   class="nav-dropdown-item {% if nav_active == 'reports_audit' %}nav-active{% endif %}">Auditoria</a>
+            </div>
+        </div>
+    {% endif %}
+</nav>
+{% endif %}

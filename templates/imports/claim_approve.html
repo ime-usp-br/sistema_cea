@@ -3,6 +3,11 @@
 {% block title %}Aprovar resgate{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
+{% block breadcrumbs %}
+{% url 'imports:claim_queue' as parent_url %}
+{% include "base/_breadcrumbs.html" with current_page="Aprovar resgate" parent_label="Resgates" parent_url=parent_url %}
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <div>
@@ -12,6 +17,7 @@
             · E-mail: {{ claim.contact_email|default:"—" }}
         </p>
     </div>
+    <a href="{% url 'imports:claim_queue' %}" class="btn btn-ghost">Voltar à fila</a>
 </div>
 
 <div class="card" style="max-width: 640px;">

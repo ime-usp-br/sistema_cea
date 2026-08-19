@@ -4,6 +4,10 @@
 {% block title %}Nova Inscrição{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
+{% block breadcrumbs %}
+    {% include "base/_breadcrumbs.html" with current_page="Nova inscrição" %}
+{% endblock %}
+
 {% block content %}
 <div class="page-header" style="display: block; text-align: center;">
     <div>

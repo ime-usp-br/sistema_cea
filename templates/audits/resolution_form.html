@@ -3,13 +3,18 @@
 {% block title %}Resolver rejeição — #{{ submission.pk }}{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
+{% block breadcrumbs %}
+{% url 'audits:resolution_list' as parent_url %}
+{% include "base/_breadcrumbs.html" with current_page="Decisão administrativa" parent_label="Auditorias rejeitadas" parent_url=parent_url %}
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <div>
         <h1 class="page-title">Decisão administrativa</h1>
         <p class="page-subtitle">
             Submissão <strong>#{{ submission.pk }}</strong> — Inscrição
-            <strong>{{ submission.application.protocol }}</strong>
+            <a href="{% url 'applications:detail' submission.application.protocol %}"><strong>{{ submission.application.protocol }}</strong></a>
         </p>
     </div>
     <a href="{% url 'audits:resolution_list' %}" class="btn btn-ghost">Voltar</a>

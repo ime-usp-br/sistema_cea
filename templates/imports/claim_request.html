@@ -3,12 +3,17 @@
 {% block title %}Vincular inscrição{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
+{% block breadcrumbs %}
+    {% include "base/_breadcrumbs.html" with current_page="Resgatar inscrição" %}
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <div>
         <h1 class="page-title">Vincular inscrição existente</h1>
         <p class="page-subtitle">Informe o protocolo e/ou o e-mail ou documento cadastrado na sua inscrição. Enviaremos um código de confirmação para o e-mail registrado.</p>
     </div>
+    <a href="{% url 'applications:dashboard' %}" class="btn btn-ghost">Voltar ao painel</a>
 </div>
 
 <div class="card" style="max-width: 640px;">

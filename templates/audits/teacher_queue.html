@@ -3,12 +3,17 @@
 {% block title %}Fila de auditoria{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
+{% block breadcrumbs %}
+    {% include "base/_breadcrumbs.html" with current_page="Fila de auditoria" %}
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <div>
         <h1 class="page-title">Submissões pendentes de análise</h1>
         <p class="page-subtitle">Revise e registre decisões sobre os dados enviados pelos candidatos.</p>
     </div>
+    <a href="{% url 'applications:dashboard' %}" class="btn btn-ghost">Voltar ao painel</a>
 </div>
 
 {% if submissions %}
@@ -28,7 +33,11 @@
                 {% for submission in submissions %}
                     <tr>
                         <td>#{{ submission.pk }}</td>
-                        <td>{{ submission.application.protocol }}</td>
+                        <td>
+                            <a href="{% url 'applications:detail' submission.application.protocol %}">
+                                {{ submission.application.protocol }}
+                            </a>
+                        </td>
                         <td><span class="badge badge-neutral">{{ submission.get_submission_channel_display }}</span></td>
                         <td>{{ submission.submitted_by|default:"—" }}</td>
                         <td>{{ submission.submitted_at }}</td>

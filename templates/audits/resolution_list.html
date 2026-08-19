@@ -3,12 +3,17 @@
 {% block title %}Auditorias rejeitadas{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
+{% block breadcrumbs %}
+    {% include "base/_breadcrumbs.html" with current_page="Auditorias rejeitadas" %}
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <div>
         <h1 class="page-title">Auditorias rejeitadas</h1>
         <p class="page-subtitle">Submissões rejeitadas aguardando decisão administrativa.</p>
     </div>
+    <a href="{% url 'applications:dashboard' %}" class="btn btn-ghost">Voltar ao painel</a>
 </div>
 
 {% if submissions %}
@@ -26,7 +31,11 @@
                 {% for submission in submissions %}
                     <tr>
                         <td>#{{ submission.pk }}</td>
-                        <td>{{ submission.application.protocol }}</td>
+                        <td>
+                            <a href="{% url 'applications:detail' submission.application.protocol %}">
+                                {{ submission.application.protocol }}
+                            </a>
+                        </td>
                         <td>{{ submission.submitted_at }}</td>
                         <td class="actions"><a href="{% url 'audits:resolve' submission.pk %}" class="btn btn-sm btn-secondary">Decidir</a></td>
                     </tr>

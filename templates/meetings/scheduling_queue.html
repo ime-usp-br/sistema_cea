@@ -3,12 +3,17 @@
 {% block title %}Fila de agendamentos{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
+{% block breadcrumbs %}
+    {% include "base/_breadcrumbs.html" with current_page="Agendamentos" %}
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <div>
         <h1 class="page-title">Agendamentos pendentes</h1>
         <p class="page-subtitle">Programe triagens de projetos e reuniões de consulta.</p>
     </div>
+    <a href="{% url 'applications:dashboard' %}" class="btn btn-ghost">Voltar ao painel</a>
 </div>
 
 <h2>Triagens de Projetos</h2>
@@ -25,7 +30,11 @@
             <tbody>
                 {% for application in projects %}
                     <tr>
-                        <td>{{ application.protocol }}</td>
+                        <td>
+                            <a href="{% url 'applications:detail' application.protocol %}">
+                                {{ application.protocol }}
+                            </a>
+                        </td>
                         <td>{{ application.researcher_name }}</td>
                         <td class="actions">
                             <a href="{% url 'meetings:screening_schedule' application.protocol %}" class="btn btn-sm btn-primary">Agendar</a>
@@ -55,7 +64,11 @@
             <tbody>
                 {% for application in consultations %}
                     <tr>
-                        <td>{{ application.protocol }}</td>
+                        <td>
+                            <a href="{% url 'applications:detail' application.protocol %}">
+                                {{ application.protocol }}
+                            </a>
+                        </td>
                         <td>{{ application.researcher_name }}</td>
                         <td class="actions">
                             <a href="{% url 'meetings:consultation_schedule' application.protocol %}" class="btn btn-sm btn-secondary">Agendar</a>

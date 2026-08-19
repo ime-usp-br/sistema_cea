@@ -3,6 +3,11 @@
 {% block title %}Pagamento da inscrição{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
+{% block breadcrumbs %}
+{% url 'applications:detail' application.protocol as parent_url %}
+{% include "base/_breadcrumbs.html" with current_page="Pagamento" parent_label="Inscrição "|add:application.protocol parent_url=parent_url %}
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <div>
@@ -54,6 +59,7 @@
                     <th>Valor</th>
                     <th>Estado</th>
                     <th>Data</th>
+                    <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -64,9 +70,19 @@
                         <td>R$ {{ instrument.amount }}</td>
                         <td><span class="badge badge-neutral">{{ instrument.get_state_display }}</span></td>
                         <td>{{ instrument.created_at }}</td>
+                        <td class="actions">
+                            {% if instrument.method == 'pix' %}
+                                <a href="{% url 'pix:detail' application.protocol %}" class="btn btn-sm btn-primary">Ver Pix</a>
+                            {% elif instrument.method == 'bank_slip' %}
+                                <a href="{% url 'bank_slips:detail' application.protocol %}" class="btn btn-sm btn-primary">Ver boleto</a>
+                            {% endif %}
+                            {% if instrument.state == 'paid' or instrument.state == 'manual_confirmed' %}
+                                <a href="{% url 'documents:payment_receipt_pdf' instrument.pk %}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-ghost">Recibo</a>
+                            {% endif %}
+                        </td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="5">Nenhum instrumento de pagamento gerado.</td></tr>
+                    <tr><td colspan="6">Nenhum instrumento de pagamento gerado.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

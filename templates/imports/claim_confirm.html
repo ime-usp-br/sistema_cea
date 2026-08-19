@@ -3,12 +3,17 @@
 {% block title %}Confirmar resgate{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
+{% block breadcrumbs %}
+    {% include "base/_breadcrumbs.html" with current_page="Confirmar resgate" %}
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <div>
         <h1 class="page-title">Confirmar código</h1>
         <p class="page-subtitle">Inscrição {{ claim.protocol }} — informe o código enviado por e-mail.</p>
     </div>
+    <a href="{% url 'imports:claim_request' %}" class="btn btn-ghost">Voltar</a>
 </div>
 
 <div class="card" style="max-width: 560px;">

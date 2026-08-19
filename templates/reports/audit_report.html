@@ -3,12 +3,17 @@
 {% block title %}Relatório de auditoria{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
+{% block breadcrumbs %}
+    {% include "base/_breadcrumbs.html" with current_page="Relatório de auditoria" %}
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <div>
         <h1 class="page-title">Relatório de auditoria</h1>
         <p class="page-subtitle">Visão consolidada das submissões e decisões de auditoria.</p>
     </div>
+    <a href="{% url 'applications:dashboard' %}" class="btn btn-ghost">Voltar ao painel</a>
 </div>
 
 {% if rows %}
@@ -31,7 +36,11 @@
             <tbody>
                 {% for row in rows %}
                     <tr>
-                        <td>{{ row.protocol }}</td>
+                        <td>
+                            <a href="{% url 'applications:detail' row.protocol %}">
+                                {{ row.protocol }}
+                            </a>
+                        </td>
                         <td>{{ row.project }}</td>
                         <td>{{ row.candidate }}</td>
                         <td>{{ row.submitted_at }}</td>

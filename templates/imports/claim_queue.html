@@ -3,12 +3,17 @@
 {% block title %}Fila de resgates{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
+{% block breadcrumbs %}
+    {% include "base/_breadcrumbs.html" with current_page="Resgates" %}
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <div>
         <h1 class="page-title">Solicitações de resgate</h1>
         <p class="page-subtitle">Solicitações de vínculo de inscrições existentes aguardando aprovação.</p>
     </div>
+    <a href="{% url 'applications:dashboard' %}" class="btn btn-ghost">Voltar ao painel</a>
 </div>
 
 {% if claims %}
@@ -29,7 +34,15 @@
                 {% for claim in claims %}
                     <tr>
                         <td>#{{ claim.pk }}</td>
-                        <td>{{ claim.protocol }}</td>
+                        <td>
+                            {% if claim.application %}
+                                <a href="{% url 'applications:detail' claim.application.protocol %}">
+                                    {{ claim.protocol }}
+                                </a>
+                            {% else %}
+                                {{ claim.protocol }}
+                            {% endif %}
+                        </td>
                         <td>{{ claim.user|default:"—" }}</td>
                         <td>{{ claim.contact_email|default:"—" }}</td>
                         <td><span class="badge badge-warning">{{ claim.get_status_display }}</span></td>

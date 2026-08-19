@@ -3,12 +3,18 @@
 {% block title %}Confirmar pagamento manual{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
+{% block breadcrumbs %}
+{% url 'applications:detail' instrument.fee_requirement.application.protocol as parent_url %}
+{% include "base/_breadcrumbs.html" with current_page="Confirmação manual de pagamento" parent_label="Inscrição "|add:instrument.fee_requirement.application.protocol parent_url=parent_url %}
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <div>
         <h1 class="page-title">Confirmar pagamento manual</h1>
         <p class="page-subtitle">Inscrição: <strong>{{ instrument.fee_requirement.application.protocol }}</strong></p>
     </div>
+    <a href="{% url 'applications:detail' instrument.fee_requirement.application.protocol %}" class="btn btn-ghost">Voltar à inscrição</a>
 </div>
 
 <div class="card" style="max-width: 760px;">
@@ -26,7 +32,7 @@
             {% endif %}
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">Confirmar pagamento</button>
-                <a href="{% url 'admin:index' %}" class="btn btn-ghost">Voltar ao painel administrativo</a>
+                <a href="{% url 'applications:detail' instrument.fee_requirement.application.protocol %}" class="btn btn-ghost">Voltar à inscrição</a>
             </div>
         </form>
     </div>

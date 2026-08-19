@@ -3,12 +3,18 @@
 {% block title %}Enviar dados — {{ application.protocol }}{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
+{% block breadcrumbs %}
+{% url 'applications:detail' application.protocol as parent_url %}
+{% include "base/_breadcrumbs.html" with current_page="Envio de dados para auditoria" parent_label="Inscrição "|add:application.protocol parent_url=parent_url %}
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <div>
         <h1 class="page-title">Envio de dados para auditoria</h1>
         <p class="page-subtitle">Inscrição: <strong>{{ application.protocol }}</strong></p>
     </div>
+    <a href="{% url 'applications:detail' application.protocol %}" class="btn btn-ghost">Voltar à inscrição</a>
 </div>
 
 <div class="card" style="max-width: 760px;">

@@ -3,6 +3,11 @@
 {% block title %}Solicitar reembolso{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
+{% block breadcrumbs %}
+{% url 'payments:refund_list' as parent_url %}
+{% include "base/_breadcrumbs.html" with current_page="Solicitar reembolso" parent_label="Reembolsos" parent_url=parent_url %}
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <div>
