@@ -55,15 +55,15 @@
                         <td>{{ row.email }}</td>
                         <td>{{ row.fee_type }}</td>
                         <td>{{ row.payment_method }}</td>
-                        <td>{{ row.base_amount }}</td>
-                        <td>{{ row.adjustment_amount }}</td>
-                        <td>{{ row.amount }}</td>
+                        <td class="tabular-nums">{{ row.base_amount|floatformat:2 }}</td>
+                        <td class="tabular-nums">{{ row.adjustment_amount|floatformat:2 }}</td>
+                        <td class="tabular-nums">{{ row.amount|floatformat:2 }}</td>
                         <td><span class="badge badge-neutral">{{ row.payment_state }}</span></td>
-                        <td>{{ row.paid_at|default:"—" }}</td>
+                        <td>{{ row.paid_at|default:"—"|date:"d/m/Y H:i" }}</td>
                         <td>{{ row.manual|yesno:"Sim,Não" }}</td>
                         <td>{{ row.superseded|yesno:"Sim,Não" }}</td>
                         <td>{{ row.modality_credit }}</td>
-                        <td>{{ row.refund_status }}{% if row.refund_amount %}<br>{{ row.refund_amount }}{% endif %}</td>
+                        <td>{{ row.refund_status }}{% if row.refund_amount %}<br>R$ {{ row.refund_amount|floatformat:2 }}{% endif %}</td>
                     </tr>
                 {% endfor %}
             </tbody>

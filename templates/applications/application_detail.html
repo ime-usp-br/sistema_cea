@@ -37,11 +37,22 @@
         <div class="form-actions">
             {% if is_candidate %}
                 <a href="{% url 'payments:fee_payment' object.protocol %}" class="btn btn-primary">Pagar taxa / ver pagamento</a>
-            {% endif %}
-            <a href="{% url 'documents:application_full_pdf' object.protocol %}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost">Ficha completa (PDF)</a>
-            <a href="{% url 'documents:application_firstpage_pdf' object.protocol %}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost">Primeira página (PDF)</a>
-            {% if is_secretariat or is_admin %}
                 <a href="{% url 'payments:refund_create' object.protocol %}" class="btn btn-secondary">Solicitar reembolso</a>
+                {% if is_candidate and object.owner_id == user.id and object.modality == "project" and object.lifecycle_status == "awaiting_dataset_submission" or is_candidate and object.owner_id == user.id and object.modality == "project" and object.lifecycle_status == "awaiting_dataset_correction" %}
+                    <a href="{% url 'audits:submit' object.protocol %}" class="btn btn-primary">
+                        {% if object.lifecycle_status == "awaiting_dataset_correction" %}
+                            Corrigir e reenviar dados
+                        {% else %}
+                            Enviar dados para auditoria
+                        {% endif %}
+                    </a>
+                {% endif %}
+            {% endif %}
+            {% if is_secretariat or is_admin %}
+                <a href="{% url 'documents:application_full_pdf' object.protocol %}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost">Ficha completa (PDF)</a>
+            {% endif %}
+            {% if is_teacher or is_secretariat or is_admin %}
+                <a href="{% url 'documents:application_firstpage_pdf' object.protocol %}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost">Primeira página (PDF)</a>
             {% endif %}
         </div>
     </div>
@@ -58,20 +69,6 @@
             </ul>
         </div>
     </div>
-{% endif %}
-
-{% if object.modality == "project" and object.owner %}
-    {% if object.lifecycle_status == "awaiting_dataset_submission" or object.lifecycle_status == "awaiting_dataset_correction" %}
-        <p>
-            <a href="{% url 'audits:submit' object.protocol %}" class="btn btn-primary">
-                {% if object.lifecycle_status == "awaiting_dataset_correction" %}
-                    Corrigir e reenviar dados
-                {% else %}
-                    Enviar dados para auditoria
-                {% endif %}
-            </a>
-        </p>
-    {% endif %}
 {% endif %}
 
 {% if user.is_authenticated and user.role == "secretariat" or user.role == "administrator" or user.is_superuser %}

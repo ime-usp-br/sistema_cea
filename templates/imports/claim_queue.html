@@ -46,7 +46,7 @@
                         <td>{{ claim.user|default:"—" }}</td>
                         <td>{{ claim.contact_email|default:"—" }}</td>
                         <td><span class="badge badge-warning">{{ claim.get_status_display }}</span></td>
-                        <td>{{ claim.created_at }}</td>
+                        <td>{{ claim.created_at|date:"d/m/Y H:i" }}</td>
                         <td class="actions">
                             <a href="{% url 'imports:claim_approve' claim.pk %}" class="btn btn-sm btn-primary">Aprovar</a>
                         </td>

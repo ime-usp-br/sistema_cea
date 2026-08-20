@@ -40,7 +40,7 @@
                         </td>
                         <td><span class="badge badge-neutral">{{ submission.get_submission_channel_display }}</span></td>
                         <td>{{ submission.submitted_by|default:"—" }}</td>
-                        <td>{{ submission.submitted_at }}</td>
+                        <td>{{ submission.submitted_at|date:"d/m/Y H:i" }}</td>
                         <td class="actions"><a href="{% url 'audits:review' submission.pk %}" class="btn btn-sm btn-primary">Analisar</a></td>
                     </tr>
                 {% endfor %}

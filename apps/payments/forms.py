@@ -29,7 +29,7 @@ class ManualPaymentConfirmationForm(forms.Form):
 
 
 class RefundRequestForm(forms.Form):
-    """Secretaria solicita um reembolso."""
+    """Candidato solicita um reembolso para a própria inscrição."""
 
     amount = forms.DecimalField(
         max_digits=10,

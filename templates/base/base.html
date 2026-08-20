@@ -74,7 +74,9 @@
         </nav>
     </header>
 
-    <main class="container content-main">
+    <a class="skip-link" href="#content-main">Pular para o conteúdo</a>
+
+    <main class="container content-main" id="content-main" tabindex="-1">
         {% block breadcrumbs %}{% endblock %}
 
         {% if messages %}
@@ -93,5 +95,46 @@
     </footer>
 
     {% block extra_js %}{% endblock %}
+
+    <script>
+    (function () {
+        document.querySelectorAll("form").forEach(function (form) {
+            form.addEventListener("submit", function () {
+                var submit = form.querySelector('button[type="submit"], input[type="submit"]');
+                if (!submit || submit.disabled) return;
+                submit.disabled = true;
+                var label = submit.getAttribute("data-loading-text");
+                if (label) {
+                    submit.dataset.originalText = submit.textContent;
+                    submit.textContent = label;
+                }
+            });
+        });
+    })();
+
+    (function () {
+        function syncExpanded() {
+            document.querySelectorAll(".nav-dropdown").forEach(function (dd) {
+                var isOpen = dd.matches(":hover") || dd.matches(":focus-within");
+                var btn = dd.querySelector(".nav-dropdown-toggle");
+                if (btn) btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+            });
+        }
+        document.querySelectorAll(".nav-dropdown").forEach(function (dd) {
+            ["mouseenter", "mouseleave", "focusin", "focusout"].forEach(function (ev) {
+                dd.addEventListener(ev, syncExpanded);
+            });
+        });
+        document.addEventListener("keydown", function (e) {
+            if (e.key !== "Escape") return;
+            document.querySelectorAll(".nav-dropdown").forEach(function (dd) {
+                dd.blur();
+                var btn = dd.querySelector(".nav-dropdown-toggle");
+                if (btn) btn.setAttribute("aria-expanded", "false");
+            });
+        });
+        syncExpanded();
+    })();
+    </script>
 </body>
 </html>

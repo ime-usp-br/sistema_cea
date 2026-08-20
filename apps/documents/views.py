@@ -13,13 +13,26 @@ from .services import DocumentRenderingService
 
 _service = DocumentRenderingService()
 
-_STAFF_ROLES = frozenset(
+_FULL_PDF_ROLES = frozenset({User.Role.SECRETARIAT, User.Role.ADMINISTRATOR})
+_FIRSTPAGE_PDF_ROLES = frozenset(
     {User.Role.TEACHER, User.Role.SECRETARIAT, User.Role.ADMINISTRATOR}
 )
 
 
-def _can_access(application: ServiceApplication, user: Any) -> bool:
-    return user.is_superuser or user.role in _STAFF_ROLES or application.owner_id == user.pk
+def _is_staff(user: Any, roles: frozenset) -> bool:
+    return user.is_superuser or user.role in roles
+
+
+def _can_full_pdf(user: Any) -> bool:
+    return _is_staff(user, _FULL_PDF_ROLES)
+
+
+def _can_firstpage_pdf(user: Any) -> bool:
+    return _is_staff(user, _FIRSTPAGE_PDF_ROLES)
+
+
+def _can_access_owner_or_staff(application: ServiceApplication, user: Any) -> bool:
+    return _is_staff(user, _FIRSTPAGE_PDF_ROLES) or application.owner_id == user.pk
 
 
 def _pdf_response(content: bytes, filename: str) -> HttpResponse:
@@ -34,7 +47,7 @@ def application_full_pdf(request: HttpRequest, protocol: str) -> HttpResponse:
         ServiceApplication.all_objects, protocol=protocol
     )
     user = request.user
-    if not _can_access(application, user):
+    if not _can_full_pdf(user):
         return HttpResponse(status=403)
     content = _service.render_application_full_pdf(application)
     return _pdf_response(content, f"ficha-{protocol}.pdf")
@@ -46,7 +59,7 @@ def application_firstpage_pdf(request: HttpRequest, protocol: str) -> HttpRespon
         ServiceApplication.all_objects, protocol=protocol
     )
     user = request.user
-    if not _can_access(application, user):
+    if not _can_firstpage_pdf(user):
         return HttpResponse(status=403)
     content = _service.render_application_firstpage_pdf(application)
     return _pdf_response(content, f"resumo-{protocol}.pdf")
@@ -57,7 +70,7 @@ def payment_receipt_pdf(request: HttpRequest, instrument_id: int) -> HttpRespons
     instrument = get_object_or_404(PaymentInstrument, pk=instrument_id)
     application = instrument.fee_requirement.application
     user = request.user
-    if not _can_access(application, user):
+    if not _can_access_owner_or_staff(application, user):
         return HttpResponse(status=403)
     content = _service.render_payment_receipt_pdf(instrument)
     return _pdf_response(content, f"comprovante-{application.protocol}.pdf")
@@ -68,7 +81,7 @@ def screening_summary_pdf(request: HttpRequest, screening_id: int) -> HttpRespon
     screening = get_object_or_404(ProjectScreening, pk=screening_id)
     application = screening.application
     user = request.user
-    if not _can_access(application, user):
+    if not _can_access_owner_or_staff(application, user):
         return HttpResponse(status=403)
     content = _service.render_screening_summary_pdf(screening)
     return _pdf_response(content, f"triagem-{application.protocol}.pdf")

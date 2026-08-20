@@ -188,11 +188,27 @@ class DocumentDownloadViewTests(TestCase):
             contact_email="owner@example.com",
         )
 
-    def test_ficha_owner_pode_baixar(self) -> None:
+    def test_ficha_owner_candidato_nao_pode_baixar(self) -> None:
+        self.client.force_login(self.owner)
+        response = self.client.get(
+            reverse(
+                "documents:application_full_pdf",
+                kwargs={"protocol": self.application.protocol},
+            )
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_ficha_secretaria_pode_baixar(self) -> None:
+        staff = User.objects.create_user(
+            username="secretaria",
+            email="secretaria@example.com",
+            password="pass",
+            role=User.Role.SECRETARIAT,
+        )
         with patch.object(
             DocumentRenderingService, "_convert_to_pdf", staticmethod(_capture_html)
         ):
-            self.client.force_login(self.owner)
+            self.client.force_login(staff)
             response = self.client.get(
                 reverse(
                     "documents:application_full_pdf",
@@ -202,6 +218,22 @@ class DocumentDownloadViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "application/pdf")
         self.assertIn("attachment", response["Content-Disposition"])
+
+    def test_ficha_docente_nao_pode_baixar(self) -> None:
+        teacher = User.objects.create_user(
+            username="docente",
+            email="docente@example.com",
+            password="pass",
+            role=User.Role.TEACHER,
+        )
+        self.client.force_login(teacher)
+        response = self.client.get(
+            reverse(
+                "documents:application_full_pdf",
+                kwargs={"protocol": self.application.protocol},
+            )
+        )
+        self.assertEqual(response.status_code, 403)
 
     def test_ficha_outro_candidato_nao_pode_baixar(self) -> None:
         self.client.force_login(self.other)
@@ -222,11 +254,27 @@ class DocumentDownloadViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 302)
 
-    def test_primeira_pagina_owner_pode_baixar(self) -> None:
+    def test_primeira_pagina_owner_candidato_nao_pode_baixar(self) -> None:
+        self.client.force_login(self.owner)
+        response = self.client.get(
+            reverse(
+                "documents:application_firstpage_pdf",
+                kwargs={"protocol": self.application.protocol},
+            )
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_primeira_pagina_docente_pode_baixar(self) -> None:
+        teacher = User.objects.create_user(
+            username="docente",
+            email="docente@example.com",
+            password="pass",
+            role=User.Role.TEACHER,
+        )
         with patch.object(
             DocumentRenderingService, "_convert_to_pdf", staticmethod(_capture_html)
         ):
-            self.client.force_login(self.owner)
+            self.client.force_login(teacher)
             response = self.client.get(
                 reverse(
                     "documents:application_firstpage_pdf",

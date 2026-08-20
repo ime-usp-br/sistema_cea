@@ -43,12 +43,12 @@
                         <td>{{ row.application.researcher_name }}</td>
                         <td>{{ row.application.get_modality_display }}</td>
                         <td>{{ row.application.term }}</td>
-                        <td>
+                        <td class="tabular-nums">
                             {% for fee in row.fees %}
                                 <div>{{ fee.get_fee_type_display }} — R$ {{ fee.amount|floatformat:2 }}</div>
                             {% endfor %}
                         </td>
-                        <td>R$ {{ row.total_pending|floatformat:2 }}</td>
+                        <td class="tabular-nums">R$ {{ row.total_pending|floatformat:2 }}</td>
                         <td class="actions">
                             <a href="{% url 'applications:detail' row.application.protocol %}" class="btn btn-sm btn-primary">Ver inscrição</a>
                         </td>

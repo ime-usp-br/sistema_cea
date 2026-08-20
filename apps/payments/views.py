@@ -166,14 +166,14 @@ class RefundRequestListView(RoleRequiredMixin, View):
         return render(request, self.template_name, {"refunds": refunds})
 
 
-class RefundRequestCreateView(RoleRequiredMixin, View):
-    """Secretaria solicita um reembolso para uma inscrição."""
+class RefundRequestCreateView(LoginRequiredMixin, View):
+    """Candidato solicita um reembolso para a própria inscrição."""
 
-    allowed_roles = frozenset({User.Role.SECRETARIAT, User.Role.ADMINISTRATOR})
     template_name = "payments/refund_request_form.html"
 
     def get_application(self, protocol: str) -> ServiceApplication:
-        return get_object_or_404(ServiceApplication, protocol=protocol)
+        user = cast(User, self.request.user)
+        return get_object_or_404(ServiceApplication, protocol=protocol, owner=user)
 
     def get(self, request, protocol: str):
         application = self.get_application(protocol)

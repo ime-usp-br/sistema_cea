@@ -41,7 +41,7 @@
             <thead>
                 <tr>
                     <th>Protocolo</th>
-                    <th>Data da inscrição</th>
+                    <th>Data da<br>inscrição</th>
                     <th>Modalidade</th>
                     <th>Nome do pesquisador</th>
                     <th>E-mail</th>
@@ -78,8 +78,12 @@
                         </td>
                         <td class="actions">
                             <a href="{% url 'applications:detail' row.application.protocol %}" class="btn btn-sm btn-ghost">Visualizar</a>
-                            <a href="{% url 'documents:application_full_pdf' row.application.protocol %}" class="btn btn-sm btn-ghost" title="PDF Completo">PDF Completo</a>
-                            <a href="{% url 'documents:application_firstpage_pdf' row.application.protocol %}" class="btn btn-sm btn-ghost" title="PDF Primeira Página">PDF 1ª Página</a>
+                            {% if is_secretariat or is_admin %}
+                                <a href="{% url 'documents:application_full_pdf' row.application.protocol %}" class="btn btn-sm btn-ghost" title="PDF Completo">PDF Completo</a>
+                            {% endif %}
+                            {% if is_teacher or is_secretariat or is_admin %}
+                                <a href="{% url 'documents:application_firstpage_pdf' row.application.protocol %}" class="btn btn-sm btn-ghost" title="PDF Primeira Página">PDF 1ª Página</a>
+                            {% endif %}
                             <form method="post" action="{% url 'applications:transfer_semester' row.application.protocol %}" class="d-inline">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-sm btn-outline-warning" title="Transferir para próximo semestre"

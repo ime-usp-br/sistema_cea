@@ -76,7 +76,7 @@
 
             <hr class="form-section-divider">
 
-            <h5 class="form-section-title">Dados bancários para emissão do boleto e devolução da taxa em caso de não poder ser feita a consulta</h5>
+            <h2 class="form-section-title">Dados bancários para emissão do boleto e devolução da taxa em caso de não poder ser feita a consulta</h2>
 
             {% include "applications/_form_field.html" with field=form.refund_account_holder_name label="Nome completo" %}
 
@@ -151,7 +151,7 @@
             <hr class="form-section-divider">
 
             <div class="form-actions" style="justify-content: center;">
-                <button type="submit" class="btn btn-primary">Enviar inscrição</button>
+                <button type="submit" class="btn btn-primary" data-loading-text="Enviando…">Enviar inscrição</button>
                 <a href="{% url 'applications:dashboard' %}" class="btn btn-ghost">Voltar ao painel</a>
             </div>
         </form>

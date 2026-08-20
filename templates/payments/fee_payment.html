@@ -29,7 +29,7 @@
     <div class="card" style="max-width: 640px;">
         <div class="card-body">
             <dl class="detail-list" style="grid-template-columns: 1fr;">
-                <div><dt>Taxa de inscrição</dt><dd>R$ {{ fee.amount }}</dd></div>
+                <div><dt>Taxa de inscrição</dt><dd>R$ {{ fee.amount|floatformat:2 }}</dd></div>
             </dl>
             {% if fee.is_paid %}
                 <div class="alert alert-success"><strong>Taxa paga.</strong></div>
@@ -65,11 +65,11 @@
             <tbody>
                 {% for instrument in fee.payment_instruments.all %}
                     <tr>
-                        <td>{{ instrument.pk }}</td>
+                        <td class="tabular-nums">{{ instrument.pk }}</td>
                         <td>{{ instrument.get_method_display }}</td>
-                        <td>R$ {{ instrument.amount }}</td>
+                        <td class="tabular-nums">R$ {{ instrument.amount|floatformat:2 }}</td>
                         <td><span class="badge badge-neutral">{{ instrument.get_state_display }}</span></td>
-                        <td>{{ instrument.created_at }}</td>
+                        <td>{{ instrument.created_at|date:"d/m/Y H:i" }}</td>
                         <td class="actions">
                             {% if instrument.method == 'pix' %}
                                 <a href="{% url 'pix:detail' application.protocol %}" class="btn btn-sm btn-primary">Ver Pix</a>

@@ -96,8 +96,13 @@ class NavigationFlowTests(TestCase):
         self._assert_link_present(
             detail, reverse("payments:fee_payment", args=[application.protocol])
         )
-        self._assert_link_present(
+        # O candidato (inscrito) não tem acesso às ações de PDF.
+        self.assertNotContains(
             detail, reverse("documents:application_full_pdf", args=[application.protocol])
+        )
+        self.assertNotContains(
+            detail,
+            reverse("documents:application_firstpage_pdf", args=[application.protocol]),
         )
 
         payment = self._get(reverse("payments:fee_payment", args=[application.protocol]))
@@ -263,14 +268,16 @@ class NavigationFlowTests(TestCase):
             submission_form, reverse("applications:detail", args=[application.protocol])
         )
 
-        # reembolso: página da secretaria.
+        # reembolso: página do candidato (owner), restrita à própria inscrição.
         self.client.logout()
-        self.client.force_login(self.secretariat)
+        self.client.force_login(self.candidate)
         refund_form = self._get(
             reverse("payments:refund_create", args=[application.protocol])
         )
         self.assertEqual(refund_form.status_code, 200)
-        self._assert_link_present(refund_form, reverse("payments:refund_list"))
+        self._assert_link_present(
+            refund_form, reverse("applications:detail", args=[application.protocol])
+        )
 
     def test_TS_NAV_006_relatorios_ligam_as_inscricoes(self) -> None:
         self._application(modality=ServiceApplication.Modality.CONSULTATION)
