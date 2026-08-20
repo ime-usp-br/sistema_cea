@@ -1,5 +1,6 @@
 from typing import Any
 
+from django.conf import settings
 from django.template.loader import render_to_string
 
 from applications.models import ServiceApplication
@@ -50,8 +51,20 @@ class DocumentRenderingService:
         return self.render_pdf("documents/screening_summary_pdf.html", context)
 
     def render_pdf(self, template_name: str, context: dict[str, Any]) -> bytes:
-        html_content = render_to_string(template_name, context)
+        html_content: str = render_to_string(template_name, context)
+        html_content = self._inject_base_href(html_content)
         return self._convert_to_pdf(html_content)
+
+    @staticmethod
+    def _inject_base_href(html_content: str) -> str:
+        """Insere uma tag <base href> para o WeasyPrint resolver os assets
+        (logotipos) por caminho relativo, sem depender de `base_url`.
+        """
+        base_href = "file://" + str(settings.BASE_DIR) + "/"
+        base_tag = f'<base href="{base_href}">'
+        if "<head" in html_content:
+            return html_content.replace("<head>", "<head>" + base_tag, 1)
+        return base_tag + html_content
 
     @staticmethod
     def _convert_to_pdf(html_content: str) -> bytes:

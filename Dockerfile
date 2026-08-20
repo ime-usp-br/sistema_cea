@@ -8,10 +8,22 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH="/app:/app/apps"
 
 # Install system dependencies
+# WeasyPrint (geração de PDF) requer Pango/Cairo no nível de SO, além de
+# libffi-dev para o binding cffi e fonts-dejavu (fonte usada nos templates PDF).
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
+    libffi-dev \
     curl \
+    libglib2.0-0 \
+    libpango-1.0-0 \
+    libpangoft2-1.0-0 \
+    libpangocairo-1.0-0 \
+    libharfbuzz-subset0 \
+    libgdk-pixbuf-2.0-0 \
+    libcairo2 \
+    fonts-dejavu \
+    fonts-urw-base35 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
