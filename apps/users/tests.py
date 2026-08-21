@@ -184,3 +184,38 @@ class CustomSenhaUnicaBackendTests(TestCase):
             ).count(),
             1,
         )
+
+
+class RoleGroupSyncTests(TestCase):
+    def test_role_secretariat_sincroniza_grupo_ao_criar(self) -> None:
+        user = User.objects.create_user(
+            username="sec1",
+            email="sec1@example.com",
+            role=User.Role.SECRETARIAT,
+        )
+        self.assertEqual(
+            set(user.groups.values_list("name", flat=True)), {"secretariat"}
+        )
+
+    def test_mudanca_de_role_atualiza_grupos(self) -> None:
+        user = User.objects.create_user(
+            username="muda1",
+            email="muda1@example.com",
+            role=User.Role.TEACHER,
+        )
+        user.role = User.Role.ADMINISTRATOR
+        user.save()
+        user.refresh_from_db()
+        self.assertEqual(
+            set(user.groups.values_list("name", flat=True)), {"administrator"}
+        )
+
+    def test_papel_invalido_nao_cria_grupo(self) -> None:
+        user = User.objects.create(
+            username="invalido",
+            email="invalido@example.com",
+            role="nao_existe",
+        )
+        user.save()
+        user.refresh_from_db()
+        self.assertEqual(user.groups.count(), 0)

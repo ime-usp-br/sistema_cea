@@ -46,7 +46,7 @@
         </div>
     {% endif %}
 
-    {% if is_admin %}
+    {% if is_secretariat or is_admin %}
         <div class="nav-dropdown">
             <button type="button" class="nav-link nav-dropdown-toggle {% if nav_active == 'reports_financial' or nav_active == 'reports_audit' %}nav-active{% endif %}" aria-haspopup="true" aria-expanded="false">
                 Relatórios

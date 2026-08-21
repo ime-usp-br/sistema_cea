@@ -6,15 +6,17 @@ from .models import IdentityProviderLink, User
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    list_display = ("username", "full_name", "email", "codpes", "is_email_verified", "is_staff")
+    list_display = ("username", "full_name", "email", "role", "codpes", "is_email_verified", "is_staff")
+    list_filter = ("role", "is_staff", "is_superuser", "is_email_verified")
+    radio_fields = {"role": admin.HORIZONTAL}
     fieldsets = tuple(UserAdmin.fieldsets or ()) + (
         (
-            "Identidade",
-            {"fields": ("full_name", "tax_id", "codpes", "is_email_verified", "email_verified_at")},
+            "Perfil",
+            {"fields": ("role", "full_name", "tax_id", "codpes", "is_email_verified", "email_verified_at")},
         ),
     )
     add_fieldsets = tuple(UserAdmin.add_fieldsets or ()) + (
-        ("Identidade", {"fields": ("full_name", "tax_id", "codpes", "is_email_verified")}),
+        ("Perfil", {"fields": ("role", "full_name", "tax_id", "codpes", "is_email_verified")}),
     )
 
 
