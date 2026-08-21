@@ -99,8 +99,33 @@ class ApplicationDetailView(LoginRequiredMixin, DetailView):
     def get_queryset(self):
         user = cast(User, self.request.user)
         if user.role in {User.Role.SECRETARIAT, User.Role.ADMINISTRATOR} or user.is_superuser:
-            return ServiceApplication.objects.all()
-        return ServiceApplication.objects.filter(owner=user)
+            return ServiceApplication.objects.select_related(
+                "term", "owner", "project_screening", "consultation_meeting"
+            ).prefetch_related(
+                "catalog_selections__option",
+                "attachments__file_asset",
+                "events__actor",
+                "audit_submissions__file_asset",
+                "audit_submissions__submitted_by",
+                "audit_submissions__reviews__reviewer",
+                "audit_submissions__resolutions__decided_by",
+                "audit_submissions__resolutions__target_term",
+                "fee_requirements__payment_instruments",
+                "refund_requests",
+            )
+        return (
+            ServiceApplication.objects.filter(owner=user)
+            .select_related("term", "owner", "project_screening", "consultation_meeting")
+            .prefetch_related(
+                "catalog_selections__option",
+                "attachments__file_asset",
+                "events__actor",
+                "audit_submissions__file_asset",
+                "audit_submissions__submitted_by",
+                "fee_requirements__payment_instruments",
+                "refund_requests",
+            )
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

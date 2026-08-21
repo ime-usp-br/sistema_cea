@@ -14,21 +14,15 @@
         <p class="page-subtitle">
             <span class="badge badge-primary">{{ object.get_modality_display }}</span>
             <span class="badge badge-info">{{ object.get_lifecycle_status_display }}</span>
+            {% if object.payment_state %}
+                <span class="badge badge-neutral">Pagamento: {{ object.get_payment_state_display }}</span>
+            {% endif %}
+            {% if object.origin == "imported" %}
+                <span class="badge badge-warning">Importada</span>
+            {% endif %}
         </p>
     </div>
     <a href="{% url 'applications:dashboard' %}" class="btn btn-ghost">Voltar ao painel</a>
-</div>
-
-<div class="card">
-    <div class="card-body">
-        <dl class="detail-list">
-            <div><dt>Modalidade</dt><dd>{{ object.get_modality_display }}</dd></div>
-            <div><dt>Status</dt><dd>{{ object.get_lifecycle_status_display }}</dd></div>
-            <div><dt>Período</dt><dd>{{ object.term }}</dd></div>
-            <div><dt>Pesquisador</dt><dd>{{ object.researcher_name }}</dd></div>
-            <div><dt>E-mail</dt><dd>{{ object.contact_email }}</dd></div>
-        </dl>
-    </div>
 </div>
 
 <div class="card">
@@ -54,44 +48,405 @@
             {% if is_teacher or is_secretariat or is_admin %}
                 <a href="{% url 'documents:application_firstpage_pdf' object.protocol %}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost">Primeira página (PDF)</a>
             {% endif %}
+            {% if is_secretariat or is_admin %}
+                <form method="post" action="{% url 'applications:transfer_semester' object.protocol %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-warning"
+                            onclick="return confirm('Transferir a inscrição {{ object.protocol }} para o próximo semestre?')">Transferir semestre</button>
+                </form>
+                <form method="post" action="{% url 'applications:delete' object.protocol %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger"
+                            onclick="return confirm('Excluir a inscrição {{ object.protocol }}?')">Excluir</button>
+                </form>
+            {% endif %}
         </div>
     </div>
 </div>
 
-{% if object.attachments.all %}
-    <div class="card">
-        <div class="card-header"><h2 class="card-title">Anexos</h2></div>
-        <div class="card-body">
-            <ul>
-                {% for attachment in object.attachments.all %}
-                    <li>{{ attachment.file_asset.original_filename }}</li>
+<div class="card">
+    <div class="card-header"><h2 class="card-title">Situação da inscrição</h2></div>
+    <div class="card-body">
+        <dl class="detail-list">
+            <div><dt>Protocolo</dt><dd>{{ object.protocol }}</dd></div>
+            <div><dt>Modalidade</dt><dd>{{ object.get_modality_display }}</dd></div>
+            <div><dt>Status do ciclo</dt><dd>{{ object.get_lifecycle_status_display }}</dd></div>
+            <div><dt>Estado de pagamento</dt><dd>{{ object.get_payment_state_display|default:"—" }}</dd></div>
+            <div><dt>Auditoria de dados</dt><dd>{{ object.get_dataset_audit_state_display|default:"Não exigida" }}</dd></div>
+            <div><dt>Origem</dt><dd>{{ object.get_origin_display }}</dd></div>
+            <div><dt>Período letivo</dt><dd>{{ object.term }}</dd></div>
+            <div><dt>Criada em</dt><dd>{{ object.created_at|date:"d/m/Y H:i" }}</dd></div>
+            <div><dt>Atualizada em</dt><dd>{{ object.updated_at|date:"d/m/Y H:i" }}</dd></div>
+            <div><dt>Crédito por modalidade</dt><dd class="tabular-nums">R$ {{ object.modality_credit_amount|floatformat:2 }}</dd></div>
+            {% if object.transfer_pending %}
+                <div><dt>Transferência pendente</dt><dd>Sim</dd></div>
+                <div><dt>Motivo da transferência</dt><dd>{{ object.transfer_reason|default:"—" }}</dd></div>
+            {% endif %}
+        </dl>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><h2 class="card-title">Identificação do pesquisador</h2></div>
+    <div class="card-body">
+        <dl class="detail-list">
+            <div><dt>Nome</dt><dd>{{ object.researcher_name }}</dd></div>
+            <div><dt>E-mail</dt><dd>{{ object.contact_email }}</dd></div>
+            <div><dt>Telefone</dt><dd>{{ object.contact_phone|default:"—" }}</dd></div>
+            <div><dt>Tem WhatsApp</dt><dd>{{ object.has_whatsapp|yesno:"Sim,Não" }}</dd></div>
+            <div><dt>CPF</dt><dd>{{ object.tax_id|default:"—" }}</dd></div>
+            <div><dt>Instituição / Unidade</dt><dd>{{ object.institution_name|default:"—" }}</dd></div>
+            <div><dt>Curso</dt><dd>{{ object.course_name|default:"—" }}</dd></div>
+            <div><dt>Orientador(a)</dt><dd>{{ object.mentor_name|default:"—" }}</dd></div>
+            <div><dt>Conta de usuário</dt><dd>{{ object.owner|default:"—" }}</dd></div>
+            {% if object.legacy_contact_email %}
+                <div><dt>E-mail legado</dt><dd>{{ object.legacy_contact_email }}</dd></div>
+            {% endif %}
+            {% if object.legacy_contact_tax_id %}
+                <div><dt>CPF legado</dt><dd>{{ object.legacy_contact_tax_id }}</dd></div>
+            {% endif %}
+        </dl>
+    </div>
+</div>
+
+{% if object.project_title or object.context_summary or object.general_objectives or object.variables_and_measurements or object.contextual_factors or object.sampling_and_limitations or object.data_management_plan or object.expected_results or object.expected_support %}
+<div class="card">
+    <div class="card-header"><h2 class="card-title">Projeto</h2></div>
+    <div class="card-body">
+        <dl class="detail-list">
+            <div><dt>Título do projeto</dt><dd>{{ object.project_title|default:"—" }}</dd></div>
+            <div><dt>Contexto</dt><dd>{{ object.context_summary|default:"—"|linebreaksbr }}</dd></div>
+            <div><dt>Objetivos gerais</dt><dd>{{ object.general_objectives|default:"—"|linebreaksbr }}</dd></div>
+            <div><dt>Variáveis e medições</dt><dd>{{ object.variables_and_measurements|default:"—"|linebreaksbr }}</dd></div>
+            <div><dt>Fatores contextuais</dt><dd>{{ object.contextual_factors|default:"—"|linebreaksbr }}</dd></div>
+            <div><dt>Amostragem e limitações</dt><dd>{{ object.sampling_and_limitations|default:"—"|linebreaksbr }}</dd></div>
+            <div><dt>Plano de gestão de dados</dt><dd>{{ object.data_management_plan|default:"—"|linebreaksbr }}</dd></div>
+            <div><dt>Resultados esperados</dt><dd>{{ object.expected_results|default:"—"|linebreaksbr }}</dd></div>
+            <div><dt>Apoio esperado do CEA</dt><dd>{{ object.expected_support|default:"—"|linebreaksbr }}</dd></div>
+            <div><dt>Dados já coletados</dt><dd>{{ object.get_data_already_collected_display|default:"—" }}</dd></div>
+        </dl>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header"><h2 class="card-title">Catálogo selecionado</h2></div>
+    <div class="card-body">
+        {% if object.catalog_selections.all %}
+            <dl class="detail-list">
+                {% for sel in object.catalog_selections.all %}
+                    <div>
+                        <dt>{{ sel.option.get_category_display }}</dt>
+                        <dd>{{ sel.option.label }}{% if sel.other_text %} — {{ sel.other_text }}{% endif %}</dd>
+                    </div>
                 {% endfor %}
-            </ul>
+            </dl>
+        {% else %}
+            <p class="muted">Nenhuma seleção de catálogo.</p>
+        {% endif %}
+        {% if object.data_use_authorization_accepted is not None %}
+            <div class="detail-list" style="margin-top: 1rem;">
+                <div><dt>Autorização de uso de dados</dt><dd>{{ object.data_use_authorization_accepted|yesno:"Aceita,Não aceita" }}</dd></div>
+            </div>
+        {% endif %}
+        {% if object.mentor_declaration_accepted is not None %}
+            <div class="detail-list" style="margin-top: 1rem;">
+                <div><dt>Declaração do orientador</dt><dd>{{ object.mentor_declaration_accepted|yesno:"Aceita,Não aceita" }}</dd></div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if object.wants_refund_receipt %}
+<div class="card">
+    <div class="card-header"><h2 class="card-title">Recibo para reembolso</h2></div>
+    <div class="card-body">
+        <dl class="detail-list">
+            <div><dt>Deseja recibo</dt><dd>Sim</dd></div>
+            <div><dt>Observações do recibo</dt><dd>{{ object.refund_receipt_details|default:"—"|linebreaksbr }}</dd></div>
+            <div><dt>Titular da conta</dt><dd>{{ object.refund_account_holder_name|default:"—" }}</dd></div>
+            <div><dt>CPF/CNPJ do titular</dt><dd>{{ object.refund_account_holder_tax_id|default:"—" }}</dd></div>
+            <div><dt>Banco</dt><dd>{{ object.refund_bank_name|default:"—" }}</dd></div>
+            <div><dt>Agência</dt><dd>{{ object.refund_branch_number|default:"—" }}</dd></div>
+            <div><dt>Conta</dt><dd>{{ object.refund_bank_account_number|default:"—" }}</dd></div>
+            <div><dt>Tipo de conta</dt><dd>{{ object.get_refund_bank_account_type_display|default:"—" }}</dd></div>
+        </dl>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header"><h2 class="card-title">Financeiro</h2></div>
+    <div class="card-body">
+        {% for fee in object.fee_requirements.all %}
+            <h3>{{ fee.get_fee_type_display }}</h3>
+            <dl class="detail-list">
+                <div><dt>Valor</dt><dd class="tabular-nums">R$ {{ fee.amount|floatformat:2 }}</dd></div>
+                <div><dt>Valor base</dt><dd class="tabular-nums">R$ {{ fee.base_amount|floatformat:2 }}</dd></div>
+                <div><dt>Ajuste</dt><dd class="tabular-nums">R$ {{ fee.adjustment_amount|floatformat:2 }}</dd></div>
+                <div><dt>Motivo</dt><dd>{{ fee.reason|default:"—" }}</dd></div>
+                <div><dt>Motivo do ajuste</dt><dd>{{ fee.adjustment_reason|default:"—" }}</dd></div>
+                <div><dt>Situação</dt><dd>
+                    {% if fee.is_waived %}
+                        <span class="badge badge-warning">Dispensada{% if fee.waiver_reason %} — {{ fee.waiver_reason }}{% endif %}</span>
+                    {% elif fee.is_paid %}
+                        <span class="badge badge-success">Pago</span>
+                    {% else %}
+                        <span class="badge badge-neutral">Pendente</span>
+                    {% endif %}
+                </dd></div>
+                <div><dt>Valor pago</dt><dd class="tabular-nums">R$ {{ fee.paid_amount|floatformat:2 }}</dd></div>
+            </dl>
+            {% if fee.payment_instruments.all %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Método</th>
+                                <th>Valor</th>
+                                <th>Estado</th>
+                                <th>Criado</th>
+                                <th>Pago em</th>
+                                <th>Expira em</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for instrument in fee.payment_instruments.all %}
+                                <tr>
+                                    <td class="tabular-nums">{{ instrument.pk }}</td>
+                                    <td>{{ instrument.get_method_display }}</td>
+                                    <td class="tabular-nums">R$ {{ instrument.amount|floatformat:2 }}</td>
+                                    <td><span class="badge badge-neutral">{{ instrument.get_state_display }}</span></td>
+                                    <td>{{ instrument.created_at|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ instrument.paid_at|date:"d/m/Y H:i"|default:"—" }}</td>
+                                    <td>{{ instrument.expires_at|date:"d/m/Y H:i"|default:"—" }}</td>
+                                    <td class="actions">
+                                        {% if instrument.method == 'pix' %}
+                                            <a href="{% url 'pix:detail' object.protocol %}" class="btn btn-sm btn-primary">Ver Pix</a>
+                                        {% elif instrument.method == 'bank_slip' %}
+                                            <a href="{% url 'bank_slips:detail' object.protocol %}" class="btn btn-sm btn-primary">Ver boleto</a>
+                                        {% endif %}
+                                        {% if instrument.state == 'paid' or instrument.state == 'manual_confirmed' %}
+                                            <a href="{% url 'documents:payment_receipt_pdf' instrument.pk %}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-ghost">Recibo</a>
+                                        {% endif %}
+                                        {% if is_secretariat or is_admin %}
+                                            <a href="{% url 'payments:manual_confirmation' instrument.pk %}" class="btn btn-sm btn-ghost">Confirmar manualmente</a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="8">Nenhum instrumento gerado.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="muted">Nenhum instrumento de pagamento gerado para esta taxa.</p>
+            {% endif %}
+            <hr class="form-section-divider">
+        {% empty %}
+            <p class="muted">Nenhuma taxa associada a esta inscrição.</p>
+        {% endfor %}
+        {% if object.refund_requests.all %}
+            <h3>Reembolsos</h3>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Status</th>
+                            <th>Valor</th>
+                            <th>Motivo</th>
+                            <th>Solicitado por</th>
+                            <th>Data</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for refund in object.refund_requests.all %}
+                            <tr>
+                                <td class="tabular-nums">{{ refund.pk }}</td>
+                                <td>{{ refund.get_status_display }}</td>
+                                <td class="tabular-nums">R$ {{ refund.amount|floatformat:2 }}</td>
+                                <td>{{ refund.reason|default:"—" }}</td>
+                                <td>{{ refund.requested_by|default:"—" }}</td>
+                                <td>{{ refund.created_at|date:"d/m/Y H:i" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if object.audit_submissions.all %}
+<div class="card">
+    <div class="card-header"><h2 class="card-title">Auditoria de dados</h2></div>
+    <div class="card-body">
+        {% for submission in object.audit_submissions.all %}
+            <h3>Submissão #{{ submission.pk }} — {{ submission.get_state_display }}</h3>
+            <dl class="detail-list">
+                <div><dt>Canal</dt><dd>{{ submission.get_submission_channel_display }}</dd></div>
+                <div><dt>Submetida por</dt><dd>{{ submission.submitted_by|default:"—" }}</dd></div>
+                <div><dt>Enviada em</dt><dd>{{ submission.submitted_at|date:"d/m/Y H:i" }}</dd></div>
+                {% if submission.external_url %}
+                    <div><dt>Link externo</dt><dd><a href="{{ submission.external_url }}" target="_blank" rel="noopener noreferrer">{{ submission.external_url }}</a></dd></div>
+                {% endif %}
+                {% if submission.file_asset %}
+                    <div><dt>Arquivo</dt><dd>{{ submission.file_asset.original_filename }}</dd></div>
+                {% endif %}
+                <div><dt>Nota</dt><dd>{{ submission.note|default:"—"|linebreaksbr }}</dd></div>
+            </dl>
+            {% if submission.reviews.all %}
+                <h4 style="margin:0.75rem 0 0.25rem;">Revisões</h4>
+                <dl class="detail-list">
+                    {% for review in submission.reviews.all %}
+                        <div>
+                            <dt>Revisão de {{ review.reviewer|default:"—" }} em {{ review.reviewed_at|date:"d/m/Y H:i" }}</dt>
+                            <dd>
+                                <span class="badge badge-neutral">{{ review.get_outcome_display }}</span>
+                                {% if review.note %} — {{ review.note }}{% endif %}
+                            </dd>
+                        </div>
+                    {% endfor %}
+                </dl>
+            {% endif %}
+            {% if submission.resolutions.all %}
+                <h4 style="margin:0.75rem 0 0.25rem;">Resoluções</h4>
+                <dl class="detail-list">
+                    {% for resolution in submission.resolutions.all %}
+                        <div>
+                            <dt>Decisão de {{ resolution.decided_by|default:"—" }} em {{ resolution.decided_at|date:"d/m/Y H:i" }}</dt>
+                            <dd>
+                                <span class="badge badge-neutral">{{ resolution.get_resolution_display }}</span>
+                                {% if resolution.target_term %} → {{ resolution.target_term }}{% endif %}
+                                {% if resolution.note %} — {{ resolution.note }}{% endif %}
+                            </dd>
+                        </div>
+                    {% endfor %}
+                </dl>
+            {% endif %}
+            <hr class="form-section-divider">
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if object.project_screening %}
+<div class="card">
+    <div class="card-header"><h2 class="card-title">Triagem (Projeto)</h2></div>
+    <div class="card-body">
+        {% with screening=object.project_screening %}
+            <dl class="detail-list">
+                <div><dt>Data</dt><dd>{{ screening.scheduled_date }} às {{ screening.scheduled_time }}</dd></div>
+                <div><dt>Modalidade</dt><dd>{{ screening.get_meeting_mode_display }}</dd></div>
+                <div><dt>Local / Link</dt><dd>{% if screening.meeting_mode == "online" %}{{ screening.virtual_link|default:"—" }}{% else %}{{ screening.place|default:"—" }}{% endif %}</dd></div>
+                <div><dt>Estado</dt><dd><span class="badge badge-neutral">{{ screening.get_state_display }}</span></dd></div>
+                <div><dt>Decisão</dt><dd>{{ screening.get_decision_display|default:"—" }}</dd></div>
+                <div><dt>Nota da decisão</dt><dd>{{ screening.decision_note|default:"—"|linebreaksbr }}</dd></div>
+                <div><dt>Feedback do docente</dt><dd>{{ screening.get_teacher_feedback_display|default:"—" }}</dd></div>
+            </dl>
+            {% if is_secretariat or is_admin %}
+                <div class="form-actions" style="margin-top:1rem;">
+                    <a href="{% url 'meetings:screening_decision' screening.pk %}" class="btn btn-primary btn-sm">Registrar decisão</a>
+                </div>
+            {% endif %}
+        {% endwith %}
+    </div>
+</div>
+{% endif %}
+
+{% if object.consultation_meeting %}
+<div class="card">
+    <div class="card-header"><h2 class="card-title">Reunião de consulta</h2></div>
+    <div class="card-body">
+        {% with meeting=object.consultation_meeting %}
+            <dl class="detail-list">
+                <div><dt>Data</dt><dd>{{ meeting.scheduled_date }} às {{ meeting.scheduled_time }}</dd></div>
+                <div><dt>Modalidade</dt><dd>{{ meeting.get_meeting_mode_display }}</dd></div>
+                <div><dt>Local / Link</dt><dd>{% if meeting.meeting_mode == "online" %}{{ meeting.virtual_link|default:"—" }}{% else %}{{ meeting.place|default:"—" }}{% endif %}</dd></div>
+                <div><dt>Estado</dt><dd><span class="badge badge-neutral">{{ meeting.get_state_display }}</span></dd></div>
+                <div><dt>Decisão</dt><dd>{{ meeting.get_decision_display|default:"—" }}</dd></div>
+                <div><dt>Nota da decisão</dt><dd>{{ meeting.decision_note|default:"—"|linebreaksbr }}</dd></div>
+                <div><dt>Feedback do docente</dt><dd>{{ meeting.get_teacher_feedback_display|default:"—" }}</dd></div>
+            </dl>
+            {% if is_secretariat or is_admin %}
+                <div class="form-actions" style="margin-top:1rem;">
+                    <a href="{% url 'meetings:consultation_decision' meeting.pk %}" class="btn btn-primary btn-sm">Registrar decisão</a>
+                </div>
+            {% endif %}
+        {% endwith %}
+    </div>
+</div>
+{% endif %}
+
+{% if object.attachments.all %}
+<div class="card">
+    <div class="card-header"><h2 class="card-title">Anexos</h2></div>
+    <div class="card-body">
+        <div class="attachment-list">
+            {% for attachment in object.attachments.all %}
+                <div class="attachment-item">
+                    <span class="attachment-name">{{ attachment.file_asset.original_filename }}{% if attachment.description %} — {{ attachment.description }}{% endif %}</span>
+                    <span class="muted">{{ attachment.file_asset.content_type|default:"" }} · {{ attachment.file_asset.size_bytes|filesizeformat|default:"—" }}</span>
+                </div>
+            {% endfor %}
         </div>
     </div>
+</div>
+{% endif %}
+
+{% if object.events.all %}
+<div class="card">
+    <div class="card-header"><h2 class="card-title">Trilha de auditoria</h2></div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Quando</th>
+                        <th>Evento</th>
+                        <th>Descrição</th>
+                        <th>Autor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for event in object.events.all %}
+                        <tr>
+                            <td>{{ event.occurred_at|date:"d/m/Y H:i" }}</td>
+                            <td><span class="badge badge-neutral">{{ event.event_code }}</span></td>
+                            <td>{{ event.description|default:"—" }}</td>
+                            <td>{{ event.actor|default:"—" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="4">Nenhum evento registrado.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 {% endif %}
 
 {% if user.is_authenticated and user.role == "secretariat" or user.role == "administrator" or user.is_superuser %}
-    <div class="card">
-        <div class="card-header"><h2 class="card-title">Ações da secretaria</h2></div>
-        <div class="card-body">
-            <form method="post" action="{% url 'bank_slips:admin_generate' object.protocol %}"
-                  style="display:inline">
+<div class="card">
+    <div class="card-header"><h2 class="card-title">Ações da secretaria</h2></div>
+    <div class="card-body">
+        <div class="form-actions">
+            <form method="post" action="{% url 'bank_slips:admin_generate' object.protocol %}">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-primary">
-                    Gerar Boleto (Manual)
-                </button>
+                <button type="submit" class="btn btn-primary">Gerar Boleto (Manual)</button>
             </form>
             {% for slip in slips %}
-                <form method="post" action="{% url 'bank_slips:admin_regenerate' slip.pk %}"
-                      style="display:inline">
+                <form method="post" action="{% url 'bank_slips:admin_regenerate' slip.pk %}">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-ghost">
-                        Regenerar boleto #{{ slip.pk }}
-                    </button>
+                    <button type="submit" class="btn btn-ghost">Regenerar boleto #{{ slip.pk }}</button>
                 </form>
             {% endfor %}
         </div>
     </div>
+</div>
 {% endif %}
 {% endblock %}
