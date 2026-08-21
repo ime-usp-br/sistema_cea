@@ -49,6 +49,60 @@ O `docker-compose.override.yml` faz *bind mount* do código-fonte em `/app`, por
 
 ---
 
+### 4.1 Comandos de Simulação da Jornada (Seed/Demo)
+
+O sistema possui comandos de gestão para popular e simular o fluxo completo de inscrições em DEV. **Use sempre o serviço `web`** e rode pelo menos `migrate` antes (as opções de catálogo são semeadas por migração).
+
+| Comando | Descrição |
+|---|---|
+| `manage.py simulate_journey` | **Simula a jornada ponta a ponta** (inscrição → pagamento → auditoria → triagem/reunião → estado final) passo a passo via flags, usando a camada de serviço real e mockando apenas os gateways externos de Pix/Boleto. |
+| `manage.py seed_demo [--users N] [--count N] [--modality project\|consultation]` | Popula o banco de DEV com candidatos e inscrições válidas (não avança o fluxo). |
+| `manage.py seed_e2e` | Cria período letivo e um candidato E2E com credenciais conhecidas (usado pelo Playwright). |
+| `manage.py import_legacy_data` | Importa dados legados (resgate/migração). |
+
+#### simulate_journey — usuários criados
+
+O comando cria (se não existirem) usuários com credenciais conhecidas:
+
+- `sim_candidate` (candidato), `sim_teacher` (docente), `sim_secretariat` (secretaria) — senha `sim-senha-123`.
+
+#### simulate_journey — flags principais
+
+| Flag | Ação |
+|---|---|
+| `--modality project\|consultation` | Modalidade (padrão: `project`). |
+| `--submit` | Cria a inscrição (taxa de inscrição gerada → `awaiting_payment`). |
+| `--pay [--method pix\|boleto\|manual]` | Paga **todas** as taxas pendentes (inscrição, projeto, complementar). |
+| `--submit-dataset [--channel file\|external_link]` | Projeto: envia dados para auditoria. |
+| `--review approved\|needs_correction\|rejected` | Revisa a submissão de auditoria. |
+| `--resolve convert_to_consultation\|reject_application\|transfer_term` | Resolve uma rejeição de auditoria. |
+| `--schedule-screening` / `--screening-decision approved_as_project\|approved_as_consultation\|not_approved` | Agenda e decide a triagem (Projeto). |
+| `--schedule-consultation` / `--consultation-decision approved_as_project\|approved_as_consultation\|not_approved` | Agenda e decide a reunião (Consulta). |
+| `--refund` | Cria, aprova e executa um reembolso do valor pago. |
+| `--step N` | Executa apenas a etapa N da sequência canônica da modalidade. |
+| `--all` | Executa a jornada completa até o estado final (para na 1ª falha). |
+| `--status` / `--protocol <protocolo>` | Imprime o estado atual da inscrição mais recente (ou a do `--protocol`). |
+
+Exemplos:
+
+```bash
+docker compose exec web python manage.py simulate_journey --all --modality project --method pix
+docker compose exec web python manage.py simulate_journey --all --modality consultation --method boleto
+docker compose exec web python manage.py simulate_journey --modality project --submit --pay --submit-dataset --review rejected --resolve reject_application
+docker compose exec web python manage.py simulate_journey --step 4
+docker compose exec web python manage.py simulate_journey --protocol 123456789 --status
+```
+
+#### simulate_journey — notas operacionais
+
+- **Sem rede externa:** os gateways de Pix (REST) e Boleto (SOAP) são mockados internamente; a confirmação Pix passa pelo caminho real do webhook. Nenhum teste/criação de dados deve depender de conectividade externa.
+- **Boleto exige `DEBUG=True`** (guard do `simulate_payment`). Em testes, usar `override_settings(DEBUG=True)`. Alternativas sem DEBUG: `--method pix` ou `--method manual`.
+- **Storage de mídia:** o comando isola `MEDIA_ROOT` em diretório temporário porque o bind mount `/app` pertence ao usuário do host (uid 1001) e o container roda como `appuser` (uid 1000). Uploads reais (Pix QR, anexos, boletos) exigem o diretório `media/` gravável — isso vale para o app inteiro, não só para a simulação.
+- **Uma inscrição por invocação:** ao encadear várias flags numa única chamada, cada flag executa uma vez (argparse deduplica flags repetidas, ex.: `--pay`). Para continuar em outra etapa, repita o comando informando `--protocol` ou deixe alvo padrão na inscrição mais recente.
+- **Testes do comando:** `apps/applications/tests/test_simulate_journey_command.py` cobre as jornadas Projeto/Consulta, rejeição, conversão, `--step` e reembolso.
+
+---
+
 ## 5. Regras de Ouro da Implementação
 
 Para manter a base de código limpa, coesa e alinhada à arquitetura aprovada, você **deve** seguir estas regras:
