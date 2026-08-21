@@ -891,6 +891,43 @@ h3 {
     box-shadow: 0 0 0 3px rgba(16, 148, 171, 0.15);
 }
 
+.form input[type="file"] {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.form input[type="file"]::file-selector-button {
+    margin-right: 0.75rem;
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background-color: var(--gray-100);
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.form input[type="file"]::file-selector-button:hover {
+    border-color: var(--usp-blue-pri);
+    color: var(--usp-blue-pri);
+}
+
+@media (prefers-color-scheme: dark) {
+    .form input[type="file"]::file-selector-button {
+        background-color: var(--gray-800);
+        color: var(--text-color);
+    }
+}
+
 .form textarea,
 .form-textarea {
     min-height: 6rem;

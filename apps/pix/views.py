@@ -38,6 +38,11 @@ def pix_webhook(request: HttpRequest) -> HttpResponse:
 class BasePixView(LoginRequiredMixin, View):
     def get_application(self, request: HttpRequest, protocol: str) -> ServiceApplication:
         user = cast(User, request.user)
+        if (
+            user.role in {User.Role.SECRETARIAT, User.Role.ADMINISTRATOR}
+            or user.is_superuser
+        ):
+            return get_object_or_404(ServiceApplication, protocol=protocol)
         return get_object_or_404(ServiceApplication, protocol=protocol, owner=user)
 
     def get_fee(self, application: ServiceApplication) -> FeeRequirement | None:

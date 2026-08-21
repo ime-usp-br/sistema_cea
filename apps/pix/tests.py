@@ -4,6 +4,7 @@ from datetime import timedelta
 from unittest.mock import patch
 
 from django.test import TestCase, override_settings
+from django.urls import reverse
 
 from applications.models import ServiceApplication
 from applications.services import ApplicationSubmissionService
@@ -375,3 +376,64 @@ class PixWebhookViewTests(TestCase):
         self.assertEqual(response.status_code, 401)
         event = PixWebhookEvent.objects.get(pix_reference=pix.pix_reference)
         self.assertFalse(event.token_valid)
+
+
+@override_settings(
+    MEDIA_ROOT=tempfile.mkdtemp(prefix="cea-pix-media-"),
+    PIX_WEBHOOK_TOKEN="teste-token",
+)
+class PixDetailViewPermissionTests(TestCase):
+    """Autorização da página de detalhe do Pix (pix:detail)."""
+
+    def setUp(self) -> None:
+        self.candidate = User.objects.create_user(
+            username="candidate_pix_view",
+            email="candidate_pix_view@example.com",
+            password="pass",
+            role=User.Role.CANDIDATE,
+        )
+        self.other_candidate = User.objects.create_user(
+            username="other_candidate_pix_view",
+            email="other_candidate_pix_view@example.com",
+            password="pass",
+            role=User.Role.CANDIDATE,
+        )
+        self.secretariat = User.objects.create_user(
+            username="secretariat_pix_view",
+            email="secretariat_pix_view@example.com",
+            password="pass",
+            role=User.Role.SECRETARIAT,
+        )
+        self.administrator = User.objects.create_user(
+            username="admin_pix_view",
+            email="admin_pix_view@example.com",
+            password="pass",
+            role=User.Role.ADMINISTRATOR,
+        )
+        self.term = AcademicTerm.objects.create(year=2026, period="first")
+        self.application = ApplicationSubmissionService().create_application(
+            term=self.term,
+            owner=self.candidate,
+            modality="consultation",
+            researcher_name="Maria Pix Detail",
+            contact_email="maria_detail@example.com",
+        )
+
+    def _detail_url(self) -> str:
+        return reverse("pix:detail", kwargs={"protocol": self.application.protocol})
+
+    def test_owner_pode_ver_a_pagina(self) -> None:
+        self.client.force_login(self.candidate)
+        response = self.client.get(self._detail_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_secretaria_e_administrador_podem_ver_a_pagina(self) -> None:
+        for staff in (self.secretariat, self.administrator):
+            self.client.force_login(staff)
+            response = self.client.get(self._detail_url())
+            self.assertEqual(response.status_code, 200)
+
+    def test_outro_candidato_nao_pode_ver_a_pagina(self) -> None:
+        self.client.force_login(self.other_candidate)
+        response = self.client.get(self._detail_url())
+        self.assertEqual(response.status_code, 404)

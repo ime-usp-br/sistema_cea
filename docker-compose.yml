@@ -26,6 +26,7 @@ services:
     restart: unless-stopped
     volumes:
       - staticfiles:/app/staticfiles
+      - media:/app/media
     environment: *app-environment
     depends_on:
       db:
@@ -65,6 +66,8 @@ services:
     build: .
     command: celery -A core worker -l info
     restart: unless-stopped
+    volumes:
+      - media:/app/media
     environment: *app-environment
     depends_on:
       db:
@@ -81,3 +84,4 @@ networks:
 volumes:
   postgres_data:
   staticfiles:
+  media:

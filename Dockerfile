@@ -49,8 +49,8 @@ RUN poetry install --no-interaction --no-ansi --no-root
 # Copy project files
 COPY . .
 
-# Create directory for static files and set permissions
-RUN mkdir -p staticfiles && chown -R appuser:appgroup /app
+# Create directory for static files and media and set permissions
+RUN mkdir -p staticfiles media && chown -R appuser:appgroup /app
 
 # Switch to non-root user
 USER appuser
