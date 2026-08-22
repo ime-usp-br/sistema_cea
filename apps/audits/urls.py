@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     DatasetSubmitView,
     RejectedResolutionListView,
+    SubmissionFileDownloadView,
     SubmissionResolutionView,
     SubmissionReviewView,
     TeacherReviewQueueView,
@@ -17,6 +18,11 @@ urlpatterns = [
         "auditoria/submissao/<int:submission_id>/revisar/",
         SubmissionReviewView.as_view(),
         name="review",
+    ),
+    path(
+        "auditoria/submissao/<int:submission_id>/arquivo/",
+        SubmissionFileDownloadView.as_view(),
+        name="download_file",
     ),
     path(
         "auditoria/rejeitadas/",

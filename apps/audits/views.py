@@ -2,7 +2,8 @@ from typing import Any, cast
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.http import Http404
+from django.core.files.storage import default_storage
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
 
@@ -93,6 +94,27 @@ class TeacherReviewQueueView(RoleRequiredMixin, View):
             .order_by("-submitted_at")
         )
         return render(request, self.template_name, {"submissions": submissions})
+
+
+class SubmissionFileDownloadView(RoleRequiredMixin, View):
+    """Docente/secretaria baixa o arquivo enviado na submissão."""
+
+    allowed_roles = frozenset({User.Role.TEACHER, User.Role.SECRETARIAT, User.Role.ADMINISTRATOR})
+
+    def get(self, request, submission_id: int):
+        submission = get_object_or_404(
+            DatasetAuditSubmission.objects.select_related("file_asset"),
+            pk=submission_id,
+        )
+        asset = submission.file_asset
+        if asset is None:
+            raise Http404("Esta submissão não possui arquivo para download.")
+        return FileResponse(
+            default_storage.open(asset.storage_key, "rb"),
+            content_type=asset.content_type or "application/octet-stream",
+            as_attachment=True,
+            filename=asset.original_filename,
+        )
 
 
 class SubmissionReviewView(RoleRequiredMixin, View):

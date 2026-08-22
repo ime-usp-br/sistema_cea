@@ -25,6 +25,9 @@
         {% if submission.submission_channel == 'file' and submission.file_asset %}
             <p>Arquivo: <strong>{{ submission.file_asset.original_filename }}</strong>
             <span class="muted">({{ submission.file_asset.size_bytes|default:"—" }} bytes)</span></p>
+            <a href="{% url 'audits:download_file' submission.pk %}" class="btn btn-secondary btn-sm" title="Baixar arquivo enviado">
+                Baixar arquivo
+            </a>
         {% elif submission.submission_channel == 'external_link' and submission.external_url %}
             <p>Link externo:
                 <a href="{{ submission.external_url }}" target="_blank" rel="noopener noreferrer">

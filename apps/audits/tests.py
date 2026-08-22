@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError, transaction
 from django.test import TestCase, override_settings
+from django.urls import reverse
 
 from applications.models import ServiceApplication
 from applications.services import ApplicationSubmissionService
@@ -540,3 +541,55 @@ class AuditScenarioTests(TestCase):
         self.assertEqual(
             submission.external_url, "https://drive.example.com/dados"
         )
+
+    # TS-AUD-018
+    def test_TS_AUD_018_docente_baixa_arquivo_da_submissao(self) -> None:
+        application = self.create_project()
+        self.pay_application_fee(application)
+        submission = self.submit_file(
+            application, file=_file(name="dados_revisao.csv", content=b"a,b\n1,2\n")
+        )
+        assert submission.file_asset_id is not None
+        self.client.force_login(self.teacher)
+        response = self.client.get(
+            reverse("audits:download_file", args=[submission.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv")
+        self.assertEqual(
+            response["Content-Disposition"],
+            'attachment; filename="dados_revisao.csv"',
+        )
+        self.assertEqual(b"".join(response.streaming_content), b"a,b\n1,2\n")
+
+    def test_TS_AUD_018b_secretaria_tambem_baixa_arquivo(self) -> None:
+        application = self.create_project()
+        self.pay_application_fee(application)
+        submission = self.submit_file(application)
+        assert submission.file_asset_id is not None
+        self.client.force_login(self.secretariat)
+        response = self.client.get(
+            reverse("audits:download_file", args=[submission.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(b"".join(response.streaming_content), b"coluna_a,coluna_b\n1,2\n")
+
+    def test_TS_AUD_018c_candidato_nao_pode_baixar_arquivo(self) -> None:
+        application = self.create_project()
+        self.pay_application_fee(application)
+        submission = self.submit_file(application)
+        self.client.force_login(self.candidate)
+        response = self.client.get(
+            reverse("audits:download_file", args=[submission.pk])
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_TS_AUD_018d_submissao_sem_arquivo_retorna_404(self) -> None:
+        application = self.create_project()
+        self.pay_application_fee(application)
+        submission = self.submit_link(application)
+        self.client.force_login(self.teacher)
+        response = self.client.get(
+            reverse("audits:download_file", args=[submission.pk])
+        )
+        self.assertEqual(response.status_code, 404)
