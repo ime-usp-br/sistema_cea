@@ -51,3 +51,27 @@
     </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var modeSelect = document.querySelector('[data-meeting-mode-toggle]');
+    if (!modeSelect) return;
+    var watched = Array.prototype.slice.call(
+        document.querySelectorAll('[data-meeting-field]')
+    );
+    function sync() {
+        var mode = modeSelect.value;
+        watched.forEach(function (input) {
+            var wrapper = input.closest('p');
+            if (!wrapper) return;
+            var visible = input.getAttribute('data-meeting-field') === mode;
+            wrapper.style.display = visible ? '' : 'none';
+            input.required = visible;
+        });
+    }
+    modeSelect.addEventListener('change', sync);
+    sync();
+})();
+</script>
+{% endblock %}

@@ -19,14 +19,21 @@ class ScreeningForm(forms.Form):
     meeting_mode = forms.ChoiceField(
         choices=ProjectScreening.MeetingMode.choices,
         label="Modalidade",
+        widget=forms.Select(attrs={"data-meeting-mode-toggle": ""}),
     )
     virtual_link = forms.URLField(
         required=False,
         max_length=2048,
         assume_scheme="https",
         label="Link de vídeo (online)",
+        widget=forms.URLInput(attrs={"data-meeting-field": "online"}),
     )
-    place = forms.CharField(required=False, max_length=255, label="Local (presencial)")
+    place = forms.CharField(
+        required=False,
+        max_length=255,
+        label="Local (presencial)",
+        widget=forms.TextInput(attrs={"data-meeting-field": "in_person"}),
+    )
 
     def clean(self):
         cleaned_data = super().clean() or {}
@@ -46,6 +53,7 @@ class ConsultationMeetingForm(ScreeningForm):
     meeting_mode = forms.ChoiceField(
         choices=ConsultationMeeting.MeetingMode.choices,
         label="Modalidade",
+        widget=forms.Select(attrs={"data-meeting-mode-toggle": ""}),
     )
 
 

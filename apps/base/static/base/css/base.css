@@ -868,6 +868,7 @@ h3 {
 .form input[type="password"],
 .form input[type="date"],
 .form input[type="datetime-local"],
+.form input[type="time"],
 .form input[type="number"],
 .form input[type="url"],
 .form select,
