@@ -44,30 +44,51 @@ class RoleRequiredMixin(LoginRequiredMixin):
 
 
 class SchedulingQueueView(RoleRequiredMixin, View):
-    """Fila de agendamentos pendentes (Projetos e Consultas pagos)."""
+    """Fila de agendamentos: pendentes de agendamento e aguardando resultado."""
 
     allowed_roles = _STAFF_ROLES
     template_name = "meetings/scheduling_queue.html"
 
     def get(self, request):
         projects = (
-            ServiceApplication.objects.select_related("term", "owner")
+            ServiceApplication.objects.select_related("term", "owner", "project_screening")
             .filter(
                 lifecycle_status=ServiceApplication.LifecycleStatus.AWAITING_SCREENING_SCHEDULING
             )
             .order_by("-created_at")
         )
         consultations = (
-            ServiceApplication.objects.select_related("term", "owner")
+            ServiceApplication.objects.select_related("term", "owner", "consultation_meeting")
             .filter(
                 lifecycle_status=ServiceApplication.LifecycleStatus.AWAITING_CONSULTATION_SCHEDULING
             )
             .order_by("-created_at")
         )
+        screenings_result = (
+            ServiceApplication.objects.select_related("term", "owner", "project_screening")
+            .filter(
+                lifecycle_status=ServiceApplication.LifecycleStatus.AWAITING_SCREENING_RESULT
+            )
+            .order_by("-project_screening__scheduled_date",
+                      "-project_screening__scheduled_time")
+        )
+        consultations_result = (
+            ServiceApplication.objects.select_related("term", "owner", "consultation_meeting")
+            .filter(
+                lifecycle_status=ServiceApplication.LifecycleStatus.AWAITING_CONSULTATION_RESULT
+            )
+            .order_by("-consultation_meeting__scheduled_date",
+                      "-consultation_meeting__scheduled_time")
+        )
         return render(
             request,
             self.template_name,
-            {"projects": projects, "consultations": consultations},
+            {
+                "projects": projects,
+                "consultations": consultations,
+                "screenings_result": screenings_result,
+                "consultations_result": consultations_result,
+            },
         )
 
 
@@ -250,7 +271,7 @@ class ScreeningDecisionView(RoleRequiredMixin, View):
 
     def post(self, request, screening_id: int):
         screening = self.get_screening(screening_id)
-        if request.POST.get("submit_feedback"):
+        if "submit_feedback" in request.POST:
             return self._handle_feedback(request, screening)
         return self._handle_decision(request, screening)
 
@@ -343,7 +364,7 @@ class ConsultationDecisionView(RoleRequiredMixin, View):
 
     def post(self, request, meeting_id: int):
         meeting = self.get_meeting(meeting_id)
-        if request.POST.get("submit_feedback"):
+        if "submit_feedback" in request.POST:
             return self._handle_feedback(request, meeting)
         return self._handle_decision(request, meeting)
 

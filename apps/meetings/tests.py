@@ -733,6 +733,30 @@ class MeetingViewTests(TestCase):
         self.assertContains(response, proj.protocol)
         self.assertContains(response, cons.protocol)
 
+    def test_view_fila_exibe_aguardando_resultado_com_link_de_decisao(self) -> None:
+        self.client.force_login(self.teacher)
+        proj = self.project_awaiting()
+        screening = self.schedule_project(proj)
+        cons = self.consultation_awaiting()
+        meeting = self.consultation_service.schedule_consultation(
+            application=cons,
+            scheduled_by=self.secretariat,
+            scheduled_date=FUTURE_DATE,
+            scheduled_time=FUTURE_TIME,
+            meeting_mode="online",
+            virtual_link="https://meet.example.com/sala",
+        )
+        response = self.client.get(reverse("meetings:queue"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, proj.protocol)
+        self.assertContains(
+            response, reverse("meetings:screening_decision", args=[screening.pk])
+        )
+        self.assertContains(response, cons.protocol)
+        self.assertContains(
+            response, reverse("meetings:consultation_decision", args=[meeting.pk])
+        )
+
     def test_view_fila_bloqueia_candidato(self) -> None:
         candidate = User.objects.create_user(
             username="candidate_view",
@@ -893,6 +917,23 @@ class MeetingViewTests(TestCase):
         response = self.client.post(
             reverse("meetings:screening_decision", args=[screening.pk]),
             {"submit_feedback": "1", "teacher_feedback": "screening_completed"},
+        )
+        self.assertRedirects(response, reverse("meetings:queue"))
+        screening.refresh_from_db()
+        self.assertEqual(
+            screening.teacher_feedback,
+            ProjectScreening.TeacherFeedback.SCREENING_COMPLETED,
+        )
+
+    def test_view_screening_feedback_botao_sem_valor_nao_vira_decisao(self) -> None:
+        """Botão 'Registrar feedback' envia submit_feedback vazio (""), o que não
+        deve recair na validação do formulário de decisão."""
+        self.client.force_login(self.teacher)
+        proj = self.project_awaiting()
+        screening = self.schedule_project(proj, scheduled_date=PAST_DATE)
+        response = self.client.post(
+            reverse("meetings:screening_decision", args=[screening.pk]),
+            {"submit_feedback": "", "teacher_feedback": "screening_completed"},
         )
         self.assertRedirects(response, reverse("meetings:queue"))
         screening.refresh_from_db()

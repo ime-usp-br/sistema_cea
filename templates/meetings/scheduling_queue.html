@@ -83,4 +83,76 @@
         <p>Não há reuniões de Consulta aguardando agendamento.</p>
     </div>
 {% endif %}
+
+<h2>Triagens aguardando resultado</h2>
+{% if screenings_result %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Protocolo</th>
+                    <th>Pesquisador</th>
+                    <th>Agendada</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for application in screenings_result %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'applications:detail' application.protocol %}">
+                                {{ application.protocol }}
+                            </a>
+                        </td>
+                        <td>{{ application.researcher_name }}</td>
+                        <td>{{ application.project_screening.scheduled_date }} às {{ application.project_screening.scheduled_time }}</td>
+                        <td class="actions">
+                            <a href="{% url 'meetings:screening_decision' application.project_screening.pk %}" class="btn btn-sm btn-primary">Registrar decisão</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="empty-state">
+        <p>Não há triagens aguardando resultado.</p>
+    </div>
+{% endif %}
+
+<h2>Reuniões aguardando resultado</h2>
+{% if consultations_result %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Protocolo</th>
+                    <th>Pesquisador</th>
+                    <th>Agendada</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for application in consultations_result %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'applications:detail' application.protocol %}">
+                                {{ application.protocol }}
+                            </a>
+                        </td>
+                        <td>{{ application.researcher_name }}</td>
+                        <td>{{ application.consultation_meeting.scheduled_date }} às {{ application.consultation_meeting.scheduled_time }}</td>
+                        <td class="actions">
+                            <a href="{% url 'meetings:consultation_decision' application.consultation_meeting.pk %}" class="btn btn-sm btn-secondary">Registrar decisão</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="empty-state">
+        <p>Não há reuniões aguardando resultado.</p>
+    </div>
+{% endif %}
 {% endblock %}
