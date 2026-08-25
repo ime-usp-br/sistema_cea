@@ -437,3 +437,116 @@ class PixDetailViewPermissionTests(TestCase):
         self.client.force_login(self.other_candidate)
         response = self.client.get(self._detail_url())
         self.assertEqual(response.status_code, 404)
+
+
+class _FakeResponse:
+    """Stub mínimo de ``httpx.Response`` para exercitar o gateway real."""
+
+    def __init__(self, payload: object, content: bytes = b"") -> None:
+        self._payload = payload
+        self.content = content
+
+    def json(self) -> object:
+        return self._payload
+
+    def raise_for_status(self) -> None:
+        return None
+
+
+@override_settings(
+    PIX_BASE_URL="https://wspix.test/api",
+    PIX_USERNAME="consumerdi",
+    PIX_PASSWORD="teste1",
+)
+class PixGatewayContractTests(TestCase):
+    """Garante que o PixGateway conversa com o WSPIX no contrato da spec.
+
+    Endpoints verificados (tmp/extracted/pix_spec.txt e docs/PIX.md):
+    gerar, consultar, listarConcluidos, pdf, qrcode, simularPag e
+    webhookConfig.
+    """
+
+    def setUp(self) -> None:
+        from pix.gateways import PixGateway
+
+        self.gateway = PixGateway()
+        self.calls: list[tuple] = []
+
+    def _patch_request(self, payload: object, content: bytes = b"") -> patch:
+        def fake_request(method: str, path: str, *, json_body: dict | None = None, params: dict | None = None):
+            self.calls.append((method, path, json_body, params))
+            return _FakeResponse(payload, content)
+
+        return patch("pix.gateways.PixGateway._request", side_effect=fake_request)
+
+    def test_gerar_usa_post_pix_gerar_com_autenticacao(self) -> None:
+        with self._patch_request({"idfpix": "pix-1", "qrCode": "000201"}):
+            result = self.gateway.generate_pix({"tipoPessoa": "PF"})
+        self.assertEqual(result["idfpix"], "pix-1")
+        method, path, body, _params = self.calls[0]
+        self.assertEqual(method, "POST")
+        self.assertEqual(path, "pix/gerar")
+        self.assertEqual(body, {"tipoPessoa": "PF"})
+
+    def test_headers_autenticacao_enviados(self) -> None:
+        from pix.gateways import PixGateway
+
+        headers = PixGateway()._headers()
+        self.assertEqual(headers["X-Username"], "consumerdi")
+        self.assertEqual(headers["X-Password"], "teste1")
+
+    def test_consultar_usa_get_por_idfpix(self) -> None:
+        with self._patch_request({"status": "Ativo"}):
+            result = self.gateway.check_pix_status("pix-1")
+        self.assertEqual(result["status"], "Ativo")
+        method, path, _body, params = self.calls[0]
+        self.assertEqual(method, "GET")
+        self.assertEqual(path, "pix/pix-1")
+        self.assertNotIn("verificar", params)
+
+    def test_consultar_com_verificar_envia_query_param(self) -> None:
+        with self._patch_request({"status": "Concluído"}):
+            self.gateway.check_pix_status("pix-1", verify=True)
+        method, path, _body, params = self.calls[0]
+        self.assertEqual(method, "GET")
+        self.assertEqual(path, "pix/pix-1")
+        self.assertEqual(params, {"verificar": "1"})
+
+    def test_listar_concluidos_usa_dtaini_dtafim(self) -> None:
+        with self._patch_request([]):
+            result = self.gateway.list_completed_pix("01/08/2026 00:00:00", "25/08/2026 23:59:59")
+        self.assertEqual(result, [])
+        method, path, _body, params = self.calls[0]
+        self.assertEqual(method, "GET")
+        self.assertEqual(path, "pix/listarConcluidos")
+        self.assertEqual(params["dtaini"], "01/08/2026 00:00:00")
+        self.assertEqual(params["dtafim"], "25/08/2026 23:59:59")
+
+    def test_pdf_qrcode_e_simular_pagamento(self) -> None:
+        with self._patch_request(None, b"%PDF"):
+            pdf = self.gateway.generate_pdf("pix-1")
+        with self._patch_request(None, b"PNG"):
+            qr = self.gateway.generate_qrcode("pix-1")
+        with self._patch_request({"retorno": "ok"}):
+            sim = self.gateway.simulate_payment("pix-1")
+        self.assertEqual(pdf, b"%PDF")
+        self.assertEqual(qr, b"PNG")
+        self.assertEqual(sim["retorno"], "ok")
+        methods = [call[0] for call in self.calls]
+        paths = [call[1] for call in self.calls]
+        self.assertEqual(methods, ["GET", "GET", "PATCH"])
+        self.assertEqual(paths, ["pix/pix-1/pdf", "pix/pix-1/qrcode", "pix/pix-1/simularPag"])
+
+    def test_webhook_config_cadastro_e_remocao(self) -> None:
+        with self._patch_request({"retorno": "ok", "mensagem": "cadastrado"}):
+            result = self.gateway.configure_webhook("https://cea.test/webhooks/pix/", "token-1")
+        with self._patch_request({"retorno": "ok"}):
+            self.gateway.remove_webhook()
+        self.assertIn("mensagem", result)
+        first_method, first_path, first_body, _ = self.calls[0]
+        self.assertEqual(first_method, "POST")
+        self.assertEqual(first_path, "pix/webhookConfig")
+        self.assertEqual(first_body, {"url": "https://cea.test/webhooks/pix/", "token": "token-1"})
+        second_method, second_path, _body, _ = self.calls[1]
+        self.assertEqual(second_method, "DELETE")
+        self.assertEqual(second_path, "pix/webhookConfig")

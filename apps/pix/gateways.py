@@ -1,6 +1,11 @@
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
+
+if TYPE_CHECKING:
+    import httpx
 
 
 class PixGatewayError(RuntimeError):
@@ -8,7 +13,15 @@ class PixGatewayError(RuntimeError):
 
 
 class PixGateway:
-    """Cliente HTTP para o serviço externo de cobrança Pix.
+    """Cliente HTTP para o serviço externo de cobrança Pix (WSPIX).
+
+    Contrato WSPIX (docs/PIX.md e tmp/extracted/pix_spec.txt):
+
+    - base [dev]: ``https://api-dev.portalservicos.usp.br/wspix/api``
+    - autenticação: headers ``X-Username``/``X-Password``
+    - endpoints sob ``<URL_BASE>/pix``: ``gerar``, ``<idfpix>``,
+      ``listarConcluidos``, ``<idfpix>/pdf``, ``<idfpix>/qrcode``,
+      ``<idfpix>/simularPag`` (somente dev) e ``webhookConfig``.
 
     A integração é feita via API REST/JSON usando ``httpx``. O transporte é
     criado de forma lazy dentro de cada método para que o módulo possa ser
@@ -17,7 +30,7 @@ class PixGateway:
     """
 
     def __init__(self, base_url: str | None = None) -> None:
-        self.base_url = base_url or settings.PIX_BASE_URL
+        self.base_url = (base_url or settings.PIX_BASE_URL).rstrip("/")
 
     def _headers(self) -> dict[str, str]:
         return {
@@ -25,55 +38,92 @@ class PixGateway:
             "X-Password": settings.PIX_PASSWORD,
         }
 
-    def generate_pix(self, payload: dict[str, Any]) -> dict[str, Any]:
-        """POST /pix/gerar — gera uma cobrança Pix."""
+    def _url(self, *parts: str) -> str:
+        return "/".join([self.base_url, *parts])
+
+    def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        json_body: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
+    ) -> httpx.Response:
         import httpx
 
         try:
             with httpx.Client(timeout=30) as client:
-                response = client.post(
-                    f"{self.base_url}/gerar",
-                    json=payload,
-                    headers=self._headers(),
-                )
-                response.raise_for_status()
-                return response.json()
-        except httpx.HTTPError as exc:
-            raise PixGatewayError(f"Falha ao gerar Pix: {exc}") from exc
-
-    def check_pix_status(self, idfpix: str, *, verify: bool = False) -> dict[str, Any]:
-        """GET /pix/<idfpix> — consulta o status de uma cobrança."""
-        import httpx
-
-        params: dict[str, Any] = {"verificar": "1"} if verify else {}
-        try:
-            with httpx.Client(timeout=30) as client:
-                response = client.get(
-                    f"{self.base_url}/{idfpix}",
+                response = client.request(
+                    method,
+                    self._url(path),
+                    json=json_body,
                     params=params,
                     headers=self._headers(),
                 )
                 response.raise_for_status()
-                return response.json()
+                return response
         except httpx.HTTPError as exc:
-            raise PixGatewayError(f"Falha ao consultar Pix: {exc}") from exc
+            raise PixGatewayError(
+                f"Falha na requisição {method} {path}: {exc}"
+            ) from exc
+
+    def generate_pix(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """POST /pix/gerar — gera uma cobrança Pix.
+
+        Retorna ``idfpix``, ``qrCode`` (copia-e-cola) e ``qrCodeImgBase64``.
+        """
+        response = self._request("POST", "pix/gerar", json_body=payload)
+        return response.json()
+
+    def check_pix_status(self, idfpix: str, *, verify: bool = False) -> dict[str, Any]:
+        """GET /pix/<idfpix> — consulta o status de uma cobrança.
+
+        Quando ``verify`` é True é enviado o queryParam ``verificar``: o
+        gateway verifica o pagamento no banco, realiza a baixa em caso de
+        falha de webhook e re-dispara o webhook cadastrado.
+        """
+        params: dict[str, Any] = {"verificar": "1"} if verify else {}
+        response = self._request("GET", f"pix/{idfpix}", params=params)
+        return response.json()
 
     def list_completed_pix(self, dtaini: str, dtafim: str) -> list[dict[str, Any]]:
         """GET /pix/listarConcluidos — lista Pix pagos em um período.
 
-        Contrato WSPIX (docs/PIX.md): os parâmetros são ``dtaini`` e ``dtafim``
-        no formato ``dd/MM/aaaa hh:mm:ss``.
+        Contrato WSPIX: os parâmetros ``dtaini`` e ``dtafim`` no formato
+        ``dd/MM/aaaa hh:mm:ss`` e o período não pode exceder 30 dias.
         """
-        import httpx
+        response = self._request(
+            "GET",
+            "pix/listarConcluidos",
+            params={"dtaini": dtaini, "dtafim": dtafim},
+        )
+        return response.json()
 
-        try:
-            with httpx.Client(timeout=30) as client:
-                response = client.get(
-                    f"{self.base_url}/listarConcluidos",
-                    params={"dtaini": dtaini, "dtafim": dtafim},
-                    headers=self._headers(),
-                )
-                response.raise_for_status()
-                return response.json()
-        except httpx.HTTPError as exc:
-            raise PixGatewayError(f"Falha ao listar Pix concluídos: {exc}") from exc
+    def generate_pdf(self, idfpix: str) -> bytes:
+        """GET /pix/<idfpix>/pdf — baixa o PDF com os dados e o QR Code."""
+        response = self._request("GET", f"pix/{idfpix}/pdf")
+        return response.content
+
+    def generate_qrcode(self, idfpix: str) -> bytes:
+        """GET /pix/<idfpix>/qrcode — baixa a imagem do QR Code."""
+        response = self._request("GET", f"pix/{idfpix}/qrcode")
+        return response.content
+
+    def simulate_payment(self, idfpix: str) -> dict[str, Any]:
+        """PATCH /pix/<idfpix>/simularPag — simula o pagamento (somente dev)."""
+        response = self._request("PATCH", f"pix/{idfpix}/simularPag")
+        return response.json()
+
+    def configure_webhook(self, url: str, token: str) -> dict[str, Any]:
+        """POST /pix/webhookConfig — cadastra a URL de webhook da aplicação."""
+        response = self._request(
+            "POST",
+            "pix/webhookConfig",
+            json_body={"url": url, "token": token},
+        )
+        return response.json()
+
+    def remove_webhook(self) -> dict[str, Any]:
+        """DELETE /pix/webhookConfig — remove o webhook cadastrado."""
+        response = self._request("DELETE", "pix/webhookConfig")
+        return response.json()

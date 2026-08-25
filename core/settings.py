@@ -222,9 +222,13 @@ DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@cea.ime.usp.br')
 NOTIFICATION_CENTER_EMAIL = env('NOTIFICATION_CENTER_EMAIL', default='cea@ime.usp.br')
 
 
-# ---- Integração Pix (API REST/JSON) ----
+# ---- Integração Pix (API REST/JSON - WSPIX) ----
 PIX_WEBHOOK_TOKEN = env('PIX_WEBHOOK_TOKEN', default='dev-webhook-token')
-PIX_BASE_URL = env('PIX_BASE_URL', default='https://example.com/pix')
+# Base do WSPIX em desenvolvimento; produção: https://uspdigital.usp.br/wspix/api
+PIX_BASE_URL = env(
+    'PIX_BASE_URL',
+    default='https://api-dev.portalservicos.usp.br/wspix/api',
+)
 PIX_USERNAME = env('PIX_USERNAME', default='')
 PIX_PASSWORD = env('PIX_PASSWORD', default='')
 PIX_EXPIRATION_SECONDS = env.int('PIX_EXPIRATION_SECONDS', default=3600)

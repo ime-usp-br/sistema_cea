@@ -122,6 +122,8 @@ class PixPaymentService:
             "codigoUnidadeDespesa": settings.PIX_CODIGO_UNIDADE_DESPESA,
             "estruturaHierarquica": settings.PIX_ESTRUTURA_HIERARQUICA,
         }
+        if application.contact_email:
+            payload["emailPesOrg"] = application.contact_email
         result = self.gateway.generate_pix(payload)
 
         payment_instrument = self.orchestration.create_payment_instrument(

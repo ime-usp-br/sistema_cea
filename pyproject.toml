@@ -15,9 +15,11 @@ whitenoise = "^6.11.0"
 psycopg = {extras = ["binary"], version = "^3.3.2"}
 django-extensions = "^4.1"
 gunicorn = "^23.0.0"
+httpx = "^0.28.1"
 weasyprint = "^66.0"
 celery = "^5.3"
 redis = "^5.0"
+zeep = "^4.3.3"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "*"

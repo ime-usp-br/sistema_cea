@@ -2,7 +2,7 @@ import base64
 import tempfile
 from datetime import timedelta
 from decimal import Decimal
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.core import mail
 from django.test import TestCase, override_settings
@@ -689,3 +689,117 @@ class BankSlipPdfViewTests(TestCase):
         assert slip.pdf_asset is not None
         with default_storage.open(slip.pdf_asset.storage_key) as stored:
             self.assertEqual(stored.read(), _PDF_BYTES)
+
+
+@override_settings(
+    BANK_SLIP_USERNAME="consumerdi",
+    BANK_SLIP_PASSWORD="teste1",
+)
+class BankSlipGatewayContractTests(TestCase):
+    """Garante que o BankSlipGateway conversa com o WS-Boleto no contrato da spec.
+
+    Contrato verificado (tmp/extracted/boleto_spec.txt, XSD do WS e docs/BOLETO.md):
+    - operação `gerarBoletoRegistrado` recebe `boletoRegistrado`;
+    - operações `obterSituacao`/`obterBoleto`/`cancelarBoleto` recebem
+      `identificacao={'codigoIDBoleto': ...}`;
+    - autenticação por cabeçalhos SOAP `username`/`password`.
+    """
+
+    def setUp(self) -> None:
+        from bank_slips.gateways import BankSlipGateway
+
+        self.gateway = BankSlipGateway(wsdl_url="http://wsdl.test/boleto.wsdl")
+
+    def _fake_call(self, **returns) -> MagicMock:
+        client = MagicMock()
+        service = MagicMock()
+        for name, value in returns.items():
+            getattr(service, name).return_value = value
+        client.service = service
+        return client
+
+    def test_headers_soap_username_password(self) -> None:
+        from bank_slips.gateways import BankSlipGateway
+
+        self.assertEqual(
+            BankSlipGateway()._headers(),
+            {"username": "consumerdi", "password": "teste1"},
+        )
+
+    def test_gerar_boleto_usa_boletoRegistrado_e_zeros_do_xsd(self) -> None:
+        result = MagicMock()
+        result.codigoIDBoleto = "ref-001"
+        client = self._fake_call(gerarBoletoRegistrado=result)
+        with patch.object(self.gateway, "_client", return_value=client):
+            out = self.gateway.gerar_boleto(
+                {
+                    "codigoUnidadeDespesa": 1,
+                    "codigoFonteRecurso": 423,
+                    "estruturaHierarquica": "\\DISTRIBUIDOR",
+                    "instrucoesObjetoCobranca": "Não receber após o vencimento.",
+                    "valorDocumento": "140.00",
+                }
+            )
+        self.assertEqual(out["codigoIDBoleto"], "ref-001")
+        call_kwargs = client.service.gerarBoletoRegistrado.call_args.kwargs
+        self.assertIn("_soapheaders", call_kwargs)
+        self.assertEqual(len(call_kwargs["_soapheaders"]), 2)
+        boleto = call_kwargs["boletoRegistrado"]
+        self.assertEqual(boleto["codigoUnidadeDespesa"], 1)
+        self.assertEqual(boleto["codigoFonteRecurso"], 423)
+        self.assertEqual(boleto["estruturaHierarquica"], "\\DISTRIBUIDOR")
+        self.assertEqual(boleto["valorDocumento"], "140.00")
+        # Campos numéricos exigidos pelo XSD, mas neutros para a cobrança.
+        self.assertEqual(boleto["codigoConvenio"], 0)
+        self.assertEqual(boleto["valorMulta"], 0.0)
+        self.assertEqual(boleto["numeroUspSacado"], 0)
+        self.assertEqual(boleto["numeroUspUsuario"], 0)
+
+    def test_obter_situacao_usa_identificacao_e_retorna_status(self) -> None:
+        situation = MagicMock()
+        situation.statusBoletoBancario = "P"
+        client = self._fake_call(obterSituacao=situation)
+        with patch.object(self.gateway, "_client", return_value=client):
+            status = self.gateway.obter_situacao("ref-001")
+        self.assertEqual(status, "P")
+        call_kwargs = client.service.obterSituacao.call_args.kwargs
+        self.assertEqual(call_kwargs["identificacao"], {"codigoIDBoleto": "ref-001"})
+        self.assertIn("_soapheaders", call_kwargs)
+
+    def test_obter_situacao_status_invalido_erro(self) -> None:
+        from bank_slips.gateways import BankSlipGatewayError
+
+        situation = MagicMock()
+        situation.statusBoletoBancario = "Z"
+        client = self._fake_call(obterSituacao=situation)
+        with patch.object(self.gateway, "_client", return_value=client), self.assertRaises(
+            BankSlipGatewayError
+        ):
+            self.gateway.obter_situacao("ref-001")
+
+    def test_obter_boleto_pdf_retorna_base64(self) -> None:
+        client = self._fake_call(obterBoleto=_PDF_BYTES)
+        with patch.object(self.gateway, "_client", return_value=client):
+            pdf_b64 = self.gateway.obter_boleto_pdf("ref-001")
+        self.assertEqual(pdf_b64, _PDF_B64)
+        call_kwargs = client.service.obterBoleto.call_args.kwargs
+        self.assertEqual(call_kwargs["identificacao"], {"codigoIDBoleto": "ref-001"})
+
+    def test_cancelar_boleto_chama_soap_e_retorna_true(self) -> None:
+        client = self._fake_call(cancelarBoleto=MagicMock())
+        with patch.object(self.gateway, "_client", return_value=client):
+            self.assertTrue(self.gateway.cancelar_boleto("ref-001"))
+        call_kwargs = client.service.cancelarBoleto.call_args.kwargs
+        self.assertEqual(call_kwargs["identificacao"], {"codigoIDBoleto": "ref-001"})
+
+    def test_obter_detalhe_retorna_pares_chave_valor(self) -> None:
+        detail = MagicMock()
+        detail.entry = [
+            {"key": "lnhdgv", "value": "123456 78901 001"},
+            {"key": "vlrcob", "value": "140.00"},
+        ]
+        client = self._fake_call(obterDetalhe=detail)
+        with patch.object(self.gateway, "_client", return_value=client):
+            parsed = self.gateway.obter_detalhe("ref-001")
+        self.assertEqual(parsed["lnhdgv"], "123456 78901 001")
+        self.assertEqual(parsed["vlrcob"], "140.00")
