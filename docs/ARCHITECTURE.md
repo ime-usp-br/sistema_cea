@@ -444,13 +444,14 @@ Pode:
 - aprovar dados;
 - rejeitar dados;
 - solicitar correção;
-- informar decisão em triagens e reuniões;
-- registrar feedback.
+- registrar feedback em triagens e reuniões;
+- agendar/reagendar/cancelar participações é da secretaria; a decisão final em triagens e reuniões é da secretaria (ver §7.4).
 
 Não deve acessar:
 
 - dados financeiros completos;
 - confirmação manual de pagamento;
+- registro da decisão final de triagens e reuniões;
 - gestão de usuários;
 - gestão de períodos;
 - relatórios financeiros completos.
@@ -466,6 +467,7 @@ Pode:
 - confirmar pagamento manual;
 - gerenciar cobranças;
 - decidir auditorias rejeitadas;
+- registrar a decisão final de triagens e reuniões (após o feedback do docente);
 - converter modalidade;
 - transferir período;
 - criar solicitações de reembolso;

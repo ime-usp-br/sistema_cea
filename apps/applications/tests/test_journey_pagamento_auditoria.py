@@ -80,10 +80,22 @@ class PixBoletoConsultationJourneyTests(TestCase):
         )
 
     def _choose_method(self, application: ServiceApplication, method: str) -> None:
-        response = self.client.post(
-            reverse("payments:fee_payment", args=[application.protocol]),
-            {"method": method},
-        )
+        # "Gerar pagamento" já gera a cobrança externa: o candidato escolhe o
+        # método e recebe o QR Code/boleto no mesmo ato (TS-PAY-001/002).
+        if method == "pix":
+            patcher = patch(
+                "pix.gateways.PixGateway.generate_pix", return_value=PIX_RESULT
+            )
+        else:
+            patcher = patch(
+                "bank_slips.gateways.BankSlipGateway.gerar_boleto",
+                return_value=SLIP_RESULT,
+            )
+        with patcher:
+            response = self.client.post(
+                reverse("payments:fee_payment", args=[application.protocol]),
+                {"method": method},
+            )
         self.assertEqual(response.status_code, 302)
 
     def _generate_pix(self, application: ServiceApplication) -> None:
@@ -130,7 +142,6 @@ class PixBoletoConsultationJourneyTests(TestCase):
 
     def test_TS_PIX_001_jornada_payload_respeita_contrato(self) -> None:
         application = self._create_consultation_form()
-        self._choose_method(application, "pix")
 
         captured: dict[str, Any] = {}
 
@@ -139,7 +150,11 @@ class PixBoletoConsultationJourneyTests(TestCase):
             return PIX_RESULT
 
         with patch("pix.gateways.PixGateway.generate_pix", side_effect=fake_generate):
-            self.client.post(reverse("pix:generate", args=[application.protocol]))
+            response = self.client.post(
+                reverse("payments:fee_payment", args=[application.protocol]),
+                {"method": "pix"},
+            )
+        self.assertEqual(response.status_code, 302)
 
         self.assertEqual(captured["valor"], "140,00")  # formato pt-BR
         self.assertEqual(captured["expiracao"], settings.PIX_EXPIRATION_SECONDS)
@@ -213,7 +228,6 @@ class PixBoletoConsultationJourneyTests(TestCase):
 
     def test_TS_BSL_001_jornada_payload_respeita_contrato(self) -> None:
         application = self._create_consultation_form()
-        self._choose_method(application, "bank_slip")
 
         captured: dict[str, Any] = {}
 
@@ -225,7 +239,11 @@ class PixBoletoConsultationJourneyTests(TestCase):
             "bank_slips.gateways.BankSlipGateway.gerar_boleto",
             side_effect=fake_gerar,
         ):
-            self.client.post(reverse("bank_slips:generate", args=[application.protocol]))
+            response = self.client.post(
+                reverse("payments:fee_payment", args=[application.protocol]),
+                {"method": "bank_slip"},
+            )
+        self.assertEqual(response.status_code, 302)
 
         self.assertEqual(captured["valorDocumento"], "140.00")  # com ponto
         day, month, year = captured["dataVencimentoBoleto"].split("/")

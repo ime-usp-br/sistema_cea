@@ -212,6 +212,10 @@ class ProjectScreeningService:
             raise MeetingDomainError(
                 "A inscrição não está aguardando o resultado da triagem."
             )
+        if screening.teacher_feedback is None:
+            raise MeetingDomainError(
+                "O feedback do docente deve ser registrado antes da decisão da triagem."
+            )
         decision_enum = ProjectScreening.Decision(decision)
         with transaction.atomic():
             screening.decision = decision_enum.value
@@ -484,6 +488,10 @@ class ConsultationMeetingService:
         ):
             raise MeetingDomainError(
                 "A inscrição não está aguardando o resultado da reunião."
+            )
+        if meeting.teacher_feedback is None:
+            raise MeetingDomainError(
+                "O feedback do docente deve ser registrado antes da decisão da reunião."
             )
         decision_enum = ConsultationMeeting.Decision(decision)
         with transaction.atomic():

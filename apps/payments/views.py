@@ -6,6 +6,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
 
 from applications.models import ServiceApplication
+from bank_slips.services import BankSlipPaymentService
+from pix.services import PixPaymentService
 from users.models import User
 
 from .forms import ManualPaymentConfirmationForm, PaymentMethodForm, RefundRequestForm
@@ -14,13 +16,11 @@ from .services import (
     ManualPaymentService,
     ModalityChangeService,
     OverdueBillingService,
-    PaymentOrchestrationService,
     PendingPaymentService,
     RefundRequestService,
 )
 
 _fee_service = ModalityChangeService()
-_payment_service = PaymentOrchestrationService()
 _manual_service = ManualPaymentService()
 _refund_service = RefundRequestService()
 _overdue_service = OverdueBillingService()
@@ -89,11 +89,19 @@ class FeePaymentView(LoginRequiredMixin, View):
                 status=400,
             )
         try:
-            _payment_service.create_payment_instrument(
+            # Gera o instrumento e já a cobrança externa (QR Code Pix ou boleto)
+            # na mesma ação: o candidato escolheu o método aqui mesmo.
+            if form.cleaned_data["method"] == PaymentInstrument.Method.PIX:
+                PixPaymentService().generate_pix_for_fee(
+                    fee_requirement=fee,
+                    created_by=cast(User, request.user),
+                )
+                return redirect("pix:detail", protocol=application.protocol)
+            BankSlipPaymentService().generate_bank_slip_for_fee(
                 fee_requirement=fee,
-                method=form.cleaned_data["method"],
                 created_by=cast(User, request.user),
             )
+            return redirect("bank_slips:detail", protocol=application.protocol)
         except Exception as exc:
             form.add_error(None, str(exc))
             return render(
@@ -102,7 +110,6 @@ class FeePaymentView(LoginRequiredMixin, View):
                 {"application": application, "fee": fee, "form": form},
                 status=400,
             )
-        return redirect("payments:fee_payment", protocol=application.protocol)
 
 
 class ManualPaymentConfirmationView(RoleRequiredMixin, View):

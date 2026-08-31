@@ -297,10 +297,17 @@ class MeetingScenarioTests(TestCase):
     def test_TS_MEET_GAP_002_nao_cancela_triagem_concluida(self) -> None:
         """Paridade Laravel: decisão final (COMPLETED) protege contra cancelamento."""
         application = self.project_awaiting_scheduling()
-        screening = self.schedule_project(application)
+        screening = self.schedule_project(
+            application, scheduled_date=PAST_DATE, scheduled_time=PAST_TIME
+        )
+        screening = self.screening_service.record_feedback(
+            screening=screening,
+            recorded_by=self.teacher,
+            teacher_feedback="screening_completed",
+        )
         screening = self.screening_service.record_decision(
             screening=screening,
-            decided_by=self.teacher,
+            decided_by=self.secretariat,
             decision="approved_as_project",
         )
         self.assertEqual(screening.state, ProjectScreening.State.COMPLETED)
@@ -328,10 +335,17 @@ class MeetingScenarioTests(TestCase):
     # TS-MEET-GAP-003 — reunião CONCLUÍDA não pode ser cancelada
     def test_TS_MEET_GAP_003_nao_cancela_reuniao_concluida(self) -> None:
         application = self.consultation_awaiting_scheduling()
-        meeting = self.schedule_consultation(application)
+        meeting = self.schedule_consultation(
+            application, scheduled_date=PAST_DATE, scheduled_time=PAST_TIME
+        )
+        meeting = self.consultation_service.record_feedback(
+            meeting=meeting,
+            recorded_by=self.teacher,
+            teacher_feedback="consultation_completed",
+        )
         meeting = self.consultation_service.record_decision(
             meeting=meeting,
-            decided_by=self.teacher,
+            decided_by=self.secretariat,
             decision="approved_as_consultation",
         )
         self.assertEqual(meeting.state, ConsultationMeeting.State.COMPLETED)
@@ -351,10 +365,17 @@ class MeetingScenarioTests(TestCase):
 
 
         application = self.project_awaiting_scheduling()
-        screening = self.schedule_project(application)
+        screening = self.schedule_project(
+            application, scheduled_date=PAST_DATE, scheduled_time=PAST_TIME
+        )
+        self.screening_service.record_feedback(
+            screening=screening,
+            recorded_by=self.teacher,
+            teacher_feedback="screening_completed",
+        )
         screening = self.screening_service.record_decision(
             screening=screening,
-            decided_by=self.teacher,
+            decided_by=self.secretariat,
             decision="approved_as_project",
             decision_note="Aprovado",
         )
@@ -374,10 +395,17 @@ class MeetingScenarioTests(TestCase):
 
     def test_TS_MEET_009b_decisao_aprovado_como_projeto_com_credito(self) -> None:
         application = self.project_awaiting_scheduling(credit=Decimal("60.00"))
-        screening = self.schedule_project(application)
+        screening = self.schedule_project(
+            application, scheduled_date=PAST_DATE, scheduled_time=PAST_TIME
+        )
+        self.screening_service.record_feedback(
+            screening=screening,
+            recorded_by=self.teacher,
+            teacher_feedback="screening_completed",
+        )
         self.screening_service.record_decision(
             screening=screening,
-            decided_by=self.teacher,
+            decided_by=self.secretariat,
             decision="approved_as_project",
         )
         application.refresh_from_db()
@@ -391,10 +419,17 @@ class MeetingScenarioTests(TestCase):
     def test_TS_MEET_010_decisao_aprovado_como_consulta(self) -> None:
         application = self.project_awaiting_scheduling()
         self.make_paid_app_fee(application, Decimal("80.00"))
-        screening = self.schedule_project(application)
+        screening = self.schedule_project(
+            application, scheduled_date=PAST_DATE, scheduled_time=PAST_TIME
+        )
+        self.screening_service.record_feedback(
+            screening=screening,
+            recorded_by=self.teacher,
+            teacher_feedback="screening_completed",
+        )
         self.screening_service.record_decision(
             screening=screening,
-            decided_by=self.teacher,
+            decided_by=self.secretariat,
             decision="approved_as_consultation",
         )
         application.refresh_from_db()
@@ -416,10 +451,17 @@ class MeetingScenarioTests(TestCase):
     # TS-MEET-011
     def test_TS_MEET_011_decisao_nao_aprovado(self) -> None:
         application = self.project_awaiting_scheduling()
-        screening = self.schedule_project(application)
+        screening = self.schedule_project(
+            application, scheduled_date=PAST_DATE, scheduled_time=PAST_TIME
+        )
+        self.screening_service.record_feedback(
+            screening=screening,
+            recorded_by=self.teacher,
+            teacher_feedback="screening_completed",
+        )
         self.screening_service.record_decision(
             screening=screening,
-            decided_by=self.teacher,
+            decided_by=self.secretariat,
             decision="not_approved",
         )
         screening.refresh_from_db()
@@ -433,16 +475,45 @@ class MeetingScenarioTests(TestCase):
 
     def test_TS_MEET_011b_reuniao_decisao_nao_aprovado(self) -> None:
         application = self.consultation_awaiting_scheduling()
-        meeting = self.schedule_consultation(application)
+        meeting = self.schedule_consultation(
+            application, scheduled_date=PAST_DATE, scheduled_time=PAST_TIME
+        )
+        self.consultation_service.record_feedback(
+            meeting=meeting,
+            recorded_by=self.teacher,
+            teacher_feedback="consultation_completed",
+        )
         self.consultation_service.record_decision(
             meeting=meeting,
-            decided_by=self.teacher,
+            decided_by=self.secretariat,
             decision="not_approved",
         )
         application.refresh_from_db()
         self.assertEqual(
             application.lifecycle_status,
             ServiceApplication.LifecycleStatus.NOT_APPROVED,
+        )
+
+    def test_TS_MEET_011c_decisao_exige_feedback_do_docente(self) -> None:
+        """A decisão e o feedback são operações separadas e sequenciais: a
+        decisão da secretaria só pode ocorrer após o feedback do docente."""
+        application = self.project_awaiting_scheduling()
+        screening = self.schedule_project(application)
+        with self.assertRaisesMessage(
+            MeetingDomainError,
+            "O feedback do docente deve ser registrado antes da decisão da triagem.",
+        ):
+            self.screening_service.record_decision(
+                screening=screening,
+                decided_by=self.secretariat,
+                decision="approved_as_project",
+            )
+        screening.refresh_from_db()
+        self.assertIsNone(screening.decision)
+        application.refresh_from_db()
+        self.assertEqual(
+            application.lifecycle_status,
+            ServiceApplication.LifecycleStatus.AWAITING_SCREENING_RESULT,
         )
 
     # TS-MEET-012
@@ -504,7 +575,7 @@ class MeetingScenarioTests(TestCase):
         with self.assertRaises(MeetingDomainError):
             self.screening_service.record_decision(
                 screening=screening,
-                decided_by=self.teacher,
+                decided_by=self.secretariat,
                 decision="approved_as_project",
             )
         screening.refresh_from_db()
@@ -550,7 +621,7 @@ class MeetingScenarioTests(TestCase):
         with self.assertRaises(MeetingDomainError):
             self.consultation_service.record_decision(
                 meeting=meeting,
-                decided_by=self.teacher,
+                decided_by=self.secretariat,
                 decision="approved_as_consultation",
             )
         meeting.refresh_from_db()
@@ -590,11 +661,17 @@ class MeetingScenarioTests(TestCase):
         Projeto. Isso cria automaticamente o bankSlip de 250 (R$ 250,00).
         """
         application = self.consultation_awaiting_scheduling()
-        meeting = self.schedule_consultation(application)
-
+        meeting = self.schedule_consultation(
+            application, scheduled_date=PAST_DATE, scheduled_time=PAST_TIME
+        )
+        self.consultation_service.record_feedback(
+            meeting=meeting,
+            recorded_by=self.teacher,
+            teacher_feedback="consultation_completed",
+        )
         self.consultation_service.record_decision(
             meeting=meeting,
-            decided_by=self.teacher,
+            decided_by=self.secretariat,
             decision="approved_as_project",
         )
 
@@ -720,6 +797,37 @@ class MeetingViewTests(TestCase):
         )
 
     # Fila de agendamentos (/agendamentos/)
+    def test_view_fila_para_docente_mostra_apenas_aguardando_resultado(self) -> None:
+        """O docente enxerga apenas os itens onde registra feedback, sem as
+        seções de agendamento (operacionais da secretaria)."""
+        self.client.force_login(self.teacher)
+        proj = self.project_awaiting()
+        cons = self.consultation_awaiting()
+        screening = self.schedule_project(proj, scheduled_date=PAST_DATE)
+        meeting = self.consultation_service.schedule_consultation(
+            application=cons,
+            scheduled_by=self.secretariat,
+            scheduled_date=PAST_DATE,
+            scheduled_time=PAST_TIME,
+            meeting_mode="online",
+            virtual_link="https://meet.example.com/sala",
+        )
+        response = self.client.get(reverse("meetings:queue"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Triagens aguardando resultado")
+        self.assertContains(response, "Reuniões aguardando resultado")
+        self.assertNotContains(response, "Triagens de Projetos</h2>")
+        self.assertNotContains(response, "Reuniões de Consulta</h2>")
+        self._assert_feedback_link(response, screening.pk, meeting.pk)
+
+    def _assert_feedback_link(self, response, screening_id: int, meeting_id: int) -> None:
+        self.assertContains(
+            response, reverse("meetings:screening_decision", args=[screening_id])
+        )
+        self.assertContains(
+            response, reverse("meetings:consultation_decision", args=[meeting_id])
+        )
+
     def test_view_fila_requer_autenticacao(self) -> None:
         response = self.client.get(reverse("meetings:queue"))
         self.assertEqual(response.status_code, 302)
@@ -867,9 +975,14 @@ class MeetingViewTests(TestCase):
 
     # Decisão de triagem (/agendamentos/triagem/<id>/decisao/)
     def test_view_screening_decision_aprovado_como_projeto(self) -> None:
-        self.client.force_login(self.teacher)
+        self.client.force_login(self.secretariat)
         proj = self.project_awaiting()
-        screening = self.schedule_project(proj)
+        screening = self.schedule_project(proj, scheduled_date=PAST_DATE)
+        self.screening_service.record_feedback(
+            screening=screening,
+            recorded_by=self.teacher,
+            teacher_feedback="screening_completed",
+        )
         response = self.client.post(
             reverse("meetings:screening_decision", args=[screening.pk]),
             {"decision": "approved_as_project", "decision_note": "Aprovado"},
@@ -885,9 +998,14 @@ class MeetingViewTests(TestCase):
         self.assertEqual(fee.amount, Decimal("250.00"))
 
     def test_view_screening_decision_nao_aprovado(self) -> None:
-        self.client.force_login(self.teacher)
+        self.client.force_login(self.secretariat)
         proj = self.project_awaiting()
-        screening = self.schedule_project(proj)
+        screening = self.schedule_project(proj, scheduled_date=PAST_DATE)
+        self.screening_service.record_feedback(
+            screening=screening,
+            recorded_by=self.teacher,
+            teacher_feedback="screening_completed",
+        )
         response = self.client.post(
             reverse("meetings:screening_decision", args=[screening.pk]),
             {"decision": "not_approved", "decision_note": "Recusado"},
@@ -897,6 +1015,55 @@ class MeetingViewTests(TestCase):
         self.assertEqual(
             proj.lifecycle_status, ServiceApplication.LifecycleStatus.NOT_APPROVED
         )
+
+    def test_view_screening_docente_nao_pode_registrar_decisao(self) -> None:
+        self.client.force_login(self.teacher)
+        proj = self.project_awaiting()
+        screening = self.schedule_project(proj, scheduled_date=PAST_DATE)
+        self.screening_service.record_feedback(
+            screening=screening,
+            recorded_by=self.teacher,
+            teacher_feedback="screening_completed",
+        )
+        response = self.client.post(
+            reverse("meetings:screening_decision", args=[screening.pk]),
+            {"decision": "approved_as_project"},
+        )
+        self.assertEqual(response.status_code, 403)
+        screening.refresh_from_db()
+        self.assertIsNone(screening.decision)
+
+    def test_view_screening_secretaria_nao_pode_registrar_feedback(self) -> None:
+        self.client.force_login(self.secretariat)
+        proj = self.project_awaiting()
+        screening = self.schedule_project(proj, scheduled_date=PAST_DATE)
+        response = self.client.post(
+            reverse("meetings:screening_decision", args=[screening.pk]),
+            {"submit_feedback": "1", "teacher_feedback": "screening_completed"},
+        )
+        self.assertEqual(response.status_code, 403)
+        screening.refresh_from_db()
+        self.assertIsNone(screening.teacher_feedback)
+
+    def test_view_screening_pagina_segmentationa_formularios_por_perfil(self) -> None:
+        proj = self.project_awaiting()
+        screening = self.schedule_project(proj, scheduled_date=PAST_DATE)
+        # Docente vê apenas o formulário de feedback (sem o de decisão).
+        self.client.force_login(self.teacher)
+        response = self.client.get(
+            reverse("meetings:screening_decision", args=[screening.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Registrar feedback do docente")
+        self.assertNotContains(response, "Registrar decisão</h3>")
+        # Secretaria vê apenas o formulário de decisão (sem o de feedback).
+        self.client.logout()
+        self.client.force_login(self.secretariat)
+        response = self.client.get(
+            reverse("meetings:screening_decision", args=[screening.pk])
+        )
+        self.assertContains(response, "Registrar decisão")
+        self.assertNotContains(response, "Registrar feedback do docente")
 
     def test_view_screening_feedback_bloqueado_antes_do_evento(self) -> None:
         self.client.force_login(self.teacher)
@@ -942,17 +1109,61 @@ class MeetingViewTests(TestCase):
             ProjectScreening.TeacherFeedback.SCREENING_COMPLETED,
         )
 
-    # Decisão de reunião de consulta (/agendamentos/reuniao/<id>/decisao/)
-    def test_view_consultation_decision_aprovado(self) -> None:
+    def test_view_screening_feedback_payload_navegador_form_action(self) -> None:
+        """Paridade com o navegador: o JS global desabilita o botão de submit e
+        ele não envia name/value; o despacho usa o campo hidden ``form_action``."""
+        self.client.force_login(self.teacher)
+        proj = self.project_awaiting()
+        screening = self.schedule_project(proj, scheduled_date=PAST_DATE)
+        response = self.client.post(
+            reverse("meetings:screening_decision", args=[screening.pk]),
+            {"form_action": "feedback", "teacher_feedback": "screening_completed"},
+        )
+        self.assertRedirects(response, reverse("meetings:queue"))
+        screening.refresh_from_db()
+        self.assertEqual(
+            screening.teacher_feedback,
+            ProjectScreening.TeacherFeedback.SCREENING_COMPLETED,
+        )
+
+    def test_view_consultation_feedback_payload_navegador_form_action(self) -> None:
         self.client.force_login(self.teacher)
         cons = self.consultation_awaiting()
         meeting = self.consultation_service.schedule_consultation(
             application=cons,
             scheduled_by=self.secretariat,
-            scheduled_date=FUTURE_DATE,
-            scheduled_time=FUTURE_TIME,
+            scheduled_date=PAST_DATE,
+            scheduled_time=PAST_TIME,
             meeting_mode="online",
             virtual_link="https://meet.example.com/sala",
+        )
+        response = self.client.post(
+            reverse("meetings:consultation_decision", args=[meeting.pk]),
+            {"form_action": "feedback", "teacher_feedback": "consultation_completed"},
+        )
+        self.assertRedirects(response, reverse("meetings:queue"))
+        meeting.refresh_from_db()
+        self.assertEqual(
+            meeting.teacher_feedback,
+            ConsultationMeeting.TeacherFeedback.CONSULTATION_COMPLETED,
+        )
+
+    # Decisão de reunião de consulta (/agendamentos/reuniao/<id>/decisao/)
+    def test_view_consultation_decision_aprovado(self) -> None:
+        self.client.force_login(self.secretariat)
+        cons = self.consultation_awaiting()
+        meeting = self.consultation_service.schedule_consultation(
+            application=cons,
+            scheduled_by=self.secretariat,
+            scheduled_date=PAST_DATE,
+            scheduled_time=PAST_TIME,
+            meeting_mode="online",
+            virtual_link="https://meet.example.com/sala",
+        )
+        self.consultation_service.record_feedback(
+            meeting=meeting,
+            recorded_by=self.teacher,
+            teacher_feedback="consultation_completed",
         )
         response = self.client.post(
             reverse("meetings:consultation_decision", args=[meeting.pk]),
@@ -964,3 +1175,71 @@ class MeetingViewTests(TestCase):
             cons.lifecycle_status,
             ServiceApplication.LifecycleStatus.APPROVED_AS_CONSULTATION,
         )
+
+    def test_view_consultation_docente_nao_pode_registrar_decisao(self) -> None:
+        self.client.force_login(self.teacher)
+        cons = self.consultation_awaiting()
+        meeting = self.consultation_service.schedule_consultation(
+            application=cons,
+            scheduled_by=self.secretariat,
+            scheduled_date=PAST_DATE,
+            scheduled_time=PAST_TIME,
+            meeting_mode="online",
+            virtual_link="https://meet.example.com/sala",
+        )
+        self.consultation_service.record_feedback(
+            meeting=meeting,
+            recorded_by=self.teacher,
+            teacher_feedback="consultation_completed",
+        )
+        response = self.client.post(
+            reverse("meetings:consultation_decision", args=[meeting.pk]),
+            {"decision": "approved_as_consultation"},
+        )
+        self.assertEqual(response.status_code, 403)
+        meeting.refresh_from_db()
+        self.assertIsNone(meeting.decision)
+
+    def test_view_consultation_secretaria_nao_pode_registrar_feedback(self) -> None:
+        self.client.force_login(self.secretariat)
+        cons = self.consultation_awaiting()
+        meeting = self.consultation_service.schedule_consultation(
+            application=cons,
+            scheduled_by=self.secretariat,
+            scheduled_date=PAST_DATE,
+            scheduled_time=PAST_TIME,
+            meeting_mode="online",
+            virtual_link="https://meet.example.com/sala",
+        )
+        response = self.client.post(
+            reverse("meetings:consultation_decision", args=[meeting.pk]),
+            {"submit_feedback": "1", "teacher_feedback": "consultation_completed"},
+        )
+        self.assertEqual(response.status_code, 403)
+        meeting.refresh_from_db()
+        self.assertIsNone(meeting.teacher_feedback)
+
+    def test_view_consultation_pagina_segmentationa_formularios_por_perfil(self) -> None:
+        cons = self.consultation_awaiting()
+        meeting = self.consultation_service.schedule_consultation(
+            application=cons,
+            scheduled_by=self.secretariat,
+            scheduled_date=PAST_DATE,
+            scheduled_time=PAST_TIME,
+            meeting_mode="online",
+            virtual_link="https://meet.example.com/sala",
+        )
+        self.client.force_login(self.teacher)
+        response = self.client.get(
+            reverse("meetings:consultation_decision", args=[meeting.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Registrar feedback do docente")
+        self.assertNotContains(response, "Registrar decisão</h3>")
+        self.client.logout()
+        self.client.force_login(self.secretariat)
+        response = self.client.get(
+            reverse("meetings:consultation_decision", args=[meeting.pk])
+        )
+        self.assertContains(response, "Registrar decisão")
+        self.assertNotContains(response, "Registrar feedback do docente")

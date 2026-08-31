@@ -1,5 +1,6 @@
 from typing import Any, cast
 
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
@@ -27,6 +28,24 @@ _STAFF_ROLES = frozenset(
     {User.Role.TEACHER, User.Role.SECRETARIAT, User.Role.ADMINISTRATOR}
 )
 _SECRETARIAT_ROLES = frozenset({User.Role.SECRETARIAT, User.Role.ADMINISTRATOR})
+# O feedback do docente é registrado pelo docente; a decisão final é da
+# secretaria (perfis distintos, conforme ARCHITECTURE.md §7.3/§7.4).
+_FEEDBACK_ROLES = frozenset({User.Role.TEACHER, User.Role.ADMINISTRATOR})
+
+
+def _can(user: User, roles: frozenset[str]) -> bool:
+    return user.is_superuser or user.role in roles
+
+
+def _ordered_choices(choices, first_value: str) -> list[tuple[str, str]]:
+    """Reordena choices colocando ``first_value`` como primeira opção.
+
+    Evita induzir a secretaria ao erro ao registrar a decisão: a opção de
+    aprovação na própria modalidade sempre aparece em primeiro lugar.
+    """
+    items = list(choices)
+    items.sort(key=lambda item: item[0] != first_value)
+    return items
 
 
 class RoleRequiredMixin(LoginRequiredMixin):
@@ -50,6 +69,11 @@ class SchedulingQueueView(RoleRequiredMixin, View):
     template_name = "meetings/scheduling_queue.html"
 
     def get(self, request):
+        user = cast(User, request.user)
+        # A secretaria vê a fila completa (agendar + registrar decisão); o
+        # docente vê apenas os itens "aguardando resultado", onde registra o
+        # feedback.
+        show_management = _can(user, _SECRETARIAT_ROLES)
         projects = (
             ServiceApplication.objects.select_related("term", "owner", "project_screening")
             .filter(
@@ -84,10 +108,12 @@ class SchedulingQueueView(RoleRequiredMixin, View):
             request,
             self.template_name,
             {
-                "projects": projects,
-                "consultations": consultations,
+                "projects": projects if show_management else [],
+                "consultations": consultations if show_management else [],
                 "screenings_result": screenings_result,
                 "consultations_result": consultations_result,
+                "can_register_feedback": _can(user, _FEEDBACK_ROLES),
+                "can_register_decision": _can(user, _SECRETARIAT_ROLES),
             },
         )
 
@@ -241,7 +267,11 @@ class ConsultationScheduleView(RoleRequiredMixin, View):
 
 
 class ScreeningDecisionView(RoleRequiredMixin, View):
-    """Docente/secretaria registra decisão e feedback da triagem."""
+    """Registro de feedback (docente) e decisão (secretaria) da triagem.
+
+    Operações separadas por perfil: o docente registra o feedback da
+    triagem; a secretaria (ou admin) registra a decisão final.
+    """
 
     allowed_roles = _STAFF_ROLES
     template_name = "meetings/screening_decision.html"
@@ -252,11 +282,17 @@ class ScreeningDecisionView(RoleRequiredMixin, View):
             pk=screening_id,
         )
 
-    def get_context(self, screening: ProjectScreening, **kwargs) -> dict[str, Any]:
+    def get_context(self, request, screening: ProjectScreening, **kwargs) -> dict[str, Any]:
+        user = cast(User, request.user)
         context = {
             "screening": screening,
+            "can_register_feedback": _can(user, _FEEDBACK_ROLES),
+            "can_register_decision": _can(user, _SECRETARIAT_ROLES),
             "decision_form": MeetingDecisionForm(
-                decision_choices=ProjectScreening.Decision.choices
+                decision_choices=_ordered_choices(
+                    ProjectScreening.Decision.choices,
+                    ProjectScreening.Decision.APPROVED_AS_PROJECT.value,
+                )
             ),
             "feedback_form": TeacherFeedbackForm(
                 teacher_feedback_choices=ProjectScreening.TeacherFeedback.choices
@@ -267,30 +303,43 @@ class ScreeningDecisionView(RoleRequiredMixin, View):
 
     def get(self, request, screening_id: int):
         screening = self.get_screening(screening_id)
-        return render(request, self.template_name, self.get_context(screening))
+        return render(
+            request, self.template_name, self.get_context(request, screening)
+        )
 
     def post(self, request, screening_id: int):
         screening = self.get_screening(screening_id)
-        if "submit_feedback" in request.POST:
+        if (
+            "submit_feedback" in request.POST
+            or request.POST.get("form_action") == "feedback"
+        ):
             return self._handle_feedback(request, screening)
         return self._handle_decision(request, screening)
 
     def _handle_decision(self, request, screening: ProjectScreening):
+        user = cast(User, request.user)
+        if not _can(user, _SECRETARIAT_ROLES):
+            raise PermissionDenied(
+                "Somente a secretaria pode registrar a decisão da triagem."
+            )
         form = MeetingDecisionForm(
             request.POST,
-            decision_choices=ProjectScreening.Decision.choices,
+            decision_choices=_ordered_choices(
+                ProjectScreening.Decision.choices,
+                ProjectScreening.Decision.APPROVED_AS_PROJECT.value,
+            ),
         )
         if not form.is_valid():
             return render(
                 request,
                 self.template_name,
-                self.get_context(screening, decision_form=form),
+                self.get_context(request, screening, decision_form=form),
                 status=400,
             )
         try:
             _screening_service.record_decision(
                 screening=screening,
-                decided_by=cast(User, request.user),
+                decided_by=user,
                 decision=form.cleaned_data["decision"],
                 decision_note=form.cleaned_data.get("decision_note") or None,
             )
@@ -299,12 +348,22 @@ class ScreeningDecisionView(RoleRequiredMixin, View):
             return render(
                 request,
                 self.template_name,
-                self.get_context(screening, decision_form=form),
+                self.get_context(request, screening, decision_form=form),
                 status=400,
             )
+        messages.success(
+            request,
+            f"Decisão da triagem registrada: "
+            f"{ProjectScreening.Decision(form.cleaned_data['decision']).label}.",
+        )
         return redirect("meetings:queue")
 
     def _handle_feedback(self, request, screening: ProjectScreening):
+        user = cast(User, request.user)
+        if not _can(user, _FEEDBACK_ROLES):
+            raise PermissionDenied(
+                "Somente o docente pode registrar o feedback da triagem."
+            )
         form = TeacherFeedbackForm(
             request.POST,
             teacher_feedback_choices=ProjectScreening.TeacherFeedback.choices,
@@ -313,13 +372,13 @@ class ScreeningDecisionView(RoleRequiredMixin, View):
             return render(
                 request,
                 self.template_name,
-                self.get_context(screening, feedback_form=form),
+                self.get_context(request, screening, feedback_form=form),
                 status=400,
             )
         try:
             _screening_service.record_feedback(
                 screening=screening,
-                recorded_by=cast(User, request.user),
+                recorded_by=user,
                 teacher_feedback=form.cleaned_data["teacher_feedback"],
             )
         except Exception as exc:
@@ -327,14 +386,23 @@ class ScreeningDecisionView(RoleRequiredMixin, View):
             return render(
                 request,
                 self.template_name,
-                self.get_context(screening, feedback_form=form),
+                self.get_context(request, screening, feedback_form=form),
                 status=400,
             )
+        messages.success(
+            request,
+            "Feedback do docente registrado: "
+            f"{ProjectScreening.TeacherFeedback(form.cleaned_data['teacher_feedback']).label}.",
+        )
         return redirect("meetings:queue")
 
 
 class ConsultationDecisionView(RoleRequiredMixin, View):
-    """Docente/secretaria registra decisão e feedback da reunião."""
+    """Registro de feedback (docente) e decisão (secretaria) da reunião.
+
+    Operações separadas por perfil: o docente registra o feedback da
+    reunião; a secretaria (ou admin) registra a decisão final.
+    """
 
     allowed_roles = _STAFF_ROLES
     template_name = "meetings/consultation_decision.html"
@@ -345,11 +413,17 @@ class ConsultationDecisionView(RoleRequiredMixin, View):
             pk=meeting_id,
         )
 
-    def get_context(self, meeting: ConsultationMeeting, **kwargs) -> dict[str, Any]:
+    def get_context(self, request, meeting: ConsultationMeeting, **kwargs) -> dict[str, Any]:
+        user = cast(User, request.user)
         context = {
             "meeting": meeting,
+            "can_register_feedback": _can(user, _FEEDBACK_ROLES),
+            "can_register_decision": _can(user, _SECRETARIAT_ROLES),
             "decision_form": MeetingDecisionForm(
-                decision_choices=ConsultationMeeting.Decision.choices
+                decision_choices=_ordered_choices(
+                    ConsultationMeeting.Decision.choices,
+                    ConsultationMeeting.Decision.APPROVED_AS_CONSULTATION.value,
+                )
             ),
             "feedback_form": TeacherFeedbackForm(
                 teacher_feedback_choices=ConsultationMeeting.TeacherFeedback.choices
@@ -360,30 +434,41 @@ class ConsultationDecisionView(RoleRequiredMixin, View):
 
     def get(self, request, meeting_id: int):
         meeting = self.get_meeting(meeting_id)
-        return render(request, self.template_name, self.get_context(meeting))
+        return render(request, self.template_name, self.get_context(request, meeting))
 
     def post(self, request, meeting_id: int):
         meeting = self.get_meeting(meeting_id)
-        if "submit_feedback" in request.POST:
+        if (
+            "submit_feedback" in request.POST
+            or request.POST.get("form_action") == "feedback"
+        ):
             return self._handle_feedback(request, meeting)
         return self._handle_decision(request, meeting)
 
     def _handle_decision(self, request, meeting: ConsultationMeeting):
+        user = cast(User, request.user)
+        if not _can(user, _SECRETARIAT_ROLES):
+            raise PermissionDenied(
+                "Somente a secretaria pode registrar a decisão da reunião."
+            )
         form = MeetingDecisionForm(
             request.POST,
-            decision_choices=ConsultationMeeting.Decision.choices,
+            decision_choices=_ordered_choices(
+                ConsultationMeeting.Decision.choices,
+                ConsultationMeeting.Decision.APPROVED_AS_CONSULTATION.value,
+            ),
         )
         if not form.is_valid():
             return render(
                 request,
                 self.template_name,
-                self.get_context(meeting, decision_form=form),
+                self.get_context(request, meeting, decision_form=form),
                 status=400,
             )
         try:
             _consultation_service.record_decision(
                 meeting=meeting,
-                decided_by=cast(User, request.user),
+                decided_by=user,
                 decision=form.cleaned_data["decision"],
                 decision_note=form.cleaned_data.get("decision_note") or None,
             )
@@ -392,12 +477,22 @@ class ConsultationDecisionView(RoleRequiredMixin, View):
             return render(
                 request,
                 self.template_name,
-                self.get_context(meeting, decision_form=form),
+                self.get_context(request, meeting, decision_form=form),
                 status=400,
             )
+        messages.success(
+            request,
+            f"Decisão da reunião registrada: "
+            f"{ConsultationMeeting.Decision(form.cleaned_data['decision']).label}.",
+        )
         return redirect("meetings:queue")
 
     def _handle_feedback(self, request, meeting: ConsultationMeeting):
+        user = cast(User, request.user)
+        if not _can(user, _FEEDBACK_ROLES):
+            raise PermissionDenied(
+                "Somente o docente pode registrar o feedback da reunião."
+            )
         form = TeacherFeedbackForm(
             request.POST,
             teacher_feedback_choices=ConsultationMeeting.TeacherFeedback.choices,
@@ -406,13 +501,13 @@ class ConsultationDecisionView(RoleRequiredMixin, View):
             return render(
                 request,
                 self.template_name,
-                self.get_context(meeting, feedback_form=form),
+                self.get_context(request, meeting, feedback_form=form),
                 status=400,
             )
         try:
             _consultation_service.record_feedback(
                 meeting=meeting,
-                recorded_by=cast(User, request.user),
+                recorded_by=user,
                 teacher_feedback=form.cleaned_data["teacher_feedback"],
             )
         except Exception as exc:
@@ -420,7 +515,12 @@ class ConsultationDecisionView(RoleRequiredMixin, View):
             return render(
                 request,
                 self.template_name,
-                self.get_context(meeting, feedback_form=form),
+                self.get_context(request, meeting, feedback_form=form),
                 status=400,
             )
+        messages.success(
+            request,
+            "Feedback do docente registrado: "
+            f"{ConsultationMeeting.TeacherFeedback(form.cleaned_data['teacher_feedback']).label}.",
+        )
         return redirect("meetings:queue")

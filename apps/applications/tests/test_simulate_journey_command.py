@@ -11,6 +11,7 @@ from django.core.management import call_command
 from django.test import TestCase, override_settings
 
 from applications.models import ServiceApplication
+from users.models import User
 
 
 def _latest_application(modality: str) -> ServiceApplication:
@@ -48,6 +49,13 @@ class SimulateJourneyCommandProjectTests(TestCase):
         self.assertTrue(fees["project_fee"].is_paid)
         self.assertTrue(app.events.filter(event_code="pix.confirmed").exists())
         self.assertTrue(app.events.filter(event_code="meeting.screening_decided").exists())
+        # Feedback do docente (docente) e decisão (secretaria) são operações separadas.
+        self.assertTrue(
+            app.events.filter(event_code="meeting.screening_feedback_recorded").exists()
+        )
+        self.assertEqual(app.project_screening.teacher_feedback, "screening_completed")
+        decided_by = app.events.get(event_code="meeting.screening_decided").actor_id
+        self.assertEqual(decided_by, User.objects.get(username="sim_secretariat").pk)
 
     def test_sim_project_auditoria_rejeitada_e_inscricao_reprovada(self) -> None:
         call_command("simulate_journey", "--modality", "project", "--submit")
@@ -89,6 +97,15 @@ class SimulateJourneyCommandConsultationTests(TestCase):
         )
         self.assertTrue(app.events.filter(event_code="bank_slip.paid").exists())
         self.assertTrue(app.events.filter(event_code="meeting.consultation_decided").exists())
+        # Feedback do docente e decisão da secretaria são operações separadas.
+        self.assertTrue(
+            app.events.filter(event_code="meeting.consultation_feedback_recorded").exists()
+        )
+        self.assertEqual(
+            app.consultation_meeting.teacher_feedback, "consultation_completed"
+        )
+        decided_by = app.events.get(event_code="meeting.consultation_decided").actor_id
+        self.assertEqual(decided_by, User.objects.get(username="sim_secretariat").pk)
 
     def test_sim_consulta_reuniao_aprova_como_projeto(self) -> None:
         call_command("simulate_journey", "--modality", "consultation", "--submit")
@@ -96,6 +113,13 @@ class SimulateJourneyCommandConsultationTests(TestCase):
         call_command("simulate_journey", "--modality", "consultation", "--schedule-consultation")
         app_before = _latest_application("consultation")
         protocol = app_before.protocol
+        call_command(
+            "simulate_journey",
+            "--modality",
+            "consultation",
+            "--consultation-feedback",
+            "consultation_completed",
+        )
         call_command(
             "simulate_journey",
             "--modality",

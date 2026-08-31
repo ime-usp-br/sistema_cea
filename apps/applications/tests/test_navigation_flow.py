@@ -109,26 +109,20 @@ class NavigationFlowTests(TestCase):
         self.assertContains(payment, "Escolha a forma de pagamento")
         self._assert_link_present(payment, reverse("applications:detail", args=[application.protocol]))
 
-        # Escolhe o método e gera o Pix (fluxo real do candidato).
-        response = self.client.post(
-            reverse("payments:fee_payment", args=[application.protocol]),
-            {"method": "pix"},
-        )
-        self.assertEqual(response.status_code, 302)
-
+        # Escolhe o método e o Pix é gerado no mesmo ato (fluxo real do
+        # candidato): "Gerar pagamento" já leva à página com o QR Code.
         with patch(
             "pix.gateways.PixGateway.generate_pix", return_value=PIX_RESULT
         ):
             response = self.client.post(
-                reverse("pix:generate", args=[application.protocol])
+                reverse("payments:fee_payment", args=[application.protocol]),
+                {"method": "pix"},
             )
         self.assertEqual(response.status_code, 302)
 
         pix_detail = self._get(reverse("pix:detail", args=[application.protocol]))
         self.assertContains(pix_detail, "Pix copia e cola")
-        self._assert_link_present(
-            pix_detail, reverse("payments:fee_payment", args=[application.protocol])
-        )
+        self.assertContains(pix_detail, PIX_RESULT["qrCode"])
 
     def test_TS_NAV_002_fluxo_auditoria_secretaria_sem_urls_manuais(self) -> None:
         # Fluxo sequencial: o Projeto paga a taxa de inscrição antes de poder
@@ -212,6 +206,16 @@ class NavigationFlowTests(TestCase):
         self.assertContains(queue, "Resgates")
         self.assertNotContains(queue, "Financeiro")
         self.assertNotContains(queue, "Relatório de auditoria")
+
+        # Docente vê a fila de análise e o acesso ao feedback (Agendamentos),
+        # mas não os itens de operação da secretaria.
+        self.client.logout()
+        self.client.force_login(self.teacher)
+        teacher_queue = self._get(reverse("audits:teacher_queue"))
+        self.assertContains(teacher_queue, "Fila de análise")
+        self._assert_link_present(teacher_queue, reverse("meetings:queue"))
+        self.assertNotContains(teacher_queue, "Reembolsos")
+        self.assertNotContains(teacher_queue, "Cobranças")
 
         # Administrador vê inclusive os relatórios.
         self.client.logout()

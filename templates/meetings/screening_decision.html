@@ -11,7 +11,7 @@
 {% block content %}
 <div class="page-header">
     <div>
-        <h1 class="page-title">Decisão e feedback da triagem</h1>
+        <h1 class="page-title">Feedback e decisão da triagem</h1>
         <p class="page-subtitle">Inscrição: <a href="{% url 'applications:detail' screening.application.protocol %}"><strong>{{ screening.application.protocol }}</strong></a></p>
     </div>
     <div class="form-actions">
@@ -26,6 +26,9 @@
             <div><dt>Agendada</dt><dd>{{ screening.scheduled_date }} às {{ screening.scheduled_time }}</dd></div>
             <div><dt>Modalidade</dt><dd>{{ screening.get_meeting_mode_display }}</dd></div>
             <div><dt>Estado</dt><dd><span class="badge badge-neutral">{{ screening.get_state_display }}</span></dd></div>
+            {% if screening.teacher_feedback %}
+                <div><dt>Feedback do docente</dt><dd>{{ screening.get_teacher_feedback_display }}</dd></div>
+            {% endif %}
             {% if screening.decision %}
                 <div><dt>Decisão registrada</dt><dd>{{ screening.get_decision_display }}</dd></div>
             {% endif %}
@@ -33,27 +36,13 @@
     </div>
 </div>
 
-<div class="card" style="max-width: 760px;">
-    <div class="card-body">
-        <h3>Registrar decisão</h3>
-        <form method="post" class="form">
-            {% csrf_token %}
-            {{ decision_form.as_p }}
-            {% if decision_form.non_field_errors %}
-                <div class="alert alert-error">{{ decision_form.non_field_errors }}</div>
-            {% endif %}
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">Registrar decisão</button>
-            </div>
-        </form>
-    </div>
-</div>
-
+{% if can_register_feedback %}
 <div class="card" style="max-width: 760px;">
     <div class="card-body">
         <h3>Registrar feedback do docente</h3>
         <form method="post" class="form">
             {% csrf_token %}
+            <input type="hidden" name="form_action" value="feedback">
             {{ feedback_form.as_p }}
             {% if feedback_form.non_field_errors %}
                 <div class="alert alert-error">{{ feedback_form.non_field_errors }}</div>
@@ -64,4 +53,33 @@
         </form>
     </div>
 </div>
+{% else %}
+<div class="alert alert-info">
+    O feedback do docente desta triagem já foi registrado ou é registrado pelo perfil docente.
+    A decisão final é registrada pela secretaria.
+</div>
+{% endif %}
+
+{% if can_register_decision %}
+<div class="card" style="max-width: 760px;">
+    <div class="card-body">
+        <h3>Registrar decisão</h3>
+        <form method="post" class="form">
+            {% csrf_token %}
+            <input type="hidden" name="form_action" value="decision">
+            {{ decision_form.as_p }}
+            {% if decision_form.non_field_errors %}
+                <div class="alert alert-error">{{ decision_form.non_field_errors }}</div>
+            {% endif %}
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Registrar decisão</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    A decisão final desta triagem é registrada pela secretaria após o feedback do docente.
+</div>
+{% endif %}
 {% endblock %}

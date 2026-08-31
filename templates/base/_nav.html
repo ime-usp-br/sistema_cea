@@ -24,6 +24,11 @@
         </div>
     {% endif %}
 
+    {% if is_teacher %}
+        <a href="{% url 'meetings:queue' %}"
+           class="nav-link {% if nav_active == 'meetings' %}nav-active{% endif %}">Feedback</a>
+    {% endif %}
+
     {% if is_secretariat or is_admin %}
         <div class="nav-dropdown">
             <button type="button" class="nav-link nav-dropdown-toggle {% if nav_active == 'meetings' or nav_active == 'pending' or nav_active == 'refunds' or nav_active == 'overdue' or nav_active == 'claims' or nav_active == 'applications' %}nav-active{% endif %}" aria-haspopup="true" aria-expanded="false">

@@ -2,6 +2,50 @@
 {% block title %}Pix - Inscrição {{ application.protocol }}{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
+{% block extra_css %}
+<style>
+    .pix-copy-field {
+        position: relative;
+    }
+    .pix-copy-field .form-textarea {
+        padding-right: 3.25rem;
+    }
+    .pix-copy-btn {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        background-color: var(--card-bg);
+        color: var(--footer-text);
+        cursor: pointer;
+        transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+    }
+    .pix-copy-btn:hover {
+        border-color: var(--usp-blue-pri);
+        color: var(--usp-blue-pri);
+    }
+    .pix-copy-btn .icon-check {
+        display: none;
+    }
+    .pix-copy-btn.is-copied {
+        border-color: var(--success);
+        color: var(--success);
+    }
+    .pix-copy-btn.is-copied .icon-copy {
+        display: none;
+    }
+    .pix-copy-btn.is-copied .icon-check {
+        display: block;
+    }
+</style>
+{% endblock %}
+
 {% block breadcrumbs %}
 {% url 'applications:detail' application.protocol as parent_url %}
 {% include "base/_breadcrumbs.html" with current_page="Pagamento via Pix" parent_label="Inscrição "|add:application.protocol parent_url=parent_url %}
@@ -39,7 +83,13 @@
             {% endif %}
 
             <p class="mt-2"><strong>Pix copia e cola:</strong></p>
-            <textarea rows="4" readonly class="form-textarea">{{ pix.qr_code_payload }}</textarea>
+            <div class="pix-copy-field">
+                <textarea id="pix-copy-payload" rows="4" readonly class="form-textarea" aria-label="Pix copia e cola">{{ pix.qr_code_payload }}</textarea>
+                <button type="button" class="pix-copy-btn" data-copy-target="pix-copy-payload" title="Copiar" aria-label="Copiar Pix copia e cola">
+                    <svg class="icon-copy" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <svg class="icon-check" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </button>
+            </div>
         </div>
     </div>
 {% else %}
@@ -57,4 +107,48 @@
         </div>
     </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var btn = document.querySelector("[data-copy-target]");
+    if (!btn) return;
+    var source = document.getElementById(btn.dataset.copyTarget);
+    if (!source) return;
+
+    function fallbackCopy(text) {
+        source.value = text;
+        source.focus();
+        source.select();
+        try {
+            document.execCommand("copy");
+        } catch (e) {}
+        source.setSelectionRange(0, 0);
+    }
+
+    function showCopied() {
+        btn.classList.add("is-copied");
+        btn.title = "Copiado!";
+        setTimeout(function () {
+            btn.classList.remove("is-copied");
+            btn.title = "Copiar";
+        }, 2000);
+    }
+
+    btn.addEventListener("click", function () {
+        var text = source.value;
+        if (!text) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(showCopied).catch(function () {
+                fallbackCopy(text);
+                showCopied();
+            });
+        } else {
+            fallbackCopy(text);
+            showCopied();
+        }
+    });
+})();
+</script>
 {% endblock %}

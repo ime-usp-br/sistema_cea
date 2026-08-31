@@ -16,6 +16,7 @@
     <a href="{% url 'applications:dashboard' %}" class="btn btn-ghost">Voltar ao painel</a>
 </div>
 
+{% if can_register_decision %}
 <h2>Triagens de Projetos</h2>
 {% if projects %}
     <div class="table-responsive">
@@ -49,7 +50,9 @@
         <p>Não há triagens de Projetos aguardando agendamento.</p>
     </div>
 {% endif %}
+{% endif %}
 
+{% if can_register_decision %}
 <h2>Reuniões de Consulta</h2>
 {% if consultations %}
     <div class="table-responsive">
@@ -83,6 +86,7 @@
         <p>Não há reuniões de Consulta aguardando agendamento.</p>
     </div>
 {% endif %}
+{% endif %}
 
 <h2>Triagens aguardando resultado</h2>
 {% if screenings_result %}
@@ -107,7 +111,18 @@
                         <td>{{ application.researcher_name }}</td>
                         <td>{{ application.project_screening.scheduled_date }} às {{ application.project_screening.scheduled_time }}</td>
                         <td class="actions">
-                            <a href="{% url 'meetings:screening_decision' application.project_screening.pk %}" class="btn btn-sm btn-primary">Registrar decisão</a>
+                            {% if can_register_feedback and application.project_screening.teacher_feedback %}
+                                <span class="badge badge-success">Feedback registrado</span>
+                            {% endif %}
+                            {% if can_register_decision %}
+                                {% if application.project_screening.decision %}
+                                    <span class="badge badge-neutral">Decisão registrada</span>
+                                {% else %}
+                                    <a href="{% url 'meetings:screening_decision' application.project_screening.pk %}" class="btn btn-sm btn-primary">Registrar decisão</a>
+                                {% endif %}
+                            {% elif not application.project_screening.teacher_feedback %}
+                                <a href="{% url 'meetings:screening_decision' application.project_screening.pk %}" class="btn btn-sm btn-primary">Registrar feedback</a>
+                            {% endif %}
                         </td>
                     </tr>
                 {% endfor %}
@@ -143,7 +158,18 @@
                         <td>{{ application.researcher_name }}</td>
                         <td>{{ application.consultation_meeting.scheduled_date }} às {{ application.consultation_meeting.scheduled_time }}</td>
                         <td class="actions">
-                            <a href="{% url 'meetings:consultation_decision' application.consultation_meeting.pk %}" class="btn btn-sm btn-secondary">Registrar decisão</a>
+                            {% if can_register_feedback and application.consultation_meeting.teacher_feedback %}
+                                <span class="badge badge-success">Feedback registrado</span>
+                            {% endif %}
+                            {% if can_register_decision %}
+                                {% if application.consultation_meeting.decision %}
+                                    <span class="badge badge-neutral">Decisão registrada</span>
+                                {% else %}
+                                    <a href="{% url 'meetings:consultation_decision' application.consultation_meeting.pk %}" class="btn btn-sm btn-secondary">Registrar decisão</a>
+                                {% endif %}
+                            {% elif not application.consultation_meeting.teacher_feedback %}
+                                <a href="{% url 'meetings:consultation_decision' application.consultation_meeting.pk %}" class="btn btn-sm btn-secondary">Registrar feedback</a>
+                            {% endif %}
                         </td>
                     </tr>
                 {% endfor %}

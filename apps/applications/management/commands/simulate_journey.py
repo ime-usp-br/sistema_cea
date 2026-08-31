@@ -136,6 +136,24 @@ class Command(BaseCommand):
             help="Registra a decisão da reunião (padrão no --step: approved_as_consultation).",
         )
         parser.add_argument(
+            "--screening-feedback",
+            choices=[
+                "screening_completed",
+                "screening_not_completed",
+            ],
+            help="Projeto: registra o feedback do docente da triagem "
+            "(padrão no --step: screening_completed).",
+        )
+        parser.add_argument(
+            "--consultation-feedback",
+            choices=[
+                "consultation_completed",
+                "consultation_not_completed",
+            ],
+            help="Consulta: registra o feedback do docente da reunião "
+            "(padrão no --step: consultation_completed).",
+        )
+        parser.add_argument(
             "--refund",
             action="store_true",
             help="Cria, aprova e executa um reembolso do valor pago.",
@@ -201,8 +219,10 @@ class Command(BaseCommand):
                     ("review", self._action_review),
                     ("resolve", self._action_resolve),
                     ("schedule_screening", self._action_schedule_screening),
+                    ("screening_feedback", self._action_screening_feedback),
                     ("screening_decision", self._action_screening_decision),
                     ("schedule_consultation", self._action_schedule_consultation),
+                    ("consultation_feedback", self._action_consultation_feedback),
                     ("consultation_decision", self._action_consultation_decision),
                     ("refund", self._action_refund),
                 ]
@@ -241,7 +261,12 @@ class Command(BaseCommand):
                 time.sleep(float(options["interval"]))
 
     def _canonical_steps(self, modality: str) -> list[tuple[str, Any]]:
-        """Sequência canônica (caminho feliz) para --step e --all."""
+        """Sequência canônica (caminho feliz) para --step e --all.
+
+        O feedback do docente e a decisão são operações separadas e feitas por
+        perfis distintos: o docente registra o feedback; a secretaria registra
+        a decisão (ARCHITECTURE.md §7.3/§7.4).
+        """
         common_start = [
             ("1. Submissão da inscrição (taxa gerada, awaiting_payment)", self._action_submit),
             ("2. Pagamento da taxa de inscrição", self._action_pay),
@@ -249,14 +274,16 @@ class Command(BaseCommand):
         if modality == "consultation":
             return common_start + [
                 ("3. Agendamento da reunião de consulta", self._action_schedule_consultation),
-                ("4. Decisão: aprovado como consulta", self._action_consultation_decision),
+                ("4. Feedback do docente (reunião realizada)", self._action_consultation_feedback),
+                ("5. Decisão da secretaria: aprovado como consulta", self._action_consultation_decision),
             ]
         return common_start + [
             ("3. Envio dos dados para auditoria", self._action_submit_dataset),
             ("4. Revisão docente (aprova)", self._action_review),
             ("5. Agendamento da triagem", self._action_schedule_screening),
-            ("6. Decisão: aprovado como projeto (taxa R$ 250)", self._action_screening_decision),
-            ("7. Pagamento da taxa de projeto", self._action_pay),
+            ("6. Feedback do docente (triagem realizada)", self._action_screening_feedback),
+            ("7. Decisão da secretaria: aprovado como projeto (taxa R$ 250)", self._action_screening_decision),
+            ("8. Pagamento da taxa de projeto", self._action_pay),
         ]
 
     # ------------------------------------------------------------------
@@ -559,16 +586,35 @@ class Command(BaseCommand):
         from meetings.services import ProjectScreeningService
 
         application = self._require_application(options)
+        # A simulação agenda o evento em uma data passada para que o passo de
+        # feedback do docente (que exige o evento já ocorrido) possa rodar.
         ProjectScreeningService().schedule_screening(
             application=application,
             scheduled_by=self._secretariat,
-            scheduled_date=date.today() + timedelta(days=2),
+            scheduled_date=date.today() - timedelta(days=1),
             scheduled_time=time(10, 0),
             meeting_mode="online",
             virtual_link="https://meet.example.com/simulacao",
         )
         application.refresh_from_db()
         self._print_event("Triagem agendada", application)
+        return application
+
+    def _action_screening_feedback(self, options: Any) -> Any:
+        from meetings.services import ProjectScreeningService
+
+        application = self._require_application(options)
+        screening = application.project_screening
+        if screening is None:
+            raise CommandError("A inscrição não possui triagem agendada.")
+        feedback = options["screening_feedback"] or "screening_completed"
+        ProjectScreeningService().record_feedback(
+            screening=screening,
+            recorded_by=self._teacher,
+            teacher_feedback=feedback,
+        )
+        application.refresh_from_db()
+        self._print_event(f"Feedback do docente registrado ({feedback})", application)
         return application
 
     def _action_screening_decision(self, options: Any) -> Any:
@@ -579,9 +625,10 @@ class Command(BaseCommand):
         if screening is None:
             raise CommandError("A inscrição não possui triagem agendada.")
         decision = options["screening_decision"] or "approved_as_project"
+        # A decisão final é da secretaria (perfis distintos do feedback docente).
         ProjectScreeningService().record_decision(
             screening=screening,
-            decided_by=self._teacher,
+            decided_by=self._secretariat,
             decision=decision,
             decision_note="Decisão simulada.",
         )
@@ -598,13 +645,30 @@ class Command(BaseCommand):
         ConsultationMeetingService().schedule_consultation(
             application=application,
             scheduled_by=self._secretariat,
-            scheduled_date=date.today() + timedelta(days=2),
+            scheduled_date=date.today() - timedelta(days=1),
             scheduled_time=time(10, 0),
             meeting_mode="online",
             virtual_link="https://meet.example.com/simulacao",
         )
         application.refresh_from_db()
         self._print_event("Reunião de consulta agendada", application)
+        return application
+
+    def _action_consultation_feedback(self, options: Any) -> Any:
+        from meetings.services import ConsultationMeetingService
+
+        application = self._require_application(options)
+        meeting = application.consultation_meeting
+        if meeting is None:
+            raise CommandError("A inscrição não possui reunião agendada.")
+        feedback = options["consultation_feedback"] or "consultation_completed"
+        ConsultationMeetingService().record_feedback(
+            meeting=meeting,
+            recorded_by=self._teacher,
+            teacher_feedback=feedback,
+        )
+        application.refresh_from_db()
+        self._print_event(f"Feedback do docente registrado ({feedback})", application)
         return application
 
     def _action_consultation_decision(self, options: Any) -> Any:
@@ -615,9 +679,10 @@ class Command(BaseCommand):
         if meeting is None:
             raise CommandError("A inscrição não possui reunião agendada.")
         decision = options["consultation_decision"] or "approved_as_consultation"
+        # A decisão final é da secretaria (perfis distintos do feedback docente).
         ConsultationMeetingService().record_decision(
             meeting=meeting,
-            decided_by=self._teacher,
+            decided_by=self._secretariat,
             decision=decision,
             decision_note="Decisão simulada.",
         )
