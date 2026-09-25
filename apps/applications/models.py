@@ -85,8 +85,8 @@ class ServiceApplication(models.Model):
             "awaiting_consultation_result",
             "Aguardando resultado da reunião de consulta",
         )
-        APPROVED_AS_PROJECT = "approved_as_project", "Aprovado como projeto"
-        APPROVED_AS_CONSULTATION = "approved_as_consultation", "Aprovado como consulta"
+        APPROVED_AS_PROJECT = "approved_as_project", "Aprovado como Projeto"
+        APPROVED_AS_CONSULTATION = "approved_as_consultation", "Aprovado como Consulta"
         NOT_APPROVED = "not_approved", "Não aprovado"
         TRANSFERRED = "transferred", "Transferida"
         CANCELED = "canceled", "Cancelada"

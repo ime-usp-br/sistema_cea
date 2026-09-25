@@ -46,6 +46,12 @@ def nav_context(request) -> dict:
         }
     )
 
+    # Semestres expostos globalmente para os filtros default das listas.
+    from terms.models import AcademicTerm
+
+    context["current_term"] = AcademicTerm.current()
+    context["all_terms"] = list(AcademicTerm.objects.all())
+
     resolver = getattr(request, "resolver_match", None)
     if resolver is not None:
         context["nav_active"] = _active_section(
@@ -66,15 +72,20 @@ def _active_section(app_name: str, url_name: str) -> str:
         "applications.detail": "dashboard",
         "applications.transfer_semester": "dashboard",
         "applications.list": "applications",
+        "applications.deleted_list": "applications_deleted",
+        "applications.restore": "applications_deleted",
+        "applications.event_list": "events",
         "audits.teacher_queue": "audit_queue",
         "audits.review": "audit_queue",
         "audits.resolution_list": "audit_rejected",
         "audits.resolve": "audit_rejected",
-        "meetings.queue": "meetings",
-        "meetings.screening_schedule": "meetings",
-        "meetings.consultation_schedule": "meetings",
-        "meetings.screening_decision": "meetings",
-        "meetings.consultation_decision": "meetings",
+        "meetings.queue": "screenings",
+        "meetings.screening_list": "screenings",
+        "meetings.screening_schedule": "screenings",
+        "meetings.screening_decision": "screenings",
+        "meetings.consultation_list": "consultations",
+        "meetings.consultation_schedule": "consultations",
+        "meetings.consultation_decision": "consultations",
         "payments.refund_list": "refunds",
         "payments.refund_create": "refunds",
         "payments.refund_action": "refunds",

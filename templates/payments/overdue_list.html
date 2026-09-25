@@ -4,62 +4,122 @@
 {% block app_name %}Inscrições CEA{% endblock %}
 
 {% block breadcrumbs %}
-    {% include "base/_breadcrumbs.html" with current_page="Cobranças manuais" %}
+    {% include "base/_breadcrumbs.html" with current_page="Cobranças Manuais" %}
 {% endblock %}
 
 {% block content %}
 <div class="page-header">
     <div>
         <h1 class="page-title">Cobranças Manuais</h1>
-        <p class="page-subtitle">Boletos vencidos e inadimplentes agrupados para cobrança em massa.</p>
+        <p class="page-subtitle">
+            {% if selected_term %}
+                {{ selected_term.get_period_display }} de {{ selected_term.year }}
+            {% else %}
+                Todos os semestres
+            {% endif %}
+        </p>
     </div>
     <div class="form-actions">
-        <form method="post" action="{% url 'payments:overdue_remind' %}">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-primary">Enviar lembretes de cobrança</button>
+        <form method="get" action="{% url 'payments:overdue_list' %}" class="toolbar-form">
+            <select name="term">
+                <option value="all" {% if selected_term_id == "all" %}selected{% endif %}>Todos os semestres</option>
+                {% for term in terms %}
+                    <option value="{{ term.pk }}" {% if selected_term_id == term.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ term.year }} - {{ term.get_period_display }}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-secondary">Buscar</button>
         </form>
-        <a href="{% url 'applications:dashboard' %}" class="btn btn-ghost">Voltar ao painel</a>
     </div>
 </div>
 
-{% if slips %}
+{% if rows %}
+<form method="post" action="{% url 'payments:overdue_remind' %}" id="bulkForm">
+    {% csrf_token %}
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary"
+                onclick="return confirm('Enviar e-mail de cobrança para os selecionados?')">
+            Enviar e-mail de cobrança para os selecionados
+        </button>
+    </div>
     <div class="table-responsive">
         <table class="table">
             <thead>
                 <tr>
+                    <th><input type="checkbox" id="selectAll" title="Selecionar todos"></th>
                     <th>Protocolo</th>
-                    <th>Candidato</th>
-                    <th>Modalidade</th>
-                    <th>Valor</th>
-                    <th>Vencimento</th>
-                    <th>Boleto</th>
+                    <th>Nome</th>
+                    <th>E-mail</th>
+                    <th>Taxa(s) Vencida(s)</th>
+                    <th>Valor Devido</th>
+                    <th>Histórico de Cobrança</th>
                     <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
-                {% for slip in slips %}
+                {% for row in rows %}
                     <tr>
                         <td>
-                            <a href="{% url 'applications:detail' slip.payment_instrument.fee_requirement.application.protocol %}">
-                                {{ slip.payment_instrument.fee_requirement.application.protocol }}
+                            {% for slip in row.slips %}
+                                <input type="checkbox" name="slip_ids" value="{{ slip.pk }}" form="bulkForm" class="bulk-checkbox">
+                            {% endfor %}
+                        </td>
+                        <td>
+                            <a href="{% url 'applications:detail' row.application.protocol %}">
+                                {{ row.application.protocol }}
                             </a>
                         </td>
-                        <td>{{ slip.payment_instrument.fee_requirement.application.researcher_name }}</td>
-                        <td>{{ slip.payment_instrument.fee_requirement.application.get_modality_display }}</td>
-                        <td class="tabular-nums">R$ {{ slip.document_amount|default:slip.payment_instrument.amount|floatformat:2 }}</td>
-                        <td>{{ slip.due_date|date:"d/m/Y" }}</td>
-                        <td>{{ slip.bank_slip_reference }}</td>
+                        <td>{{ row.application.researcher_name }}</td>
+                        <td>{{ row.application.legacy_contact_email|default:row.application.contact_email }}</td>
+                        <td>
+                            {% for slip in row.slips %}
+                                <div>
+                                    {{ slip.payment_instrument.fee_requirement.get_fee_type_display }}
+                                    (R$ {{ slip.document_amount|default:slip.payment_instrument.amount|floatformat:2 }})
+                                </div>
+                            {% endfor %}
+                        </td>
+                        <td class="tabular-nums">R$ {{ row.total_due|floatformat:2 }}</td>
+                        <td>
+                            {% for date in row.charge_history %}
+                                <div>{{ date|date:"d/m/Y H:i" }}</div>
+                            {% empty %}
+                                <span>-</span>
+                            {% endfor %}
+                        </td>
                         <td class="actions">
-                            <a href="{% url 'bank_slips:detail' slip.payment_instrument.fee_requirement.application.protocol %}" class="btn btn-sm btn-primary">Ver boleto</a>
+                            {% for slip in row.slips %}
+                                <a href="{% url 'payments:manual_confirmation' slip.payment_instrument.pk %}"
+                                   class="btn btn-sm btn-success"
+                                   onclick="return confirm('Confirmar pagamento manual por depósito para {{ slip.payment_instrument.fee_requirement.get_fee_type_display }}?')">
+                                    Confirmar {{ slip.payment_instrument.fee_requirement.get_fee_type_display }}
+                                </a>
+                            {% endfor %}
                         </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+</form>
 {% else %}
     <div class="empty-state">
-        <p>Não há boletos vencidos pendentes.</p>
+        <p>Não há inscrições com boletos vencidos no momento.</p>
     </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var selectAll = document.getElementById("selectAll");
+    if (!selectAll) return;
+    selectAll.addEventListener("change", function () {
+        document.querySelectorAll(".bulk-checkbox").forEach(function (cb) {
+            cb.checked = selectAll.checked;
+        });
+    });
+});
+</script>
 {% endblock %}

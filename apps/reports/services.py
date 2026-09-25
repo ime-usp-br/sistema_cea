@@ -6,26 +6,8 @@ from typing import Any
 from django.http import HttpResponse
 
 from applications.models import ServiceApplication
-from payments.models import PaymentInstrument
-
-FINANCIAL_FIELDS = [
-    "protocol",
-    "modality",
-    "candidate",
-    "email",
-    "fee_type",
-    "payment_method",
-    "base_amount",
-    "adjustment_amount",
-    "amount",
-    "payment_state",
-    "paid_at",
-    "manual",
-    "superseded",
-    "modality_credit",
-    "refund_status",
-    "refund_amount",
-]
+from payments.models import FeeRequirement, PaymentInstrument
+from payments.services import fee_status_label
 
 AUDIT_FIELDS = [
     "protocol",
@@ -38,6 +20,32 @@ AUDIT_FIELDS = [
     "teacher_decision",
     "admin_decision",
     "corrections",
+]
+
+# Cabeçalhos do export (paridade com ``FinancialReportController`` legado).
+FINANCIAL_EXPORT_HEADERS = [
+    "Protocolo",
+    "Modalidade",
+    "Pesquisador",
+    "CPF",
+    "E-mail",
+    "Nome (Boleto)",
+    "CPF/CNPJ (Boleto)",
+    "Banco",
+    "Agência",
+    "Conta",
+    "Tipo",
+    "Recibo Reembolso",
+    "Dados Reembolso",
+    "Taxa de Inscrição",
+    "Taxa de Projeto",
+    "Complemento",
+]
+
+FEE_ORDER = [
+    FeeRequirement.FeeType.APPLICATION_FEE.value,
+    FeeRequirement.FeeType.PROJECT_FEE.value,
+    FeeRequirement.FeeType.SUPPLEMENT_FEE.value,
 ]
 
 XLSX_CONTENT_TYPE = (
@@ -61,12 +69,16 @@ def _fmt_value(value: Any) -> str:
 
 
 class ReportService:
-    """Serviço de domínio responsável por relatórios financeiros e de auditoria."""
+    """Serviço de domínio responsável por relatórios financeiros e de auditoria.
 
-    # ---- Financeiro ----
+    O relatório financeiro é agrupado por inscrição (paridade com o sistema
+    legado): cada linha tem uma célula por taxa (inscrição / projeto /
+    complemento). Os exportadores (CSV/XLSX) seguem o mesmo formato.
+    """
 
-    def build_financial_report_data(self) -> list[dict[str, Any]]:
-        """Reúne inscrições, taxas, instrumentos e reembolsos (TS-REP-001)."""
+    # ---- Financeiro (agrupado por inscrição) ----
+
+    def build_financial_report_data(self, term: Any = None) -> list[dict[str, Any]]:
         applications = (
             ServiceApplication.objects.select_related("term")
             .prefetch_related(
@@ -76,101 +88,175 @@ class ReportService:
             )
             .order_by("protocol")
         )
-        rows: list[dict[str, Any]] = []
-        for app in applications:
-            refund = app.refund_requests.order_by("-created_at").first()
-            credit = app.modality_credit_amount or Decimal("0.00")
-            fees = list(app.fee_requirements.all())
-            if not fees:
-                rows.append(self._financial_row(app, None, refund, credit))
-                continue
-            for fee in fees:
-                instrument = fee.payment_instruments.first()
-                rows.append(self._financial_row(app, fee, refund, credit, instrument))
-        return rows
+        if term is not None:
+            applications = applications.filter(term=term)
+        return [self._financial_row(app) for app in applications]
 
-    def _financial_row(
-        self,
-        app: ServiceApplication,
-        fee: Any,
-        refund: Any,
-        credit: Decimal,
-        instrument: Any = None,
-    ) -> dict[str, Any]:
+    def _financial_row(self, app: ServiceApplication) -> dict[str, Any]:
+        refund = app.refund_requests.order_by("-created_at").first()
+        fees = list(app.fee_requirements.all())
+        fees_by_type = {fee.fee_type: fee for fee in fees}
+        credit = app.modality_credit_amount or Decimal("0.00")
+
+        fee_cells: dict[str, dict[str, Any]] = {}
+        for fee_type in FEE_ORDER:
+            fee = fees_by_type.get(fee_type)
+            if fee is None:
+                fee_cells[fee_type] = {
+                    "label": "Não Emitido",
+                    "amount": None,
+                    "status": "Não Emitido",
+                    "method": "",
+                    "manual": False,
+                    "superseded": False,
+                    "bank_status": "",
+                    "due_date": None,
+                    "paid_date": None,
+                }
+                continue
+            instruments = list(fee.payment_instruments.all())
+            instrument = instruments[0] if instruments else None
+            slip = getattr(instrument, "bank_slip_instrument", None) if instrument else None
+            fee_cells[fee_type] = {
+                "label": fee.get_fee_type_display(),
+                "amount": fee.amount,
+                "status": fee_status_label(fee),
+                "method": instrument.method if instrument else "",
+                "manual": bool(
+                    instrument
+                    and instrument.state == PaymentInstrument.State.MANUAL_CONFIRMED
+                ),
+                "superseded": bool(
+                    instrument
+                    and instrument.state == PaymentInstrument.State.SUPERSEDED
+                ),
+                "bank_status": slip.get_bank_status_display() if slip else "",
+                "due_date": slip.due_date if slip else None,
+                "paid_date": slip.payment_date if slip else (
+                    instrument.paid_at if instrument else None
+                ),
+            }
+
         return {
+            "application": app,
             "protocol": app.protocol,
             "modality": app.get_modality_display(),
             "candidate": app.researcher_name,
+            "tax_id": app.tax_id or "",
             "email": app.legacy_contact_email or app.contact_email or "",
-            "fee_type": fee.get_fee_type_display() if fee else "",
-            "payment_method": instrument.method if instrument else "",
-            "base_amount": fee.base_amount if fee else Decimal("0.00"),
-            "adjustment_amount": fee.adjustment_amount if fee else Decimal("0.00"),
-            "amount": fee.amount if fee else Decimal("0.00"),
-            "payment_state": app.get_payment_state_display() if app.payment_state else "",
-            "paid_at": (instrument.paid_at.isoformat() if instrument and instrument.paid_at else None),
-            "manual": bool(instrument and instrument.state == PaymentInstrument.State.MANUAL_CONFIRMED),
-            "superseded": bool(instrument and instrument.state == PaymentInstrument.State.SUPERSEDED),
-            "modality_credit": credit,
+            "bank_data": {
+                "name": app.refund_account_holder_name or "",
+                "tax_id": app.refund_account_holder_tax_id or "",
+                "bank": app.refund_bank_name or "",
+                "agency": app.refund_branch_number or "",
+                "account": app.refund_bank_account_number or "",
+                "type": app.get_refund_bank_account_type_display() or "",
+            },
+            "wants_refund_receipt": app.wants_refund_receipt,
+            "refund_receipt_details": app.refund_receipt_details or "",
             "refund_status": refund.get_status_display() if refund else "",
             "refund_amount": refund.amount if refund else Decimal("0.00"),
+            "modality_credit": credit,
+            "fees": fee_cells,
         }
 
-    def export_financial_csv(self) -> HttpResponse:
-        """Exporta o relatório financeiro em CSV com separador `;` e BOM UTF-8 (TS-REP-004)."""
-        rows = self.build_financial_report_data()
-        response = HttpResponse(content_type="text/csv; charset=utf-8")
-        response["Content-Disposition"] = 'attachment; filename="relatorio_financeiro.csv"'
-        response.write("\ufeff")
-        writer = csv.DictWriter(
-            response, fieldnames=FINANCIAL_FIELDS, delimiter=";", lineterminator="\n"
-        )
-        writer.writeheader()
+    def _fee_cell_text(self, cell: dict[str, Any]) -> str:
+        if cell["amount"] is None:
+            return "Não Emitido"
+        pieces = [f"R$ {_fmt_money(cell['amount'])}", cell["status"]]
+        if cell["method"]:
+            pieces.append(PaymentInstrument.Method(cell["method"]).label)
+        if cell["manual"]:
+            pieces.append("Manual")
+        if cell["superseded"]:
+            pieces.append("Substituído")
+        return " — ".join(pieces)
+
+    def _export_rows(self, term: Any = None) -> list[list[str]]:
+        rows = self.build_financial_report_data(term=term)
+        export: list[list[str]] = []
         for row in rows:
-            writer.writerow(
-                {field: _fmt_value(row.get(field)) for field in FINANCIAL_FIELDS}
+            bank = row["bank_data"]
+            fees = row["fees"]
+            export.append(
+                [
+                    row["protocol"],
+                    row["modality"],
+                    row["candidate"],
+                    row["tax_id"],
+                    row["email"],
+                    bank["name"],
+                    bank["tax_id"],
+                    bank["bank"],
+                    bank["agency"],
+                    bank["account"],
+                    bank["type"],
+                    "Sim" if row["wants_refund_receipt"] else "Não",
+                    row["refund_receipt_details"],
+                    self._fee_cell_text(
+                        fees[FeeRequirement.FeeType.APPLICATION_FEE.value]
+                    ),
+                    self._fee_cell_text(fees[FeeRequirement.FeeType.PROJECT_FEE.value]),
+                    self._fee_cell_text(
+                        fees[FeeRequirement.FeeType.SUPPLEMENT_FEE.value]
+                    ),
+                ]
             )
+        return export
+
+    def _export_filename(self, term: Any, extension: str) -> str:
+        if term is not None:
+            return f"relatorio_financeiro_{term.year}_{term.period}.{extension}"
+        return f"relatorio_financeiro.{extension}"
+
+    def export_financial_csv(self, term: Any = None) -> HttpResponse:
+        """Exporta o relatório financeiro em CSV com ``;`` e BOM UTF-8 (TS-REP-004)."""
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        filename = self._export_filename(term, "csv")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        response.write("\ufeff")
+        writer = csv.writer(response, delimiter=";", lineterminator="\n")
+        writer.writerow(FINANCIAL_EXPORT_HEADERS)
+        for row in self._export_rows(term=term):
+            writer.writerow(row)
         return response
 
-    def export_financial_xlsx(self) -> HttpResponse:
+    def export_financial_xlsx(self, term: Any = None) -> HttpResponse:
         """Exporta o relatório financeiro em XLSX (fallback TSV se openpyxl ausente - TS-REP-005)."""
-        rows = self.build_financial_report_data()
         try:
             import openpyxl  # type: ignore[import-not-found]  # noqa: PLC0415
         except ImportError:
-            return self._export_financial_tsv_fallback(rows)
+            return self._export_financial_tsv_fallback(term=term)
         workbook = openpyxl.Workbook()
         worksheet = workbook.active
         worksheet.title = "Financeiro"
-        worksheet.append(FINANCIAL_FIELDS)
-        for row in rows:
-            worksheet.append([row.get(field) for field in FINANCIAL_FIELDS])
+        worksheet.append(FINANCIAL_EXPORT_HEADERS)
+        for row in self._export_rows(term=term):
+            worksheet.append(row)
         buffer = io.BytesIO()
         workbook.save(buffer)
         response = HttpResponse(buffer.getvalue(), content_type=XLSX_CONTENT_TYPE)
-        response["Content-Disposition"] = 'attachment; filename="relatorio_financeiro.xlsx"'
+        filename = self._export_filename(term, "xlsx")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response
 
-    def _export_financial_tsv_fallback(self, rows: list[dict[str, Any]]) -> HttpResponse:
+    def _export_financial_tsv_fallback(self, term: Any = None) -> HttpResponse:
         buffer = io.StringIO()
         buffer.write("\ufeff")
-        writer = csv.DictWriter(
-            buffer, fieldnames=FINANCIAL_FIELDS, delimiter="\t", lineterminator="\n"
-        )
-        writer.writeheader()
-        for row in rows:
-            writer.writerow(
-                {field: _fmt_value(row.get(field)) for field in FINANCIAL_FIELDS}
-            )
+        writer = csv.writer(buffer, delimiter="\t", lineterminator="\n")
+        writer.writerow(FINANCIAL_EXPORT_HEADERS)
+        for row in self._export_rows(term=term):
+            writer.writerow(row)
         response = HttpResponse(
             buffer.getvalue(), content_type="text/tab-separated-values; charset=utf-8"
         )
-        response["Content-Disposition"] = 'attachment; filename="relatorio_financeiro.tsv"'
+        filename = self._export_filename(term, "tsv")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response
 
     # ---- Auditoria ----
 
-    def build_audit_report_data(self) -> list[dict[str, Any]]:
+    def build_audit_report_data(self, term: Any = None) -> list[dict[str, Any]]:
         """Reúne submissões, revisões e decisões de auditoria (TS-REP-006)."""
         applications = (
             ServiceApplication.objects.filter(dataset_audit_required=True)
@@ -181,6 +267,8 @@ class ReportService:
             )
             .order_by("protocol")
         )
+        if term is not None:
+            applications = applications.filter(term=term)
         rows: list[dict[str, Any]] = []
         for app in applications:
             submissions = list(app.audit_submissions.all())

@@ -23,16 +23,20 @@ class DocumentRenderingService:
         }
         return self.render_pdf("documents/application_full_pdf.html", context)
 
-    def render_application_firstpage_pdf(self, application: ServiceApplication) -> bytes:
+    def render_application_firstpage_pdf(
+        self, application: ServiceApplication, can_view_financial: bool = True
+    ) -> bytes:
         """PDF resumido de 1 página com os dados essenciais da inscrição.
 
         Porta da rota ``/applications/{protocol}/firstpageaspdf`` e do template
         LaTeX ``latexfirstpage.blade.php`` do sistema legado, usado pela
-        Secretaria/Docentes para impressão rápida.
+        Secretaria/Docentes para impressão rápida. O Docente não vê CPF/dados
+        financeiros (ARCHITECTURE.md §7.3/§38.2).
         """
         context: dict[str, Any] = {
             "application": application,
             "protocol": application.protocol,
+            "can_view_financial": can_view_financial,
         }
         return self.render_pdf("documents/application_firstpage_pdf.html", context)
 

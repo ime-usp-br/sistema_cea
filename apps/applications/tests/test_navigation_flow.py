@@ -201,28 +201,28 @@ class NavigationFlowTests(TestCase):
         self.client.force_login(self.secretariat)
         queue = self._get(reverse("audits:teacher_queue"))
         self.assertContains(queue, "Reembolsos")
-        self.assertContains(queue, "Agendamentos")
-        self.assertContains(queue, "Cobranças")
+        self.assertContains(queue, "Triagens")
+        self.assertContains(queue, "Reuniões de Consulta")
+        self.assertContains(queue, "Cobranças Manuais")
         self.assertContains(queue, "Resgates")
-        self.assertNotContains(queue, "Financeiro")
-        self.assertNotContains(queue, "Relatório de auditoria")
+        self.assertContains(queue, "Relatório Financeiro")
 
-        # Docente vê a fila de análise e o acesso ao feedback (Agendamentos),
+        # Docente vê a fila de análise e o acesso ao feedback (Triagens),
         # mas não os itens de operação da secretaria.
         self.client.logout()
         self.client.force_login(self.teacher)
         teacher_queue = self._get(reverse("audits:teacher_queue"))
         self.assertContains(teacher_queue, "Fila de análise")
-        self._assert_link_present(teacher_queue, reverse("meetings:queue"))
+        self._assert_link_present(teacher_queue, reverse("meetings:screening_list"))
         self.assertNotContains(teacher_queue, "Reembolsos")
-        self.assertNotContains(teacher_queue, "Cobranças")
+        self.assertNotContains(teacher_queue, "Cobranças Manuais")
 
         # Administrador vê inclusive os relatórios.
         self.client.logout()
         self.client.force_login(self.admin)
         admin_page = self._get(reverse("audits:teacher_queue"))
-        self.assertContains(admin_page, "Financeiro")
-        self.assertContains(admin_page, "Auditoria")
+        self.assertContains(admin_page, "Relatório Financeiro")
+        self.assertContains(admin_page, "Relatório de Auditoria")
 
     # ------------------------------------------------------------------
     # TS_NAV-003 Páginas internas possuem breadcrumbs e retorno
@@ -234,13 +234,14 @@ class NavigationFlowTests(TestCase):
             (reverse("applications:create"), "Nova inscrição"),
             (reverse("audits:teacher_queue"), "Fila de auditoria"),
             (reverse("audits:resolution_list"), "Auditorias rejeitadas"),
-            (reverse("meetings:queue"), "Agendamentos"),
+            (reverse("meetings:screening_list"), "Triagens"),
+            (reverse("meetings:consultation_list"), "Reuniões de Consulta"),
             (reverse("payments:refund_list"), "Reembolsos"),
-            (reverse("payments:overdue_list"), "Cobranças"),
+            (reverse("payments:overdue_list"), "Cobranças Manuais"),
             (reverse("imports:claim_request"), "Resgatar inscrição"),
             (reverse("imports:claim_queue"), "Resgates"),
-            (reverse("reports:financial_report"), "Relatório financeiro"),
-            (reverse("reports:audit_report"), "Relatório de auditoria"),
+            (reverse("reports:financial_report"), "Relatório Financeiro"),
+            (reverse("reports:audit_report"), "Relatório de Auditoria"),
         ]
         self.client.force_login(self.admin)
         for url, label in pages:
@@ -288,11 +289,11 @@ class NavigationFlowTests(TestCase):
         self.client.force_login(self.admin)
         financial = self._get(reverse("reports:financial_report"))
         self.assertEqual(financial.status_code, 200)
-        self.assertContains(financial, "Relatório financeiro")
+        self.assertContains(financial, "Relatório Financeiro")
 
         audit = self._get(reverse("reports:audit_report"))
         self.assertEqual(audit.status_code, 200)
-        self.assertContains(audit, "Relatório de auditoria")
+        self.assertContains(audit, "Relatório de Auditoria")
 
 
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp(prefix="cea-nav-media-"))

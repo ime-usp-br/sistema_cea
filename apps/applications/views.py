@@ -1,34 +1,22 @@
 from typing import cast
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views import View
 from django.views.generic import DetailView, FormView, TemplateView
 
 from payments.models import PaymentInstrument
-from payments.services import ModalityChangeService
+from payments.services import ModalityChangeService, fee_status_label
 from terms.models import AcademicTerm
+from terms.utils import resolve_term, term_filter_id
+from users.mixins import RoleRequiredMixin
 from users.models import User
 
 from .forms import ApplicationForm
-from .models import ServiceApplication
+from .models import ApplicationEvent, ServiceApplication
 from .services import ApplicationSubmissionService, TermTransferService
-
-
-class RoleRequiredMixin(LoginRequiredMixin):
-    """Exige que o usuário autenticado possua um dos papéis listados."""
-
-    allowed_roles: frozenset[str] = frozenset()
-
-    def dispatch(self, request, *args, **kwargs):
-        user = cast(User, request.user)
-        if not user.is_authenticated:
-            return self.handle_no_permission()
-        if user.role not in self.allowed_roles and not user.is_superuser:
-            raise PermissionDenied("Você não tem permissão para acessar esta área.")
-        return super().dispatch(request, *args, **kwargs)
 
 
 class CandidateDashboardView(LoginRequiredMixin, TemplateView):
@@ -98,7 +86,15 @@ class ApplicationDetailView(LoginRequiredMixin, DetailView):
 
     def get_queryset(self):
         user = cast(User, self.request.user)
-        if user.role in {User.Role.SECRETARIAT, User.Role.ADMINISTRATOR} or user.is_superuser:
+        if (
+            user.role
+            in {
+                User.Role.SECRETARIAT,
+                User.Role.ADMINISTRATOR,
+                User.Role.TEACHER,
+            }
+            or user.is_superuser
+        ):
             return ServiceApplication.objects.select_related(
                 "term", "owner", "project_screening", "consultation_meeting"
             ).prefetch_related(
@@ -130,8 +126,53 @@ class ApplicationDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         application = self.object
+        user = cast(User, self.request.user)
+        # CPF e dados financeiros: visíveis ao dono, Secretaria e Admin;
+        # ocultos ao Docente (ARCHITECTURE.md §7.3/§38.2).
+        context["can_view_financial"] = (
+            user.is_superuser
+            or user.role in {User.Role.SECRETARIAT, User.Role.ADMINISTRATOR}
+            or (user.role == User.Role.CANDIDATE and application.owner_id == user.pk)
+        )
+        # Catálogo agrupado por categoria (Vínculo/Finalidade/Agência/Área).
+        catalog: dict[str, list[str]] = {}
+        for selection in application.catalog_selections.all():
+            value = selection.option.label
+            if selection.other_text:
+                value = f"{value} — {selection.other_text}"
+            catalog.setdefault(selection.option.category, []).append(value)
+        context["catalog_by_category"] = catalog
+
         # Boletos da inscrição para as ações administrativas (Gap D).
         from bank_slips.models import BankSlipPaymentInstrument
+
+        today = timezone.localdate()
+        financial_rows = []
+        for fee in application.fee_requirements.all():
+            instruments = []
+            for instrument in fee.payment_instruments.all():
+                slip = BankSlipPaymentInstrument.objects.filter(
+                    payment_instrument=instrument
+                ).first()
+                already_paid = instrument.state in (
+                    PaymentInstrument.State.PAID,
+                    PaymentInstrument.State.MANUAL_CONFIRMED,
+                )
+                can_confirm = bool(
+                    slip is not None
+                    and slip.due_date is not None
+                    and slip.due_date <= today
+                    and not already_paid
+                )
+                instruments.append(
+                    {
+                        "instrument": instrument,
+                        "slip": slip,
+                        "can_confirm": can_confirm,
+                    }
+                )
+            financial_rows.append({"fee": fee, "instruments": instruments})
+        context["financial_rows"] = financial_rows
 
         context["slips"] = list(
             BankSlipPaymentInstrument.objects.select_related("payment_instrument")
@@ -143,12 +184,27 @@ class ApplicationDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
+def _schedule_url_name(application: ServiceApplication) -> str | None:
+    """Rota de agendamento indicada para o status atual (atalho do legado)."""
+    if (
+        application.lifecycle_status
+        == ServiceApplication.LifecycleStatus.AWAITING_SCREENING_SCHEDULING
+    ):
+        return "meetings:screening_schedule"
+    if (
+        application.lifecycle_status
+        == ServiceApplication.LifecycleStatus.AWAITING_CONSULTATION_SCHEDULING
+    ):
+        return "meetings:consultation_schedule"
+    return None
+
+
 class ApplicationListView(RoleRequiredMixin, View):
     """Secretaria/administrador visualiza todas as inscrições (visão geral).
 
     Alinhada ao legado: exibe protocolo, data, modalidade, nome, e-mail, status,
     taxas com status de cobrança e ações (ver, PDF, transferir, mudar modalidade,
-    excluir). Aceita o parâmetro ``term`` para filtrar por período letivo.
+    excluir). Filtra por período letivo com default no semestre atual.
     """
 
     allowed_roles = frozenset({User.Role.SECRETARIAT, User.Role.ADMINISTRATOR})
@@ -156,20 +212,25 @@ class ApplicationListView(RoleRequiredMixin, View):
 
     def get(self, request):
         terms = list(AcademicTerm.objects.all())
-        term_id = request.GET.get("term") or request.GET.get("semester_id")
+        raw_term = term_filter_id(request)
+        selected_term = None if raw_term == "all" else resolve_term(request)
 
         applications = (
             ServiceApplication.objects.select_related("term")
             .prefetch_related("fee_requirements__payment_instruments")
             .order_by("-created_at")
         )
-        if term_id:
-            applications = applications.filter(term_id=term_id)
+        if selected_term is not None:
+            applications = applications.filter(term=selected_term)
 
         rows = [self._row(app) for app in applications]
-        selected_term = next(
-            (t for t in terms if str(t.pk) == str(term_id)), None
-        ) if term_id else None
+
+        if selected_term is not None:
+            selected_term_id: str | None = str(selected_term.pk)
+        elif raw_term == "all":
+            selected_term_id = "all"
+        else:
+            selected_term_id = None
 
         return render(
             request,
@@ -177,40 +238,71 @@ class ApplicationListView(RoleRequiredMixin, View):
             {
                 "rows": rows,
                 "terms": terms,
-                "selected_term_id": term_id,
+                "selected_term_id": selected_term_id,
                 "selected_term": selected_term,
+                "show_all": raw_term == "all",
             },
         )
 
     @staticmethod
     def _fee_status(fee) -> str:
-        instruments = list(fee.payment_instruments.all())
-        if fee.is_waived:
-            return "Dispensada"
-        if fee.is_paid:
-            return "Pago"
-        if any(
-            item.state in (PaymentInstrument.State.ACTIVE, PaymentInstrument.State.CREATED)
-            for item in instruments
-        ):
-            return "Emitido"
-        if instruments:
-            return "Cancelado"
-        return "Não Emitido"
+        return fee_status_label(fee)
 
     @classmethod
     def _row(cls, application: ServiceApplication) -> dict:
-        return {
-            "application": application,
-            "fees_info": [
+        fees_info = []
+        show_generate_slip = False
+        for fee in application.fee_requirements.all():
+            status = cls._fee_status(fee)
+            if not fee.is_waived and status != "Pago":
+                show_generate_slip = True
+            fees_info.append(
                 {
                     "label": fee.get_fee_type_display(),
                     "amount": fee.amount,
-                    "status": cls._fee_status(fee),
+                    "status": status,
                 }
-                for fee in application.fee_requirements.all()
-            ],
+            )
+        return {
+            "application": application,
+            "fees_info": fees_info,
+            "schedule_url_name": _schedule_url_name(application),
+            "show_generate_slip": show_generate_slip,
         }
+
+
+class EventListView(RoleRequiredMixin, View):
+    """Histórico de eventos das inscrições, filtrável por semestre (legado)."""
+
+    allowed_roles = frozenset({User.Role.SECRETARIAT, User.Role.ADMINISTRATOR})
+    template_name = "applications/event_list.html"
+
+    def get(self, request):
+        terms = list(AcademicTerm.objects.all())
+        raw_term = term_filter_id(request)
+        selected_term = None if raw_term == "all" else resolve_term(request)
+
+        events = (
+            ApplicationEvent.objects.select_related("application", "actor")
+            .order_by("-occurred_at")
+        )
+        if selected_term is not None:
+            events = events.filter(application__term=selected_term)
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "events": events,
+                "terms": terms,
+                "selected_term": selected_term,
+                "selected_term_id": (
+                    str(selected_term.pk)
+                    if selected_term is not None
+                    else ("all" if raw_term == "all" else None)
+                ),
+            },
+        )
 
 
 class ApplicationModalityChangeView(RoleRequiredMixin, View):
@@ -238,6 +330,60 @@ class ApplicationDeleteView(RoleRequiredMixin, View):
         application = get_object_or_404(ServiceApplication, protocol=protocol)
         application.soft_delete()
         return redirect(reverse("applications:list"))
+
+
+class ApplicationDeletedListView(RoleRequiredMixin, View):
+    """Lixeira: inscrições com exclusão lógica, com restauração (paridade legado)."""
+
+    allowed_roles = frozenset({User.Role.SECRETARIAT, User.Role.ADMINISTRATOR})
+    template_name = "applications/application_deleted_list.html"
+
+    def get(self, request):
+        terms = list(AcademicTerm.objects.all())
+        raw_term = term_filter_id(request)
+        selected_term = None if raw_term == "all" else resolve_term(request)
+
+        applications = (
+            ServiceApplication.all_objects.filter(soft_deleted_at__isnull=False)
+            .select_related("term", "owner")
+            .order_by("-soft_deleted_at")
+        )
+        if selected_term is not None:
+            applications = applications.filter(term=selected_term)
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "applications": applications,
+                "terms": terms,
+                "selected_term": selected_term,
+                "selected_term_id": (
+                    str(selected_term.pk)
+                    if selected_term is not None
+                    else ("all" if raw_term == "all" else None)
+                ),
+            },
+        )
+
+
+class ApplicationRestoreView(RoleRequiredMixin, View):
+    """Restaura uma inscrição previamente excluída (soft delete)."""
+
+    allowed_roles = frozenset({User.Role.SECRETARIAT, User.Role.ADMINISTRATOR})
+
+    def post(self, request, protocol: str):
+        application = get_object_or_404(
+            ServiceApplication.all_objects, protocol=protocol
+        )
+        application.restore()
+        ApplicationEvent.objects.create(
+            application=application,
+            event_code="application.restored",
+            actor=cast(User, request.user),
+            description="Inscrição restaurada pela Secretaria.",
+        )
+        return redirect(reverse("applications:deleted_list"))
 
 
 class TransferSemesterView(RoleRequiredMixin, View):

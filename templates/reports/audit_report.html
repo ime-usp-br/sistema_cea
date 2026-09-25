@@ -1,19 +1,38 @@
 {% extends "base/base.html" %}
 
-{% block title %}Relatório de auditoria{% endblock %}
+{% block title %}Relatório de Auditoria{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
 {% block breadcrumbs %}
-    {% include "base/_breadcrumbs.html" with current_page="Relatório de auditoria" %}
+    {% include "base/_breadcrumbs.html" with current_page="Relatório de Auditoria" %}
 {% endblock %}
 
 {% block content %}
 <div class="page-header">
     <div>
-        <h1 class="page-title">Relatório de auditoria</h1>
-        <p class="page-subtitle">Visão consolidada das submissões e decisões de auditoria.</p>
+        <h1 class="page-title">Relatório de Auditoria</h1>
+        <p class="page-subtitle">
+            {% if selected_term %}
+                {{ selected_term.get_period_display }} de {{ selected_term.year }}
+            {% else %}
+                Todos os semestres
+            {% endif %}
+        </p>
     </div>
-    <a href="{% url 'applications:dashboard' %}" class="btn btn-ghost">Voltar ao painel</a>
+    <div class="form-actions">
+        <form method="get" action="{% url 'reports:audit_report' %}" class="toolbar-form">
+            <select name="term">
+                <option value="all" {% if selected_term_id == "all" %}selected{% endif %}>Todos os semestres</option>
+                {% for term in terms %}
+                    <option value="{{ term.pk }}" {% if selected_term_id == term.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ term.year }} - {{ term.get_period_display }}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-secondary">Buscar</button>
+        </form>
+        <a href="{% url 'applications:dashboard' %}" class="btn btn-ghost">Voltar ao painel</a>
+    </div>
 </div>
 
 {% if rows %}

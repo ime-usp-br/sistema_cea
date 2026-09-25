@@ -1,0 +1,123 @@
+{% extends "base/base.html" %}
+
+{% block title %}Reuniões de Consulta{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
+{% block breadcrumbs %}
+    {% include "base/_breadcrumbs.html" with current_page="Reuniões de Consulta" %}
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Reuniões de Consulta</h1>
+        <p class="page-subtitle">
+            {% if selected_term %}
+                {{ selected_term.get_period_display }} de {{ selected_term.year }}
+            {% else %}
+                Todos os semestres
+            {% endif %}
+        </p>
+    </div>
+    <div class="form-actions">
+        <form method="get" action="{% url 'meetings:consultation_list' %}" class="toolbar-form">
+            <select name="term">
+                <option value="all" {% if selected_term_id == "all" %}selected{% endif %}>Todos os semestres</option>
+                {% for term in terms %}
+                    <option value="{{ term.pk }}" {% if selected_term_id == term.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ term.year }} - {{ term.get_period_display }}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-secondary">Buscar</button>
+        </form>
+    </div>
+</div>
+
+{% if can_manage %}
+<h2>Aguardando agendamento</h2>
+{% if awaiting %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Protocolo</th>
+                    <th>Nome do pesquisador</th>
+                    <th>Modalidade</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for application in awaiting %}
+                    <tr>
+                        <td><a href="{% url 'applications:detail' application.protocol %}">{{ application.protocol }}</a></td>
+                        <td>{{ application.researcher_name }}</td>
+                        <td>{{ application.get_modality_display }}</td>
+                        <td class="actions">
+                            <a href="{% url 'meetings:consultation_schedule' application.protocol %}" class="btn btn-sm btn-primary">Agendar</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="empty-state"><p>Não há reuniões de consulta aguardando agendamento.</p></div>
+{% endif %}
+{% endif %}
+
+{% if rows %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Protocolo</th>
+                    <th>Nome do pesquisador</th>
+                    <th>Modalidade</th>
+                    <th>Data</th>
+                    <th>Local ou Link</th>
+                    <th>Resultado</th>
+                    <th>Observações</th>
+                    <th>Feedback do Professor</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    <tr>
+                        <td><a href="{% url 'applications:detail' row.application.protocol %}">{{ row.application.protocol }}</a></td>
+                        <td>{{ row.application.researcher_name }}</td>
+                        <td>{{ row.application.get_modality_display }}</td>
+                        <td>{{ row.meeting.scheduled_date|date:"d/m/Y" }} {{ row.meeting.scheduled_time|time:"H:i" }}</td>
+                        <td>
+                            {% if row.meeting.meeting_mode == "online" %}
+                                {{ row.meeting.virtual_link|default:"—" }}
+                            {% else %}
+                                {{ row.meeting.place|default:"—" }}
+                            {% endif %}
+                        </td>
+                        <td>{{ row.meeting.get_decision_display|default:"—" }}</td>
+                        <td>{{ row.meeting.decision_note|default:"—" }}</td>
+                        <td>{{ row.meeting.get_teacher_feedback_display|default:"—" }}</td>
+                        <td class="actions">
+                            {% if can_manage %}
+                                <a href="{% url 'meetings:consultation_schedule' row.application.protocol %}" class="btn btn-sm btn-primary" title="Reagendar Reunião de Consulta">Reagendar</a>
+                                <a href="{% url 'meetings:consultation_decision' row.meeting.pk %}" class="btn btn-sm btn-secondary" title="Informar Resultado">Resultado</a>
+                                <form method="post" action="{% url 'meetings:consultation_schedule' row.application.protocol %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" name="action" value="cancel" class="btn btn-sm btn-danger"
+                                            onclick="return confirm('Você tem certeza que deseja cancelar essa reunião de consulta?')">Cancelar</button>
+                                </form>
+                            {% elif can_register_feedback and not row.meeting.teacher_feedback %}
+                                <a href="{% url 'meetings:consultation_decision' row.meeting.pk %}" class="btn btn-sm btn-primary">Registrar feedback</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="empty-state"><p>Não há reuniões de consulta cadastradas.</p></div>
+{% endif %}
+{% endblock %}

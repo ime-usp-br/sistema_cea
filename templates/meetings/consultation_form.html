@@ -4,7 +4,7 @@
 {% block app_name %}Inscrições CEA{% endblock %}
 
 {% block breadcrumbs %}
-{% url 'meetings:queue' as parent_url %}
+{% url 'meetings:consultation_list' as parent_url %}
 {% include "base/_breadcrumbs.html" with current_page="Agendar reunião" parent_label="Agendamentos" parent_url=parent_url %}
 {% endblock %}
 
@@ -14,7 +14,7 @@
         <h1 class="page-title">{% if meeting %}Reagendar{% else %}Agendar{% endif %} reunião</h1>
         <p class="page-subtitle">Inscrição: <a href="{% url 'applications:detail' application.protocol %}"><strong>{{ application.protocol }}</strong></a> — {{ application.researcher_name }}</p>
     </div>
-    <a href="{% url 'meetings:queue' %}" class="btn btn-ghost">Voltar à fila</a>
+    <a href="{% url 'meetings:consultation_list' %}" class="btn btn-ghost">Voltar à fila</a>
 </div>
 
 <div class="card" style="max-width: 760px;">

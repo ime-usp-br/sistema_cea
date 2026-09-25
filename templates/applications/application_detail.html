@@ -10,7 +10,7 @@
 {% block content %}
 <div class="page-header">
     <div>
-        <h1 class="page-title">Inscrição {{ object.protocol }}</h1>
+        <h1 class="page-title">Ficha de Inscrição {{ object.protocol }}</h1>
         <p class="page-subtitle">
             <span class="badge badge-primary">{{ object.get_modality_display }}</span>
             <span class="badge badge-info">{{ object.get_lifecycle_status_display }}</span>
@@ -65,45 +65,53 @@
 </div>
 
 <div class="card">
-    <div class="card-header"><h2 class="card-title">Situação da inscrição</h2></div>
+    <div class="card-header"><h2 class="card-title">Identificação do pesquisador</h2></div>
     <div class="card-body">
         <dl class="detail-list">
             <div><dt>Protocolo</dt><dd>{{ object.protocol }}</dd></div>
-            <div><dt>Modalidade</dt><dd>{{ object.get_modality_display }}</dd></div>
-            <div><dt>Status do ciclo</dt><dd>{{ object.get_lifecycle_status_display }}</dd></div>
-            <div><dt>Estado de pagamento</dt><dd>{{ object.get_payment_state_display|default:"—" }}</dd></div>
-            <div><dt>Auditoria de dados</dt><dd>{{ object.get_dataset_audit_state_display|default:"Não exigida" }}</dd></div>
-            <div><dt>Origem</dt><dd>{{ object.get_origin_display }}</dd></div>
-            <div><dt>Período letivo</dt><dd>{{ object.term }}</dd></div>
-            <div><dt>Criada em</dt><dd>{{ object.created_at|date:"d/m/Y H:i" }}</dd></div>
-            <div><dt>Atualizada em</dt><dd>{{ object.updated_at|date:"d/m/Y H:i" }}</dd></div>
-            <div><dt>Crédito por modalidade</dt><dd class="tabular-nums">R$ {{ object.modality_credit_amount|floatformat:2 }}</dd></div>
-            {% if object.transfer_pending %}
-                <div><dt>Transferência pendente</dt><dd>Sim</dd></div>
-                <div><dt>Motivo da transferência</dt><dd>{{ object.transfer_reason|default:"—" }}</dd></div>
+            <div><dt>Modalidade do serviço solicitado</dt><dd>{{ object.get_modality_display }}</dd></div>
+            <div><dt>Coletou os dados</dt><dd>{{ object.get_data_already_collected_display|default:"—" }}</dd></div>
+            <div><dt>Nome do pesquisador</dt><dd>{{ object.researcher_name }}</dd></div>
+            <div><dt>Telefones para contato{% if object.has_whatsapp %} (Whatsapp){% endif %}</dt><dd>{{ object.contact_phone|default:"—" }}</dd></div>
+            {% if can_view_financial %}
+                <div><dt>CPF/CNPJ</dt><dd>{{ object.tax_id|default:"—" }}</dd></div>
+            {% endif %}
+            <div><dt>E-mail</dt><dd>{{ object.contact_email }}</dd></div>
+            <div><dt>Instituição/Unidade</dt><dd>{{ object.institution_name|default:"—" }}</dd></div>
+            <div><dt>Curso</dt><dd>{{ object.course_name|default:"—" }}</dd></div>
+            <div><dt>Vínculo com a Instituição</dt><dd>{{ catalog_by_category.institutional_tie|join:", "|default:"—" }}</dd></div>
+            <div><dt>Colaborador(es) ou orientador</dt><dd>{{ object.mentor_name|default:"—" }}</dd></div>
+            <div><dt>Finalidade do projeto</dt><dd>{{ catalog_by_category.project_purpose|join:", "|default:"—" }}</dd></div>
+            <div><dt>Agência financiadora do projeto</dt><dd>{{ catalog_by_category.funding_agency|join:", "|default:"—" }}</dd></div>
+            <div><dt>Área de conhecimento</dt><dd>{{ catalog_by_category.knowledge_area|join:", "|default:"—" }}</dd></div>
+            {% if can_view_financial and object.legacy_contact_tax_id %}
+                <div><dt>CPF legado</dt><dd>{{ object.legacy_contact_tax_id }}</dd></div>
             {% endif %}
         </dl>
     </div>
 </div>
 
 <div class="card">
-    <div class="card-header"><h2 class="card-title">Identificação do pesquisador</h2></div>
+    <div class="card-header"><h2 class="card-title">Situação da inscrição</h2></div>
     <div class="card-body">
         <dl class="detail-list">
-            <div><dt>Nome</dt><dd>{{ object.researcher_name }}</dd></div>
-            <div><dt>E-mail</dt><dd>{{ object.contact_email }}</dd></div>
-            <div><dt>Telefone</dt><dd>{{ object.contact_phone|default:"—" }}</dd></div>
-            <div><dt>Tem WhatsApp</dt><dd>{{ object.has_whatsapp|yesno:"Sim,Não" }}</dd></div>
-            <div><dt>CPF</dt><dd>{{ object.tax_id|default:"—" }}</dd></div>
-            <div><dt>Instituição / Unidade</dt><dd>{{ object.institution_name|default:"—" }}</dd></div>
-            <div><dt>Curso</dt><dd>{{ object.course_name|default:"—" }}</dd></div>
-            <div><dt>Orientador(a)</dt><dd>{{ object.mentor_name|default:"—" }}</dd></div>
-            <div><dt>Conta de usuário</dt><dd>{{ object.owner|default:"—" }}</dd></div>
-            {% if object.legacy_contact_email %}
-                <div><dt>E-mail legado</dt><dd>{{ object.legacy_contact_email }}</dd></div>
+            <div><dt>Status do ciclo</dt><dd>{{ object.get_lifecycle_status_display }}</dd></div>
+            <div><dt>Estado de pagamento</dt><dd>{{ object.get_payment_state_display|default:"—" }}</dd></div>
+            <div><dt>Auditoria de dados</dt><dd>{{ object.get_dataset_audit_state_display|default:"Não exigida" }}</dd></div>
+            <div><dt>Origem</dt><dd>{{ object.get_origin_display }}</dd></div>
+            <div><dt>Período letivo</dt><dd>{{ object.term }}</dd></div>
+            <div><dt>Data da inscrição</dt><dd>{{ object.created_at|date:"d/m/Y H:i" }}</dd></div>
+            <div><dt>Atualizada em</dt><dd>{{ object.updated_at|date:"d/m/Y H:i" }}</dd></div>
+            <div><dt>Crédito por modalidade</dt><dd class="tabular-nums">R$ {{ object.modality_credit_amount|floatformat:2 }}</dd></div>
+            {% if object.transfer_pending %}
+                <div><dt>Transferência pendente</dt><dd>Sim</dd></div>
+                <div><dt>Motivo da transferência</dt><dd>{{ object.transfer_reason|default:"—" }}</dd></div>
             {% endif %}
-            {% if object.legacy_contact_tax_id %}
-                <div><dt>CPF legado</dt><dd>{{ object.legacy_contact_tax_id }}</dd></div>
+            {% if object.data_use_authorization_accepted is not None %}
+                <div><dt>Autorização de uso de dados</dt><dd>{{ object.data_use_authorization_accepted|yesno:"Aceita,Não aceita" }}</dd></div>
+            {% endif %}
+            {% if object.mentor_declaration_accepted is not None %}
+                <div><dt>Declaração do orientador</dt><dd>{{ object.mentor_declaration_accepted|yesno:"Aceita,Não aceita" }}</dd></div>
             {% endif %}
         </dl>
     </div>
@@ -111,144 +119,114 @@
 
 {% if object.project_title or object.context_summary or object.general_objectives or object.variables_and_measurements or object.contextual_factors or object.sampling_and_limitations or object.data_management_plan or object.expected_results or object.expected_support %}
 <div class="card">
-    <div class="card-header"><h2 class="card-title">Projeto</h2></div>
+    <div class="card-header"><h2 class="card-title">Descrição do projeto</h2></div>
     <div class="card-body">
         <dl class="detail-list">
-            <div><dt>Título do projeto</dt><dd>{{ object.project_title|default:"—" }}</dd></div>
-            <div><dt>Contexto</dt><dd>{{ object.context_summary|default:"—"|linebreaksbr }}</dd></div>
-            <div><dt>Objetivos gerais</dt><dd>{{ object.general_objectives|default:"—"|linebreaksbr }}</dd></div>
-            <div><dt>Variáveis e medições</dt><dd>{{ object.variables_and_measurements|default:"—"|linebreaksbr }}</dd></div>
-            <div><dt>Fatores contextuais</dt><dd>{{ object.contextual_factors|default:"—"|linebreaksbr }}</dd></div>
-            <div><dt>Amostragem e limitações</dt><dd>{{ object.sampling_and_limitations|default:"—"|linebreaksbr }}</dd></div>
-            <div><dt>Plano de gestão de dados</dt><dd>{{ object.data_management_plan|default:"—"|linebreaksbr }}</dd></div>
-            <div><dt>Resultados esperados</dt><dd>{{ object.expected_results|default:"—"|linebreaksbr }}</dd></div>
-            <div><dt>Apoio esperado do CEA</dt><dd>{{ object.expected_support|default:"—"|linebreaksbr }}</dd></div>
-            <div><dt>Dados já coletados</dt><dd>{{ object.get_data_already_collected_display|default:"—" }}</dd></div>
+            <div><dt>1. Título do projeto, mesmo sendo provisório:</dt><dd>{{ object.project_title|default:"—"|linebreaksbr }}</dd></div>
+            <div><dt>2. Aspectos gerais da área de concentração, com ênfase naqueles que motivaram o projeto:</dt><dd>{{ object.context_summary|default:"—"|linebreaksbr }}</dd></div>
+            <div><dt>3. Objetivos gerais:</dt><dd>{{ object.general_objectives|default:"—"|linebreaksbr }}</dd></div>
+            <div><dt>4. Que características (ou variáveis) foram ou serão observadas para atingir os objetivos? Como foram ou serão efetuadas as medidas dessas características (ou variáveis)? Quais as unidades de medida?</dt><dd>{{ object.variables_and_measurements|default:"—"|linebreaksbr }}</dd></div>
+            <div><dt>5. Que outras características (ou variáveis) poderiam influenciar essas medidas? Existe possibilidade destas serem controladas?</dt><dd>{{ object.contextual_factors|default:"—"|linebreaksbr }}</dd></div>
+            <div><dt>6. Como foi (ou será) conduzida a investigação para que os objetivos do item 3 sejam atingidos? Quais as restrições que foram ou serão naturalmente impostas à coleta de dados? Quantas unidades amostrais* foram ou serão analisadas? Indique as limitações de tempo e custo.</dt><dd>{{ object.sampling_and_limitations|default:"—"|linebreaksbr }}</dd></div>
+            <div><dt>7. Como os dados estão ou serão armazenados? Existe a possibilidade de apresentá-los em mídia eletrônica (CD, DVD, etc)?</dt><dd>{{ object.data_management_plan|default:"—"|linebreaksbr }}</dd></div>
+            <div><dt>8. Supondo que os dados já tivessem sido analisados de forma apropriada, indique o tipo de conclusões que seriam satisfatórias, tendo em vista seu comentário no item 3. Simule resultados possíveis e comente-os.</dt><dd>{{ object.expected_results|default:"—"|linebreaksbr }}</dd></div>
+            <div><dt>9. Que tipo de ajuda você espera do CEA?</dt><dd>{{ object.expected_support|default:"—"|linebreaksbr }}</dd></div>
+            <div>
+                <dt>10. Caso seja pertinente, anexe a esta ficha de inscrição algum plano de pesquisa, relatório, resumo ou trabalho publicado que se relacione com este projeto.</dt>
+                <dd>
+                    {% if object.attachments.all %}
+                        {% for attachment in object.attachments.all %}
+                            <div>
+                                <a href="{% url 'documents:application_attachment_download' attachment.pk %}">{{ attachment.file_asset.original_filename }}</a>
+                                {% if attachment.description %} — {{ attachment.description }}{% endif %}
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        Não foram feitos anexos.
+                    {% endif %}
+                </dd>
+            </div>
         </dl>
     </div>
 </div>
 {% endif %}
 
-<div class="card">
-    <div class="card-header"><h2 class="card-title">Catálogo selecionado</h2></div>
-    <div class="card-body">
-        {% if object.catalog_selections.all %}
-            <dl class="detail-list">
-                {% for sel in object.catalog_selections.all %}
-                    <div>
-                        <dt>{{ sel.option.get_category_display }}</dt>
-                        <dd>{{ sel.option.label }}{% if sel.other_text %} — {{ sel.other_text }}{% endif %}</dd>
-                    </div>
-                {% endfor %}
-            </dl>
-        {% else %}
-            <p class="muted">Nenhuma seleção de catálogo.</p>
-        {% endif %}
-        {% if object.data_use_authorization_accepted is not None %}
-            <div class="detail-list" style="margin-top: 1rem;">
-                <div><dt>Autorização de uso de dados</dt><dd>{{ object.data_use_authorization_accepted|yesno:"Aceita,Não aceita" }}</dd></div>
-            </div>
-        {% endif %}
-        {% if object.mentor_declaration_accepted is not None %}
-            <div class="detail-list" style="margin-top: 1rem;">
-                <div><dt>Declaração do orientador</dt><dd>{{ object.mentor_declaration_accepted|yesno:"Aceita,Não aceita" }}</dd></div>
-            </div>
-        {% endif %}
-    </div>
-</div>
-
-{% if object.wants_refund_receipt %}
+{% if can_view_financial %}
 <div class="card">
     <div class="card-header"><h2 class="card-title">Recibo para reembolso</h2></div>
     <div class="card-body">
         <dl class="detail-list">
-            <div><dt>Deseja recibo</dt><dd>Sim</dd></div>
-            <div><dt>Observações do recibo</dt><dd>{{ object.refund_receipt_details|default:"—"|linebreaksbr }}</dd></div>
-            <div><dt>Titular da conta</dt><dd>{{ object.refund_account_holder_name|default:"—" }}</dd></div>
-            <div><dt>CPF/CNPJ do titular</dt><dd>{{ object.refund_account_holder_tax_id|default:"—" }}</dd></div>
-            <div><dt>Banco</dt><dd>{{ object.refund_bank_name|default:"—" }}</dd></div>
-            <div><dt>Agência</dt><dd>{{ object.refund_branch_number|default:"—" }}</dd></div>
-            <div><dt>Conta</dt><dd>{{ object.refund_bank_account_number|default:"—" }}</dd></div>
-            <div><dt>Tipo de conta</dt><dd>{{ object.get_refund_bank_account_type_display|default:"—" }}</dd></div>
+            <div><dt>Deseja recibo para reembolso</dt><dd>{{ object.wants_refund_receipt|yesno:"Sim,Não" }}</dd></div>
+            <div><dt>Dados que devem constar no recibo:</dt><dd>{{ object.refund_receipt_details|default:"—"|linebreaksbr }}</dd></div>
+            <div><dt>Nome completo:</dt><dd>{{ object.refund_account_holder_name|default:"—" }}</dd></div>
+            <div><dt>CPF/CNPJ:</dt><dd>{{ object.refund_account_holder_tax_id|default:"—" }}</dd></div>
+            <div><dt>Nome do Banco:</dt><dd>{{ object.refund_bank_name|default:"—" }}</dd></div>
+            <div><dt>Número da Agência:</dt><dd>{{ object.refund_branch_number|default:"—" }}</dd></div>
+            <div><dt>Número da Conta:</dt><dd>{{ object.refund_bank_account_number|default:"—" }}</dd></div>
+            <div><dt>Tipo da Conta:</dt><dd>{{ object.get_refund_bank_account_type_display|default:"—" }}</dd></div>
         </dl>
     </div>
 </div>
 {% endif %}
 
+{% if can_view_financial %}
 <div class="card">
     <div class="card-header"><h2 class="card-title">Financeiro</h2></div>
     <div class="card-body">
-        {% for fee in object.fee_requirements.all %}
-            <h3>{{ fee.get_fee_type_display }}</h3>
-            <dl class="detail-list">
-                <div><dt>Valor</dt><dd class="tabular-nums">R$ {{ fee.amount|floatformat:2 }}</dd></div>
-                <div><dt>Valor base</dt><dd class="tabular-nums">R$ {{ fee.base_amount|floatformat:2 }}</dd></div>
-                <div><dt>Ajuste</dt><dd class="tabular-nums">R$ {{ fee.adjustment_amount|floatformat:2 }}</dd></div>
-                <div><dt>Motivo</dt><dd>{{ fee.reason|default:"—" }}</dd></div>
-                <div><dt>Motivo do ajuste</dt><dd>{{ fee.adjustment_reason|default:"—" }}</dd></div>
-                <div><dt>Situação</dt><dd>
-                    {% if fee.is_waived %}
-                        <span class="badge badge-warning">Dispensada{% if fee.waiver_reason %} — {{ fee.waiver_reason }}{% endif %}</span>
-                    {% elif fee.is_paid %}
-                        <span class="badge badge-success">Pago</span>
-                    {% else %}
-                        <span class="badge badge-neutral">Pendente</span>
-                    {% endif %}
-                </dd></div>
-                <div><dt>Valor pago</dt><dd class="tabular-nums">R$ {{ fee.paid_amount|floatformat:2 }}</dd></div>
-            </dl>
-            {% if fee.payment_instruments.all %}
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Método</th>
-                                <th>Valor</th>
-                                <th>Estado</th>
-                                <th>Criado</th>
-                                <th>Pago em</th>
-                                <th>Expira em</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for instrument in fee.payment_instruments.all %}
-                                <tr>
-                                    <td class="tabular-nums">{{ instrument.pk }}</td>
-                                    <td>{{ instrument.get_method_display }}</td>
-                                    <td class="tabular-nums">R$ {{ instrument.amount|floatformat:2 }}</td>
-                                    <td><span class="badge badge-neutral">{{ instrument.get_state_display }}</span></td>
-                                    <td>{{ instrument.created_at|date:"d/m/Y H:i" }}</td>
-                                    <td>{{ instrument.paid_at|date:"d/m/Y H:i"|default:"—" }}</td>
-                                    <td>{{ instrument.expires_at|date:"d/m/Y H:i"|default:"—" }}</td>
-                                    <td class="actions">
-                                        {% if instrument.method == 'pix' %}
-                                            <a href="{% url 'pix:detail' object.protocol %}" class="btn btn-sm btn-primary">Ver Pix</a>
-                                        {% elif instrument.method == 'bank_slip' %}
-                                            <a href="{% url 'bank_slips:detail' object.protocol %}" class="btn btn-sm btn-primary">Ver boleto</a>
-                                        {% endif %}
-                                        {% if instrument.state == 'paid' or instrument.state == 'manual_confirmed' %}
-                                            <a href="{% url 'documents:payment_receipt_pdf' instrument.pk %}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-ghost">Recibo</a>
-                                        {% endif %}
-                                        {% if is_secretariat or is_admin %}
-                                            <a href="{% url 'payments:manual_confirmation' instrument.pk %}" class="btn btn-sm btn-ghost">Confirmar manualmente</a>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                            {% empty %}
-                                <tr><td colspan="8">Nenhum instrumento gerado.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <p class="muted">Nenhum instrumento de pagamento gerado para esta taxa.</p>
+        {% for row in financial_rows %}
+            <h3>{{ row.fee.get_fee_type_display }}</h3>
+            {% if row.fee.is_waived %}
+                <p><span class="badge badge-warning">Dispensada{% if row.fee.waiver_reason %} — {{ row.fee.waiver_reason }}{% endif %}</span></p>
             {% endif %}
+            {% for item in row.instruments %}
+                {% if item.slip %}
+                    <div class="card" style="margin-bottom: 0.75rem;">
+                        <div class="card-header"><strong>{{ row.fee.get_fee_type_display }} (ID: {{ item.instrument.pk }})</strong></div>
+                        <div class="card-body">
+                            <dl class="detail-list">
+                                <div><dt>Status Bancário:</dt><dd>{{ item.slip.get_bank_status_display }}</dd></div>
+                                <div><dt>Valor do Documento:</dt><dd class="tabular-nums">R$ {{ item.slip.document_amount|default:item.instrument.amount|floatformat:2 }}</dd></div>
+                                <div><dt>Data do Vencimento:</dt><dd>{{ item.slip.due_date|date:"d/m/Y"|default:"—" }}</dd></div>
+                                <div><dt>Valor Pago:</dt><dd class="tabular-nums">R$ {{ item.slip.paid_amount|default:"0.00"|floatformat:2 }}</dd></div>
+                                <div><dt>Data do Pagamento:</dt><dd>{{ item.slip.payment_date|date:"d/m/Y"|default:"Não foi pago" }}</dd></div>
+                            </dl>
+                            <div class="form-actions">
+                                <a href="{% url 'bank_slips:download_pdf' item.slip.pk %}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-primary">Baixar Boleto</a>
+                                {% if item.can_confirm %}
+                                    <a href="{% url 'payments:manual_confirmation' item.instrument.pk %}" class="btn btn-sm btn-success"
+                                       onclick="return confirm('Confirmar pagamento manual por depósito?')">Confirmar Pagamento (Depósito)</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="card" style="margin-bottom: 0.75rem;">
+                        <div class="card-body">
+                            <dl class="detail-list">
+                                <div><dt>Método:</dt><dd>{{ item.instrument.get_method_display }}</dd></div>
+                                <div><dt>Valor:</dt><dd class="tabular-nums">R$ {{ item.instrument.amount|floatformat:2 }}</dd></div>
+                                <div><dt>Estado:</dt><dd><span class="badge badge-neutral">{{ item.instrument.get_state_display }}</span></dd></div>
+                                <div><dt>Pago em:</dt><dd>{{ item.instrument.paid_at|date:"d/m/Y H:i"|default:"—" }}</dd></div>
+                            </dl>
+                            <div class="form-actions">
+                                {% if item.instrument.method == 'pix' %}
+                                    <a href="{% url 'pix:detail' object.protocol %}" class="btn btn-sm btn-primary">Ver Pix</a>
+                                {% endif %}
+                                {% if item.instrument.state == 'paid' or item.instrument.state == 'manual_confirmed' %}
+                                    <a href="{% url 'documents:payment_receipt_pdf' item.instrument.pk %}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-ghost">Recibo</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% empty %}
+                <p class="muted">Não Emitido.</p>
+            {% endfor %}
             <hr class="form-section-divider">
         {% empty %}
             <p class="muted">Nenhuma taxa associada a esta inscrição.</p>
         {% endfor %}
+
         {% if object.refund_requests.all %}
             <h3>Reembolsos</h3>
             <div class="table-responsive">
@@ -280,6 +258,7 @@
         {% endif %}
     </div>
 </div>
+{% endif %}
 
 {% if object.audit_submissions.all %}
 <div class="card">
@@ -334,69 +313,50 @@
 </div>
 {% endif %}
 
-{% if object.project_screening %}
 <div class="card">
-    <div class="card-header"><h2 class="card-title">Triagem (Projeto)</h2></div>
+    <div class="card-header"><h2 class="card-title">Agendamentos</h2></div>
     <div class="card-body">
-        {% with screening=object.project_screening %}
-            <dl class="detail-list">
-                <div><dt>Data</dt><dd>{{ screening.scheduled_date }} às {{ screening.scheduled_time }}</dd></div>
-                <div><dt>Modalidade</dt><dd>{{ screening.get_meeting_mode_display }}</dd></div>
-                <div><dt>Local / Link</dt><dd>{% if screening.meeting_mode == "online" %}{{ screening.virtual_link|default:"—" }}{% else %}{{ screening.place|default:"—" }}{% endif %}</dd></div>
-                <div><dt>Estado</dt><dd><span class="badge badge-neutral">{{ screening.get_state_display }}</span></dd></div>
-                <div><dt>Decisão</dt><dd>{{ screening.get_decision_display|default:"—" }}</dd></div>
-                <div><dt>Nota da decisão</dt><dd>{{ screening.decision_note|default:"—"|linebreaksbr }}</dd></div>
-                <div><dt>Feedback do docente</dt><dd>{{ screening.get_teacher_feedback_display|default:"—" }}</dd></div>
-            </dl>
-            {% if is_secretariat or is_admin %}
-                <div class="form-actions" style="margin-top:1rem;">
-                    <a href="{% url 'meetings:screening_decision' screening.pk %}" class="btn btn-primary btn-sm">Registrar decisão</a>
-                </div>
-            {% endif %}
-        {% endwith %}
+        {% if object.project_screening %}
+            {% with screening=object.project_screening %}
+                <h3>Triagem:</h3>
+                <dl class="detail-list">
+                    <div><dt>Data</dt><dd>{{ screening.scheduled_date|date:"d/m/Y" }} | Hora: {{ screening.scheduled_time|time:"H:i" }} | Modo: {{ screening.get_meeting_mode_display }}</dd></div>
+                    <div><dt>Local / Link</dt><dd>{% if screening.meeting_mode == "online" %}{{ screening.virtual_link|default:"—" }}{% else %}{{ screening.place|default:"—" }}{% endif %}</dd></div>
+                    <div><dt>Estado</dt><dd><span class="badge badge-neutral">{{ screening.get_state_display }}</span></dd></div>
+                    <div><dt>Decisão</dt><dd>{{ screening.get_decision_display|default:"—" }}</dd></div>
+                    <div><dt>Observações</dt><dd>{{ screening.decision_note|default:"—"|linebreaksbr }}</dd></div>
+                    <div><dt>Feedback do Professor</dt><dd>{{ screening.get_teacher_feedback_display|default:"—" }}</dd></div>
+                </dl>
+                {% if is_secretariat or is_admin %}
+                    <div class="form-actions" style="margin-top:1rem;">
+                        <a href="{% url 'meetings:screening_decision' screening.pk %}" class="btn btn-primary btn-sm">Registrar decisão</a>
+                    </div>
+                {% endif %}
+            {% endwith %}
+        {% endif %}
+        {% if object.consultation_meeting %}
+            {% with meeting=object.consultation_meeting %}
+                <h3>Reunião de Consulta:</h3>
+                <dl class="detail-list">
+                    <div><dt>Data</dt><dd>{{ meeting.scheduled_date|date:"d/m/Y" }} | Hora: {{ meeting.scheduled_time|time:"H:i" }} | Modo: {{ meeting.get_meeting_mode_display }}</dd></div>
+                    <div><dt>Local / Link</dt><dd>{% if meeting.meeting_mode == "online" %}{{ meeting.virtual_link|default:"—" }}{% else %}{{ meeting.place|default:"—" }}{% endif %}</dd></div>
+                    <div><dt>Estado</dt><dd><span class="badge badge-neutral">{{ meeting.get_state_display }}</span></dd></div>
+                    <div><dt>Decisão</dt><dd>{{ meeting.get_decision_display|default:"—" }}</dd></div>
+                    <div><dt>Observações</dt><dd>{{ meeting.decision_note|default:"—"|linebreaksbr }}</dd></div>
+                    <div><dt>Feedback do Professor</dt><dd>{{ meeting.get_teacher_feedback_display|default:"—" }}</dd></div>
+                </dl>
+                {% if is_secretariat or is_admin %}
+                    <div class="form-actions" style="margin-top:1rem;">
+                        <a href="{% url 'meetings:consultation_decision' meeting.pk %}" class="btn btn-primary btn-sm">Registrar decisão</a>
+                    </div>
+                {% endif %}
+            {% endwith %}
+        {% endif %}
+        {% if not object.project_screening and not object.consultation_meeting %}
+            <p class="muted">Sem agendamentos registrados.</p>
+        {% endif %}
     </div>
 </div>
-{% endif %}
-
-{% if object.consultation_meeting %}
-<div class="card">
-    <div class="card-header"><h2 class="card-title">Reunião de consulta</h2></div>
-    <div class="card-body">
-        {% with meeting=object.consultation_meeting %}
-            <dl class="detail-list">
-                <div><dt>Data</dt><dd>{{ meeting.scheduled_date }} às {{ meeting.scheduled_time }}</dd></div>
-                <div><dt>Modalidade</dt><dd>{{ meeting.get_meeting_mode_display }}</dd></div>
-                <div><dt>Local / Link</dt><dd>{% if meeting.meeting_mode == "online" %}{{ meeting.virtual_link|default:"—" }}{% else %}{{ meeting.place|default:"—" }}{% endif %}</dd></div>
-                <div><dt>Estado</dt><dd><span class="badge badge-neutral">{{ meeting.get_state_display }}</span></dd></div>
-                <div><dt>Decisão</dt><dd>{{ meeting.get_decision_display|default:"—" }}</dd></div>
-                <div><dt>Nota da decisão</dt><dd>{{ meeting.decision_note|default:"—"|linebreaksbr }}</dd></div>
-                <div><dt>Feedback do docente</dt><dd>{{ meeting.get_teacher_feedback_display|default:"—" }}</dd></div>
-            </dl>
-            {% if is_secretariat or is_admin %}
-                <div class="form-actions" style="margin-top:1rem;">
-                    <a href="{% url 'meetings:consultation_decision' meeting.pk %}" class="btn btn-primary btn-sm">Registrar decisão</a>
-                </div>
-            {% endif %}
-        {% endwith %}
-    </div>
-</div>
-{% endif %}
-
-{% if object.attachments.all %}
-<div class="card">
-    <div class="card-header"><h2 class="card-title">Anexos</h2></div>
-    <div class="card-body">
-        <div class="attachment-list">
-            {% for attachment in object.attachments.all %}
-                <div class="attachment-item">
-                    <span class="attachment-name">{{ attachment.file_asset.original_filename }}{% if attachment.description %} — {{ attachment.description }}{% endif %}</span>
-                    <span class="muted">{{ attachment.file_asset.content_type|default:"" }} · {{ attachment.file_asset.size_bytes|filesizeformat|default:"—" }}</span>
-                </div>
-            {% endfor %}
-        </div>
-    </div>
-</div>
-{% endif %}
 
 {% if object.events.all %}
 <div class="card">
@@ -430,7 +390,7 @@
 </div>
 {% endif %}
 
-{% if user.is_authenticated and user.role == "secretariat" or user.role == "administrator" or user.is_superuser %}
+{% if is_secretariat or is_admin %}
 <div class="card">
     <div class="card-header"><h2 class="card-title">Ações da secretaria</h2></div>
     <div class="card-body">

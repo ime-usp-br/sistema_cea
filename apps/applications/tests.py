@@ -319,7 +319,13 @@ class ApplicationAdminViewsTests(TestCase):
         in_term2 = self._create(self.term2)
         self.client.force_login(self.secretariat)
 
-        all_response = self.client.get(reverse("applications:list"))
+        # Sem parâmetro, o default é o semestre atual (segundo de 2026).
+        default_response = self.client.get(reverse("applications:list"))
+        self.assertEqual(default_response.status_code, 200)
+        self.assertContains(default_response, in_term2.protocol)
+        self.assertNotContains(default_response, in_term1.protocol)
+
+        all_response = self.client.get(reverse("applications:list"), {"term": "all"})
         self.assertEqual(all_response.status_code, 200)
         self.assertContains(all_response, in_term1.protocol)
         self.assertContains(all_response, in_term2.protocol)

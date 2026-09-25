@@ -9,9 +9,9 @@ class FeeRequirement(models.Model):
     """Taxa devida por uma inscrição (base do sistema financeiro)."""
 
     class FeeType(models.TextChoices):
-        APPLICATION_FEE = "application_fee", "Taxa de inscrição"
-        PROJECT_FEE = "project_fee", "Taxa de projeto"
-        SUPPLEMENT_FEE = "supplement_fee", "Taxa complementar"
+        APPLICATION_FEE = "application_fee", "Taxa de Inscrição"
+        PROJECT_FEE = "project_fee", "Taxa de Projeto"
+        SUPPLEMENT_FEE = "supplement_fee", "Complemento de Taxa"
 
     application = models.ForeignKey(
         "applications.ServiceApplication",

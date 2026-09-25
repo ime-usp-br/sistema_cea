@@ -4,7 +4,7 @@
 {% block app_name %}Inscrições CEA{% endblock %}
 
 {% block breadcrumbs %}
-{% url 'meetings:queue' as parent_url %}
+{% url 'meetings:screening_list' as parent_url %}
 {% include "base/_breadcrumbs.html" with current_page="Decisão da triagem" parent_label="Agendamentos" parent_url=parent_url %}
 {% endblock %}
 
@@ -16,7 +16,7 @@
     </div>
     <div class="form-actions">
         <a href="{% url 'documents:screening_summary_pdf' screening.pk %}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost">Resumo (PDF)</a>
-        <a href="{% url 'meetings:queue' %}" class="btn btn-ghost">Voltar</a>
+        <a href="{% url 'meetings:screening_list' %}" class="btn btn-ghost">Voltar</a>
     </div>
 </div>
 

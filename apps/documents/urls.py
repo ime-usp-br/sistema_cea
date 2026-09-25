@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    application_attachment_download,
     application_firstpage_pdf,
     application_full_pdf,
     payment_receipt_pdf,
@@ -19,6 +20,11 @@ urlpatterns = [
         "inscricoes/<str:protocol>/pdf/primeira-pagina/",
         application_firstpage_pdf,
         name="application_firstpage_pdf",
+    ),
+    path(
+        "inscricoes/anexo/<int:attachment_id>/",
+        application_attachment_download,
+        name="application_attachment_download",
     ),
     path(
         "pagamento/instrumento/<int:instrument_id>/pdf/comprovante/",

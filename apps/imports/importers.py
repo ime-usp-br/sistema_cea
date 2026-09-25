@@ -101,7 +101,7 @@ class LegacyImporter:
                     year=value["year"], period=value["period"]
                 )
             return term
-        return AcademicTerm.objects.first()  # type: ignore[return-value]
+        return AcademicTerm.current()  # type: ignore[return-value]
 
     def _import_payments(self, application: ServiceApplication, payments: Any) -> None:
         if not payments:

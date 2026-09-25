@@ -11,25 +11,35 @@
 
 <h1 class="document-title">Inscrição CEA — Protocolo {{ protocol }}</h1>
 
-<div class="line">Protocolo: {{ application.protocol }}</div>
-<div class="line">Nome do pesquisador(a): {{ application.researcher_name }}</div>
-<div class="line">E-mail: {{ application.contact_email }}</div>
-<div class="line">Telefone: {{ application.contact_phone|default:"—" }}</div>
-<div class="line">Instituição/Unidade: {{ application.institution_name|default:"—" }}</div>
-<div class="line">Modalidade: {{ application.get_modality_display }}</div>
-<div class="line">Período letivo: {{ application.term }}</div>
-<div class="line">Status: {{ application.get_lifecycle_status_display }}</div>
-<div class="line">Título do projeto: {{ application.project_title|default:"—" }}</div>
+<div class="field"><span class="lbl">Protocolo:</span> <span class="val">{{ application.protocol }}</span></div>
+<div class="field"><span class="lbl">Data da inscrição:</span> <span class="val">{{ application.created_at|date:"d/m/Y" }}</span></div>
+<div class="field"><span class="lbl">Nome do pesquisador:</span> <span class="val">{{ application.researcher_name }}</span></div>
+<div class="field"><span class="lbl">Telefones para contato{% if application.has_whatsapp %} (Whatsapp){% endif %}:</span> <span class="val">{{ application.contact_phone|default:"—" }}</span></div>
+{% if can_view_financial %}
+<div class="field"><span class="lbl">CPF/CNPJ:</span> <span class="val">{{ application.tax_id|default:"—" }}</span></div>
+{% endif %}
+<div class="field"><span class="lbl">E-mail:</span> <span class="val">{{ application.contact_email }}</span></div>
+<div class="field"><span class="lbl">Instituição/Unidade:</span> <span class="val">{{ application.institution_name|default:"—" }}</span></div>
+<div class="field"><span class="lbl">Curso:</span> <span class="val">{{ application.course_name|default:"—" }}</span></div>
+<div class="field"><span class="lbl">Vínculo com a Instituição:</span> <span class="val">{% for sel in application.catalog_selections.all %}{% if sel.option.category == "institutional_tie" %}{{ sel.option.label }}{% if sel.other_text %} — {{ sel.other_text }}{% endif %}{% if not forloop.last %}, {% endif %}{% endif %}{% empty %}—{% endfor %}</span></div>
+<div class="field"><span class="lbl">Colaborador(es) ou orientador:</span> <span class="val">{{ application.mentor_name|default:"—" }}</span></div>
+<div class="field"><span class="lbl">Finalidade do projeto:</span> <span class="val">{% for sel in application.catalog_selections.all %}{% if sel.option.category == "project_purpose" %}{{ sel.option.label }}{% if sel.other_text %} — {{ sel.other_text }}{% endif %}{% if not forloop.last %}, {% endif %}{% endif %}{% empty %}—{% endfor %}</span></div>
+<div class="field"><span class="lbl">Agência financiadora do projeto:</span> <span class="val">{% for sel in application.catalog_selections.all %}{% if sel.option.category == "funding_agency" %}{{ sel.option.label }}{% if sel.other_text %} — {{ sel.other_text }}{% endif %}{% if not forloop.last %}, {% endif %}{% endif %}{% empty %}—{% endfor %}</span></div>
+<div class="field"><span class="lbl">Área de conhecimento:</span> <span class="val">{% for sel in application.catalog_selections.all %}{% if sel.option.category == "knowledge_area" %}{{ sel.option.label }}{% if sel.other_text %} — {{ sel.other_text }}{% endif %}{% if not forloop.last %}, {% endif %}{% endif %}{% empty %}—{% endfor %}</span></div>
+<div class="field"><span class="lbl">Modalidade:</span> <span class="val">{{ application.get_modality_display }}</span></div>
+<div class="field"><span class="lbl">Período letivo:</span> <span class="val">{{ application.term }}</span></div>
 
-<h2>Contexto</h2>
-<div class="val">{{ application.context_summary|default:"—" }}</div>
-
-<h2>Objetivos gerais</h2>
-<div class="val">{{ application.general_objectives|default:"—" }}</div>
-
+{% if can_view_financial %}
+<h2>Dados Bancários</h2>
+<div class="field"><span class="lbl">Nome completo:</span> <span class="val">{{ application.refund_account_holder_name|default:"—" }}</span></div>
+<div class="field"><span class="lbl">CPF/CNPJ:</span> <span class="val">{{ application.refund_account_holder_tax_id|default:"—" }}</span></div>
+<div class="field"><span class="lbl">Nome do Banco:</span> <span class="val">{{ application.refund_bank_name|default:"—" }}</span></div>
+<div class="field"><span class="lbl">Número da Agência:</span> <span class="val">{{ application.refund_branch_number|default:"—" }}</span></div>
+<div class="field"><span class="lbl">Número da Conta:</span> <span class="val">{{ application.refund_bank_account_number|default:"—" }}</span></div>
+<div class="field"><span class="lbl">Tipo da Conta:</span> <span class="val">{{ application.get_refund_bank_account_type_display|default:"—" }}</span></div>
 {% if application.wants_refund_receipt %}
-<h2>Recibo para Reembolso</h2>
-<div class="val">{{ application.refund_receipt_details|default:"—" }}</div>
+<div class="field"><span class="lbl">Dados que devem constar no recibo:</span> <div class="val">{{ application.refund_receipt_details|default:"—" }}</div></div>
+{% endif %}
 {% endif %}
 </body>
 </html>

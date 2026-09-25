@@ -1,10 +1,10 @@
 {% extends "base/base.html" %}
 
-{% block title %}Todas as inscrições{% endblock %}
+{% block title %}Fichas de Inscrição{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
 {% block breadcrumbs %}
-    {% include "base/_breadcrumbs.html" with current_page="Todas as inscrições" %}
+    {% include "base/_breadcrumbs.html" with current_page="Fichas de Inscrição" %}
 {% endblock %}
 
 {% block content %}
@@ -13,7 +13,7 @@
         <h1 class="page-title">Fichas de Inscrição</h1>
         <p class="page-subtitle">
             {% if selected_term %}
-                {{ selected_term.period|title }} de {{ selected_term.year }}
+                {{ selected_term.get_period_display }} de {{ selected_term.year }}
             {% else %}
                 Visão geral de todas as inscrições
             {% endif %}
@@ -22,7 +22,7 @@
     <div class="form-actions">
         <form method="get" action="{% url 'applications:list' %}" class="toolbar-form">
             <select name="term">
-                <option value="">Todos os semestres</option>
+                <option value="all" {% if selected_term_id == "all" %}selected{% endif %}>Todos os semestres</option>
                 {% for term in terms %}
                     <option value="{{ term.pk }}" {% if selected_term_id == term.pk|stringformat:"s" %}selected{% endif %}>
                         {{ term.year }} - {{ term.get_period_display }}
@@ -63,12 +63,19 @@
                             {{ row.application.get_modality_display }}
                             <form method="post" action="{% url 'applications:modality_change' row.application.protocol %}" class="d-inline">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-outline-dark btn-sm" title="Mudar modalidade">Mudar</button>
+                                <button type="submit" class="btn btn-outline-dark btn-sm" title="Mudar Modalidade">Mudar</button>
                             </form>
                         </td>
                         <td>{{ row.application.researcher_name }}</td>
                         <td>{{ row.application.legacy_contact_email|default:row.application.contact_email }}</td>
-                        <td><span class="badge badge-primary">{{ row.application.get_lifecycle_status_display }}</span></td>
+                        <td>
+                            <span class="badge badge-primary">{{ row.application.get_lifecycle_status_display }}</span>
+                            {% if row.schedule_url_name %}
+                                <a href="{% url row.schedule_url_name row.application.protocol %}"
+                                   class="btn btn-sm btn-primary"
+                                   title="{% if row.schedule_url_name == 'meetings:screening_schedule' %}Agendar Triagem{% else %}Agendar Reunião de Consulta{% endif %}">Agendar</a>
+                            {% endif %}
+                        </td>
                         <td>
                             {% for fee in row.fees_info %}
                                 <div>{{ fee.label }}, {{ fee.status }}</div>
@@ -84,16 +91,25 @@
                             {% if is_teacher or is_secretariat or is_admin %}
                                 <a href="{% url 'documents:application_firstpage_pdf' row.application.protocol %}" class="btn btn-sm btn-ghost" title="PDF Primeira Página">PDF 1ª Página</a>
                             {% endif %}
-                            <form method="post" action="{% url 'applications:transfer_semester' row.application.protocol %}" class="d-inline">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Transferir para próximo semestre"
-                                        onclick="return confirm('Transferir inscrição {{ row.application.protocol }} para o próximo semestre?')">Transferir</button>
-                            </form>
-                            <form method="post" action="{% url 'applications:delete' row.application.protocol %}" class="d-inline">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-danger" title="Excluir inscrição"
-                                        onclick="return confirm('Excluir inscrição {{ row.application.protocol }}?')">Excluir</button>
-                            </form>
+                            {% if is_secretariat or is_admin %}
+                                {% if row.show_generate_slip %}
+                                    <form method="post" action="{% url 'bank_slips:admin_generate' row.application.protocol %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-info" title="Gerar Boleto (Manual)"
+                                                onclick="return confirm('Tentaremos gerar um novo boleto via SOAP e enviar por e-mail. Confirmar?')">Gerar Boleto (Manual)</button>
+                                    </form>
+                                {% endif %}
+                                <form method="post" action="{% url 'applications:transfer_semester' row.application.protocol %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Transferir para próximo semestre"
+                                            onclick="return confirm('Transferir inscrição {{ row.application.protocol }} para o próximo semestre?')">{% if row.application.transfer_pending %}Pendente{% else %}Transferir{% endif %}</button>
+                                </form>
+                                <form method="post" action="{% url 'applications:delete' row.application.protocol %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Excluir inscrição"
+                                            onclick="return confirm('Excluir inscrição {{ row.application.protocol }}?')">Excluir</button>
+                                </form>
+                            {% endif %}
                         </td>
                     </tr>
                 {% endfor %}

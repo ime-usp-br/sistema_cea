@@ -61,8 +61,46 @@ def application_firstpage_pdf(request: HttpRequest, protocol: str) -> HttpRespon
     user = request.user
     if not _can_firstpage_pdf(user):
         return HttpResponse(status=403)
-    content = _service.render_application_firstpage_pdf(application)
+    can_view_financial = bool(
+        user.is_superuser
+        or (
+            hasattr(user, "role")
+            and user.role  # type: ignore[union-attr]
+            in {User.Role.SECRETARIAT, User.Role.ADMINISTRATOR}
+        )
+        or application.owner_id == user.pk
+    )
+    content = _service.render_application_firstpage_pdf(
+        application, can_view_financial=can_view_financial
+    )
     return _pdf_response(content, f"resumo-{protocol}.pdf")
+
+
+@login_required
+def application_attachment_download(request: HttpRequest, attachment_id: int) -> HttpResponse:
+    from django.core.files.storage import default_storage
+    from django.http import Http404
+
+    from applications.models import ApplicationAttachment
+
+    attachment = get_object_or_404(
+        ApplicationAttachment.objects.select_related("file_asset", "application"),
+        pk=attachment_id,
+    )
+    user = request.user
+    application = attachment.application
+    if not _can_access_owner_or_staff(application, user):
+        return HttpResponse(status=403)
+    asset = attachment.file_asset
+    try:
+        content = default_storage.open(asset.storage_key, "rb").read()
+    except FileNotFoundError as exc:
+        raise Http404("Arquivo indisponível.") from exc
+    response = HttpResponse(
+        content, content_type=asset.content_type or "application/octet-stream"
+    )
+    response["Content-Disposition"] = f'attachment; filename="{asset.original_filename}"'
+    return response
 
 
 @login_required

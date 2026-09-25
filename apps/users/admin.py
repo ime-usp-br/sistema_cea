@@ -6,8 +6,9 @@ from .models import IdentityProviderLink, User
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    list_display = ("username", "full_name", "email", "role", "codpes", "is_email_verified", "is_staff")
+    list_display = ("full_name", "codpes", "email", "role")
     list_filter = ("role", "is_staff", "is_superuser", "is_email_verified")
+    search_fields = ("username", "full_name", "email", "codpes")
     radio_fields = {"role": admin.HORIZONTAL}
     fieldsets = tuple(UserAdmin.fieldsets or ()) + (
         (

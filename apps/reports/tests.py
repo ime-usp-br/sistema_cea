@@ -67,11 +67,13 @@ class ReportScenarioTests(TestCase):
         self.create_paid_instrument(app, PaymentInstrument.Method.PIX)
         rows = self.service.build_financial_report_data()
         self.assertTrue(rows)
-        row = next(r for r in rows if r["protocol"] == app.protocol)
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        self.assertEqual(row["protocol"], app.protocol)
         self.assertEqual(row["candidate"], "Maria Pesquisadora")
-        self.assertEqual(row["fee_type"], "Taxa de inscrição")
-        self.assertEqual(row["payment_method"], "pix")
-        self.assertEqual(row["payment_state"], "Pago")
+        fee_cell = row["fees"]["application_fee"]
+        self.assertEqual(fee_cell["method"], "pix")
+        self.assertEqual(fee_cell["status"], "Pago")
 
     def test_TS_REP_002_sincronizacao_pix_estados(self):
         # A sincronização de estados é responsabilidade dos gateways; o relatório
@@ -86,15 +88,15 @@ class ReportScenarioTests(TestCase):
         )
         rows = self.service.build_financial_report_data()
         row = next(r for r in rows if r["protocol"] == app.protocol)
-        self.assertEqual(row["payment_method"], "pix")
+        self.assertEqual(row["fees"]["application_fee"]["method"], "pix")
 
     def test_TS_REP_003_sincronizacao_boleto_estados(self):
         app = self.create_project()
         self.create_paid_instrument(app, PaymentInstrument.Method.BANK_SLIP)
         rows = self.service.build_financial_report_data()
         row = next(r for r in rows if r["protocol"] == app.protocol)
-        self.assertEqual(row["payment_method"], "bank_slip")
-        self.assertEqual(row["payment_state"], "Pago")
+        self.assertEqual(row["fees"]["application_fee"]["method"], "bank_slip")
+        self.assertEqual(row["fees"]["application_fee"]["status"], "Pago")
 
     def test_TS_REP_004_exportacao_csv_bom_e_delimitador(self):
         app = self.create_project()
@@ -105,7 +107,8 @@ class ReportScenarioTests(TestCase):
         self.assertTrue(content.startswith("\ufeff"))
         header_line = content.split("\n", 1)[0].lstrip("\ufeff")
         self.assertIn(";", header_line)
-        self.assertIn("protocol", header_line)
+        self.assertIn("Protocolo", header_line)
+        self.assertIn("Taxa de Inscrição", header_line)
         self.assertIn(app.protocol, content)
 
     def test_TS_REP_005_exportacao_xlsx_colunas_financeiras(self):
@@ -114,7 +117,7 @@ class ReportScenarioTests(TestCase):
         response = self.service.export_financial_xlsx()
         self.assertIn("attachment", response["Content-Disposition"])
         content = response.content.decode("utf-8-sig", errors="replace")
-        self.assertIn("protocol", content)
+        self.assertIn("Protocolo", content)
         self.assertIn(app.protocol, content)
 
     def test_TS_REP_006_relatorio_auditoria_mostra_submissoes_e_decisoes(self):

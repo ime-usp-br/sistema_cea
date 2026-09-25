@@ -21,8 +21,8 @@ class ProjectScreening(models.Model):
         IN_PERSON = _MeetingMode.IN_PERSON, "Presencial"
 
     class Decision(models.TextChoices):
-        APPROVED_AS_PROJECT = "approved_as_project", "Aprovado como projeto"
-        APPROVED_AS_CONSULTATION = "approved_as_consultation", "Aprovado como consulta"
+        APPROVED_AS_PROJECT = "approved_as_project", "Aprovado como Projeto"
+        APPROVED_AS_CONSULTATION = "approved_as_consultation", "Aprovado como Consulta"
         NOT_APPROVED = "not_approved", "Não aprovado"
 
     class TeacherFeedback(models.TextChoices):
@@ -113,8 +113,8 @@ class ConsultationMeeting(models.Model):
         IN_PERSON = _MeetingMode.IN_PERSON, "Presencial"
 
     class Decision(models.TextChoices):
-        APPROVED_AS_PROJECT = "approved_as_project", "Aprovado como projeto"
-        APPROVED_AS_CONSULTATION = "approved_as_consultation", "Aprovado como consulta"
+        APPROVED_AS_PROJECT = "approved_as_project", "Aprovado como Projeto"
+        APPROVED_AS_CONSULTATION = "approved_as_consultation", "Aprovado como Consulta"
         NOT_APPROVED = "not_approved", "Não aprovado"
 
     class TeacherFeedback(models.TextChoices):

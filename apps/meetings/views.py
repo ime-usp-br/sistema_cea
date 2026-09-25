@@ -1,12 +1,16 @@
 from typing import Any, cast
 
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
 
 from applications.models import ServiceApplication
+from payments.models import FeeRequirement
+from payments.services import fee_status_label
+from terms.models import AcademicTerm
+from terms.utils import resolve_term, term_filter_id
+from users.mixins import RoleRequiredMixin
 from users.models import User
 
 from .forms import (
@@ -46,20 +50,6 @@ def _ordered_choices(choices, first_value: str) -> list[tuple[str, str]]:
     items = list(choices)
     items.sort(key=lambda item: item[0] != first_value)
     return items
-
-
-class RoleRequiredMixin(LoginRequiredMixin):
-    """Exige que o usuário autenticado possua um dos papéis listados."""
-
-    allowed_roles: frozenset[str] = frozenset()
-
-    def dispatch(self, request, *args, **kwargs):
-        user = cast(User, request.user)
-        if not user.is_authenticated:
-            return self.handle_no_permission()
-        if user.role not in self.allowed_roles and not user.is_superuser:
-            raise PermissionDenied("Você não tem permissão para acessar esta área.")
-        return super().dispatch(request, *args, **kwargs)
 
 
 class SchedulingQueueView(RoleRequiredMixin, View):
@@ -118,6 +108,124 @@ class SchedulingQueueView(RoleRequiredMixin, View):
         )
 
 
+def _selected_term_id(selected_term, raw_term):
+    if selected_term is not None:
+        return str(selected_term.pk)
+    return "all" if raw_term == "all" else None
+
+
+class ScreeningListView(RoleRequiredMixin, View):
+    """Triagens de Projeto, por semestre (substitui a tela de Agendamentos)."""
+
+    allowed_roles = _STAFF_ROLES
+    template_name = "meetings/screening_list.html"
+
+    def get(self, request):
+        user = cast(User, request.user)
+        raw_term = term_filter_id(request)
+        selected_term = None if raw_term == "all" else resolve_term(request)
+
+        screenings = ProjectScreening.objects.select_related(
+            "application", "application__term"
+        ).order_by("-scheduled_date", "-scheduled_time")
+        if selected_term is not None:
+            screenings = screenings.filter(application__term=selected_term)
+
+        awaiting = (
+            ServiceApplication.objects.select_related("term")
+            .filter(
+                lifecycle_status=ServiceApplication.LifecycleStatus.AWAITING_SCREENING_SCHEDULING
+            )
+            .order_by("-created_at")
+        )
+        if selected_term is not None:
+            awaiting = awaiting.filter(term=selected_term)
+
+        rows = []
+        for screening in screenings:
+            application = screening.application
+            project_fee = next(
+                (
+                    fee
+                    for fee in application.fee_requirements.all()
+                    if fee.fee_type == FeeRequirement.FeeType.PROJECT_FEE
+                ),
+                None,
+            )
+            rows.append(
+                {
+                    "screening": screening,
+                    "application": application,
+                    "project_fee_status": (
+                        fee_status_label(project_fee) if project_fee else "Não Emitido"
+                    ),
+                }
+            )
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "rows": rows,
+                "awaiting": awaiting,
+                "terms": list(AcademicTerm.objects.all()),
+                "selected_term": selected_term,
+                "selected_term_id": _selected_term_id(selected_term, raw_term),
+                "show_all": raw_term == "all",
+                "can_manage": _can(user, _SECRETARIAT_ROLES),
+                "can_register_feedback": _can(user, _FEEDBACK_ROLES),
+            },
+        )
+
+
+class ConsultationListView(RoleRequiredMixin, View):
+    """Reuniões de Consulta, por semestre (sem a coluna Taxa de Projeto)."""
+
+    allowed_roles = _STAFF_ROLES
+    template_name = "meetings/consultation_list.html"
+
+    def get(self, request):
+        user = cast(User, request.user)
+        raw_term = term_filter_id(request)
+        selected_term = None if raw_term == "all" else resolve_term(request)
+
+        meetings = ConsultationMeeting.objects.select_related(
+            "application", "application__term"
+        ).order_by("-scheduled_date", "-scheduled_time")
+        if selected_term is not None:
+            meetings = meetings.filter(application__term=selected_term)
+
+        awaiting = (
+            ServiceApplication.objects.select_related("term")
+            .filter(
+                lifecycle_status=ServiceApplication.LifecycleStatus.AWAITING_CONSULTATION_SCHEDULING
+            )
+            .order_by("-created_at")
+        )
+        if selected_term is not None:
+            awaiting = awaiting.filter(term=selected_term)
+
+        rows = [
+            {"meeting": meeting, "application": meeting.application}
+            for meeting in meetings
+        ]
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "rows": rows,
+                "awaiting": awaiting,
+                "terms": list(AcademicTerm.objects.all()),
+                "selected_term": selected_term,
+                "selected_term_id": _selected_term_id(selected_term, raw_term),
+                "show_all": raw_term == "all",
+                "can_manage": _can(user, _SECRETARIAT_ROLES),
+                "can_register_feedback": _can(user, _FEEDBACK_ROLES),
+            },
+        )
+
+
 class ScreeningScheduleView(RoleRequiredMixin, View):
     """Secretaria agenda, reagenda ou cancela uma triagem."""
 
@@ -150,7 +258,7 @@ class ScreeningScheduleView(RoleRequiredMixin, View):
                 screening=screening,
                 canceled_by=cast(User, request.user),
             )
-            return redirect("meetings:queue")
+            return redirect("meetings:screening_list")
         form = ScreeningForm(request.POST)
         if not form.is_valid():
             return render(
@@ -189,7 +297,7 @@ class ScreeningScheduleView(RoleRequiredMixin, View):
                 self.get_context(application, form),
                 status=400,
             )
-        return redirect("meetings:queue")
+        return redirect("meetings:screening_list")
 
 
 class ConsultationScheduleView(RoleRequiredMixin, View):
@@ -224,7 +332,7 @@ class ConsultationScheduleView(RoleRequiredMixin, View):
                 meeting=meeting,
                 canceled_by=cast(User, request.user),
             )
-            return redirect("meetings:queue")
+            return redirect("meetings:consultation_list")
         form = ConsultationMeetingForm(request.POST)
         if not form.is_valid():
             return render(
@@ -263,7 +371,7 @@ class ConsultationScheduleView(RoleRequiredMixin, View):
                 self.get_context(application, form),
                 status=400,
             )
-        return redirect("meetings:queue")
+        return redirect("meetings:consultation_list")
 
 
 class ScreeningDecisionView(RoleRequiredMixin, View):
@@ -356,7 +464,7 @@ class ScreeningDecisionView(RoleRequiredMixin, View):
             f"Decisão da triagem registrada: "
             f"{ProjectScreening.Decision(form.cleaned_data['decision']).label}.",
         )
-        return redirect("meetings:queue")
+        return redirect("meetings:screening_list")
 
     def _handle_feedback(self, request, screening: ProjectScreening):
         user = cast(User, request.user)
@@ -394,7 +502,7 @@ class ScreeningDecisionView(RoleRequiredMixin, View):
             "Feedback do docente registrado: "
             f"{ProjectScreening.TeacherFeedback(form.cleaned_data['teacher_feedback']).label}.",
         )
-        return redirect("meetings:queue")
+        return redirect("meetings:screening_list")
 
 
 class ConsultationDecisionView(RoleRequiredMixin, View):
@@ -485,7 +593,7 @@ class ConsultationDecisionView(RoleRequiredMixin, View):
             f"Decisão da reunião registrada: "
             f"{ConsultationMeeting.Decision(form.cleaned_data['decision']).label}.",
         )
-        return redirect("meetings:queue")
+        return redirect("meetings:consultation_list")
 
     def _handle_feedback(self, request, meeting: ConsultationMeeting):
         user = cast(User, request.user)
@@ -523,4 +631,4 @@ class ConsultationDecisionView(RoleRequiredMixin, View):
             "Feedback do docente registrado: "
             f"{ConsultationMeeting.TeacherFeedback(form.cleaned_data['teacher_feedback']).label}.",
         )
-        return redirect("meetings:queue")
+        return redirect("meetings:consultation_list")

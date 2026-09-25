@@ -233,7 +233,7 @@ class ApplicationForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.label_suffix = ""
         if not self.is_bound:
-            latest_term = AcademicTerm.objects.first()
+            latest_term = AcademicTerm.current()
             if latest_term:
                 self.fields["term"].initial = latest_term
 

@@ -107,7 +107,8 @@ class DocumentRenderingServiceTests(TestCase):
 
     def test_pdf_fallback_sem_weasyprint_retorna_mock(self) -> None:
         html = "<html><body>OK</body></html>"
-        result = DocumentRenderingService._convert_to_pdf(html)
+        with patch.dict("sys.modules", {"weasyprint": None}):
+            result = DocumentRenderingService._convert_to_pdf(html)
         self.assertTrue(result.startswith(b"%PDF-1.4"))
 
     # TS-NFR-004

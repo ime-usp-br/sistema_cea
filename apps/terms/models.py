@@ -33,3 +33,19 @@ class AcademicTerm(models.Model):
 
     def __str__(self) -> str:
         return f"{self.year} - {self.get_period_display()}"
+
+    @classmethod
+    def current(cls) -> AcademicTerm | None:
+        """Semestre em operação: maior ``year``; dentro do ano, ``second`` > ``first``.
+
+        O ``Meta.ordering`` do modelo é ``["-year", "period"]``, então
+        ``objects.first()`` devolveria o **primeiro** semestre do ano mais
+        recente. Ordenar por ``-period`` corrige isso (``"second" > "first"``
+        lexicograficamente).
+        """
+        return cls.objects.order_by("-year", "-period").first()
+
+    @classmethod
+    def latest(cls) -> AcademicTerm | None:
+        """Sinônimo de :meth:`current`, usado como default do formulário."""
+        return cls.current()

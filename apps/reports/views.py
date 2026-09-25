@@ -1,10 +1,9 @@
-from typing import cast
-
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import PermissionDenied
 from django.shortcuts import render
 from django.views import View
 
+from terms.models import AcademicTerm
+from terms.utils import resolve_term
+from users.mixins import RoleRequiredMixin
 from users.models import User
 
 from .services import ReportService
@@ -12,18 +11,18 @@ from .services import ReportService
 _service = ReportService()
 
 
-class RoleRequiredMixin(LoginRequiredMixin):
-    """Exige que o usuário autenticado possua um dos papéis listados."""
-
-    allowed_roles: frozenset[str] = frozenset()
-
-    def dispatch(self, request, *args, **kwargs):
-        user = cast(User, request.user)
-        if not user.is_authenticated:
-            return self.handle_no_permission()
-        if user.role not in self.allowed_roles and not user.is_superuser:
-            raise PermissionDenied("Você não tem permissão para acessar esta área.")
-        return super().dispatch(request, *args, **kwargs)
+def _term_context(request) -> dict[str, object]:
+    raw_term = request.GET.get("term") or request.GET.get("semester_id")
+    selected_term = None if raw_term == "all" else resolve_term(request)
+    return {
+        "selected_term": selected_term,
+        "terms": list(AcademicTerm.objects.all()),
+        "selected_term_id": (
+            str(selected_term.pk)
+            if selected_term is not None
+            else ("all" if raw_term == "all" else None)
+        ),
+    }
 
 
 class FinancialReportView(RoleRequiredMixin, View):
@@ -31,22 +30,29 @@ class FinancialReportView(RoleRequiredMixin, View):
     template_name = "reports/financial_report.html"
 
     def get(self, request):
-        rows = _service.build_financial_report_data()
-        return render(request, self.template_name, {"rows": rows})
+        term_context = _term_context(request)
+        rows = _service.build_financial_report_data(term=term_context["selected_term"])
+        return render(
+            request,
+            self.template_name,
+            {"rows": rows, **term_context},
+        )
 
 
 class FinancialExportCsvView(RoleRequiredMixin, View):
     allowed_roles = frozenset({User.Role.SECRETARIAT, User.Role.ADMINISTRATOR})
 
     def get(self, request):
-        return _service.export_financial_csv()
+        term_context = _term_context(request)
+        return _service.export_financial_csv(term=term_context["selected_term"])
 
 
 class FinancialExportXlsxView(RoleRequiredMixin, View):
     allowed_roles = frozenset({User.Role.SECRETARIAT, User.Role.ADMINISTRATOR})
 
     def get(self, request):
-        return _service.export_financial_xlsx()
+        term_context = _term_context(request)
+        return _service.export_financial_xlsx(term=term_context["selected_term"])
 
 
 class AuditReportView(RoleRequiredMixin, View):
@@ -54,5 +60,10 @@ class AuditReportView(RoleRequiredMixin, View):
     template_name = "reports/audit_report.html"
 
     def get(self, request):
-        rows = _service.build_audit_report_data()
-        return render(request, self.template_name, {"rows": rows})
+        term_context = _term_context(request)
+        rows = _service.build_audit_report_data(term=term_context["selected_term"])
+        return render(
+            request,
+            self.template_name,
+            {"rows": rows, **term_context},
+        )

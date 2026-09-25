@@ -43,16 +43,20 @@
                         <span class="shortcut-card-title">Auditorias rejeitadas</span>
                         <span class="shortcut-card-desc">Decidir submissões rejeitadas</span>
                     </a>
-                    <a href="{% url 'meetings:queue' %}" class="shortcut-card">
-                        <span class="shortcut-card-title">Agendamentos</span>
-                        <span class="shortcut-card-desc">Triagens e reuniões pendentes</span>
+                    <a href="{% url 'meetings:screening_list' %}" class="shortcut-card">
+                        <span class="shortcut-card-title">Triagens</span>
+                        <span class="shortcut-card-desc">Triagens de projetos por semestre</span>
+                    </a>
+                    <a href="{% url 'meetings:consultation_list' %}" class="shortcut-card">
+                        <span class="shortcut-card-title">Reuniões de Consulta</span>
+                        <span class="shortcut-card-desc">Reuniões de consulta por semestre</span>
                     </a>
                     <a href="{% url 'payments:refund_list' %}" class="shortcut-card">
                         <span class="shortcut-card-title">Reembolsos</span>
                         <span class="shortcut-card-desc">Aprovar e executar reembolsos</span>
                     </a>
                     <a href="{% url 'payments:overdue_list' %}" class="shortcut-card">
-                        <span class="shortcut-card-title">Cobranças</span>
+                        <span class="shortcut-card-title">Cobranças Manuais</span>
                         <span class="shortcut-card-desc">Boletos vencidos e lembretes</span>
                     </a>
                     <a href="{% url 'imports:claim_queue' %}" class="shortcut-card">

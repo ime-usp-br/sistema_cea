@@ -1,22 +1,38 @@
 {% extends "base/base.html" %}
 
-{% block title %}Relatório financeiro{% endblock %}
+{% block title %}Relatório Financeiro{% endblock %}
 {% block app_name %}Inscrições CEA{% endblock %}
 
 {% block breadcrumbs %}
-    {% include "base/_breadcrumbs.html" with current_page="Relatório financeiro" %}
+    {% include "base/_breadcrumbs.html" with current_page="Relatório Financeiro" %}
 {% endblock %}
 
 {% block content %}
 <div class="page-header">
     <div>
-        <h1 class="page-title">Relatório financeiro</h1>
-        <p class="page-subtitle">Visão consolidada das receitas de inscrição.</p>
+        <h1 class="page-title">Relatório Financeiro</h1>
+        <p class="page-subtitle">
+            {% if selected_term %}
+                {{ selected_term.get_period_display }} de {{ selected_term.year }}
+            {% else %}
+                Todos os semestres
+            {% endif %}
+        </p>
     </div>
     <div class="form-actions">
-        <a href="{% url 'reports:financial_csv' %}" class="btn btn-secondary btn-sm">Exportar CSV</a>
-        <a href="{% url 'reports:financial_xlsx' %}" class="btn btn-secondary btn-sm">Exportar XLSX</a>
-        <a href="{% url 'applications:dashboard' %}" class="btn btn-ghost">Voltar ao painel</a>
+        <form method="get" action="{% url 'reports:financial_report' %}" class="toolbar-form">
+            <select name="term">
+                <option value="all" {% if selected_term_id == "all" %}selected{% endif %}>Todos os semestres</option>
+                {% for term in terms %}
+                    <option value="{{ term.pk }}" {% if selected_term_id == term.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ term.year }} - {{ term.get_period_display }}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-secondary">Buscar</button>
+        </form>
+        <a href="{% url 'reports:financial_csv' %}?term={{ selected_term_id|default:'' }}" class="btn btn-outline-success btn-sm">Exportar CSV</a>
+        <a href="{% url 'reports:financial_xlsx' %}?term={{ selected_term_id|default:'' }}" class="btn btn-outline-success btn-sm">Exportar Excel</a>
     </div>
 </div>
 
@@ -27,43 +43,58 @@
                 <tr>
                     <th>Protocolo</th>
                     <th>Modalidade</th>
-                    <th>Candidato</th>
+                    <th>Pesquisador</th>
+                    <th>CPF</th>
                     <th>E-mail</th>
-                    <th>Taxa</th>
-                    <th>Método</th>
-                    <th>Valor base</th>
-                    <th>Ajuste</th>
-                    <th>Valor final</th>
-                    <th>Estado</th>
-                    <th>Pagamento</th>
-                    <th>Manual</th>
-                    <th>Substituída</th>
-                    <th>Crédito</th>
-                    <th>Reembolso</th>
+                    <th>Dados Bancários</th>
+                    <th>Recibo Reembolso</th>
+                    <th>Dados Reembolso</th>
+                    <th>Taxa de Inscrição</th>
+                    <th>Taxa de Projeto</th>
+                    <th>Complemento</th>
                 </tr>
             </thead>
             <tbody>
                 {% for row in rows %}
                     <tr>
                         <td>
-                            <a href="{% url 'applications:detail' row.protocol %}">
-                                {{ row.protocol }}
-                            </a>
+                            <a href="{% url 'applications:detail' row.protocol %}">{{ row.protocol }}</a>
                         </td>
                         <td>{{ row.modality }}</td>
                         <td>{{ row.candidate }}</td>
+                        <td>{{ row.tax_id|default:"—" }}</td>
                         <td>{{ row.email }}</td>
-                        <td>{{ row.fee_type }}</td>
-                        <td>{{ row.payment_method }}</td>
-                        <td class="tabular-nums">{{ row.base_amount|floatformat:2 }}</td>
-                        <td class="tabular-nums">{{ row.adjustment_amount|floatformat:2 }}</td>
-                        <td class="tabular-nums">{{ row.amount|floatformat:2 }}</td>
-                        <td><span class="badge badge-neutral">{{ row.payment_state }}</span></td>
-                        <td>{{ row.paid_at|default:"—"|date:"d/m/Y H:i" }}</td>
-                        <td>{{ row.manual|yesno:"Sim,Não" }}</td>
-                        <td>{{ row.superseded|yesno:"Sim,Não" }}</td>
-                        <td>{{ row.modality_credit }}</td>
-                        <td>{{ row.refund_status }}{% if row.refund_amount %}<br>R$ {{ row.refund_amount|floatformat:2 }}{% endif %}</td>
+                        <td>
+                            {% if row.bank_data.name %}
+                                <div><strong>Nome:</strong> {{ row.bank_data.name }}</div>
+                                <div><strong>CPF/CNPJ:</strong> {{ row.bank_data.tax_id }}</div>
+                                <div><strong>Banco:</strong> {{ row.bank_data.bank }}</div>
+                                <div><strong>Agência:</strong> {{ row.bank_data.agency }}</div>
+                                <div><strong>Conta:</strong> {{ row.bank_data.account }}</div>
+                                <div><strong>Tipo:</strong> {{ row.bank_data.type }}</div>
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td>{{ row.wants_refund_receipt|yesno:"Sim,Não" }}</td>
+                        <td>
+                            {{ row.refund_receipt_details|default:"—" }}
+                            {% if row.refund_status %}
+                                <div><span class="badge badge-neutral">{{ row.refund_status }}</span> R$ {{ row.refund_amount|floatformat:2 }}</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="tabular-nums">R$ {{ row.fees.application_fee.amount|floatformat:2 }}</div>
+                            <div><span class="badge badge-neutral">{{ row.fees.application_fee.status }}</span></div>
+                        </td>
+                        <td>
+                            <div class="tabular-nums">R$ {{ row.fees.project_fee.amount|floatformat:2 }}</div>
+                            <div><span class="badge badge-neutral">{{ row.fees.project_fee.status }}</span></div>
+                        </td>
+                        <td>
+                            <div class="tabular-nums">R$ {{ row.fees.supplement_fee.amount|floatformat:2 }}</div>
+                            <div><span class="badge badge-neutral">{{ row.fees.supplement_fee.status }}</span></div>
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -71,7 +102,7 @@
     </div>
 {% else %}
     <div class="empty-state">
-        <p>Não há dados financeiros para exibir.</p>
+        <p>Não há inscrições no semestre atual.</p>
     </div>
 {% endif %}
 {% endblock %}

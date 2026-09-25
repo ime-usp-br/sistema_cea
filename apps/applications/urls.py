@@ -1,12 +1,15 @@
 from django.urls import path
 
 from .views import (
+    ApplicationDeletedListView,
     ApplicationDeleteView,
     ApplicationDetailView,
     ApplicationListView,
     ApplicationModalityChangeView,
+    ApplicationRestoreView,
     CandidateDashboardView,
     CreateApplicationView,
+    EventListView,
     TransferSemesterView,
 )
 
@@ -16,6 +19,13 @@ urlpatterns = [
     path("painel/", CandidateDashboardView.as_view(), name="dashboard"),
     path("inscricoes/nova/", CreateApplicationView.as_view(), name="create"),
     path("inscricoes/", ApplicationListView.as_view(), name="list"),
+    path("inscricoes/excluidas/", ApplicationDeletedListView.as_view(), name="deleted_list"),
+    path(
+        "inscricoes/<str:protocol>/restaurar/",
+        ApplicationRestoreView.as_view(),
+        name="restore",
+    ),
+    path("inscricoes/historico/", EventListView.as_view(), name="event_list"),
     path(
         "inscricoes/<str:protocol>/modalidade/",
         ApplicationModalityChangeView.as_view(),

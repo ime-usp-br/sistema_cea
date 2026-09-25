@@ -25,6 +25,32 @@ class PaymentDomainError(ValueError):
     """Erro de domínio para o módulo financeiro."""
 
 
+def fee_status_label(fee: FeeRequirement) -> str:
+    """Rótulo de situação da taxa no vocabulário do legado.
+
+    Reutilizado na lista de inscrições, nas filas de triagem/reunião e no
+    relatório financeiro: "Pago", "Emitido", "Cancelado", "Não Emitido",
+    "Dispensada".
+    """
+    instruments = list(fee.payment_instruments.all())
+    if fee.is_waived:
+        return "Dispensada"
+    if any(
+        item.state
+        in (PaymentInstrument.State.PAID, PaymentInstrument.State.MANUAL_CONFIRMED)
+        for item in instruments
+    ):
+        return "Pago"
+    if any(
+        item.state in (PaymentInstrument.State.ACTIVE, PaymentInstrument.State.CREATED)
+        for item in instruments
+    ):
+        return "Emitido"
+    if instruments:
+        return "Cancelado"
+    return "Não Emitido"
+
+
 def record_application_event(
     *,
     application: ServiceApplication,
@@ -702,12 +728,12 @@ class OverdueBillingService:
     ``ApplicationController@sendOverdueReminders`` do sistema legado.
     """
 
-    def get_overdue_slips(self):
-        """Lista boletos vencidos ainda não pagos."""
+    def get_overdue_slips(self, term: Any = None):
+        """Lista boletos vencidos ainda não pagos (com filtro opcional por semestre)."""
         from bank_slips.models import BankSlipPaymentInstrument
 
         today = timezone.localdate()
-        return (
+        queryset = (
             BankSlipPaymentInstrument.objects.select_related(
                 "payment_instrument__fee_requirement__application"
             )
@@ -721,14 +747,65 @@ class OverdueBillingService:
             )
             .order_by("due_date")
         )
+        if term is not None:
+            queryset = queryset.filter(
+                payment_instrument__fee_requirement__application__term=term
+            )
+        return queryset
 
-    def send_overdue_reminders(self, actor: Any = None) -> int:
-        """Dispara e-mails de cobrança para todos os boletos vencidos."""
+    def build_overdue_rows(self, term: Any = None) -> list[dict[str, Any]]:
+        """Agrupadas por inscrição (paridade com o ``overdue_index`` legado).
+
+        Cada linha representa uma inscrição com boletos vencidos; ``slips`` traz
+        os boletos individuais e ``charge_history`` os eventos de cobrança já
+        enviados (``payment.overdue_reminder_sent``).
+        """
+        from applications.models import ApplicationEvent
+
+        slips = list(self.get_overdue_slips(term=term))
+        grouped: dict[int, dict[str, Any]] = {}
+        for slip in slips:
+            application = slip.payment_instrument.fee_requirement.application
+            row = grouped.setdefault(
+                application.pk,
+                {
+                    "application": application,
+                    "slips": [],
+                    "total_due": Decimal("0.00"),
+                },
+            )
+            row["slips"].append(slip)
+            row["total_due"] += slip.document_amount or slip.payment_instrument.amount
+        charge_events = (
+            ApplicationEvent.objects.filter(
+                event_code="payment.overdue_reminder_sent",
+                application_id__in=list(grouped.keys()),
+            )
+            .order_by("occurred_at")
+            .values_list("application_id", "occurred_at")
+        )
+        for application_id, occurred_at in charge_events:
+            target_row = grouped.get(application_id)
+            if target_row is not None:
+                target_row.setdefault("charge_history", []).append(occurred_at)
+        for row in grouped.values():
+            row.setdefault("charge_history", [])
+        return list(grouped.values())
+
+    def send_overdue_reminders(self, actor: Any = None, slip_ids: list[int] | None = None) -> int:
+        """Dispara e-mails de cobrança; sem ``slip_ids`` usa todos os vencidos."""
+        from bank_slips.models import BankSlipPaymentInstrument
         from notifications.services import NotificationService
 
         notification_service = NotificationService()
+        if slip_ids:
+            slips = BankSlipPaymentInstrument.objects.filter(
+                pk__in=slip_ids
+            ).select_related("payment_instrument__fee_requirement__application")
+        else:
+            slips = self.get_overdue_slips()
         sent = 0
-        for slip in self.get_overdue_slips():
+        for slip in slips:
             application = slip.payment_instrument.fee_requirement.application
             notification_service.notify_overdue_reminder(application)
             record_application_event(

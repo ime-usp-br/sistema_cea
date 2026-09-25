@@ -2,15 +2,21 @@ from django.urls import path
 
 from .views import (
     ConsultationDecisionView,
+    ConsultationListView,
     ConsultationScheduleView,
     SchedulingQueueView,
     ScreeningDecisionView,
+    ScreeningListView,
     ScreeningScheduleView,
 )
 
 app_name = "meetings"
 
 urlpatterns = [
+    # Telas separadas por semestre (paridade com o legado).
+    path("triagens/", ScreeningListView.as_view(), name="screening_list"),
+    path("reunioes/", ConsultationListView.as_view(), name="consultation_list"),
+    # Alias temporário da antiga tela única de Agendamentos.
     path("agendamentos/", SchedulingQueueView.as_view(), name="queue"),
     path(
         "agendamentos/triagem/<str:protocol>/",

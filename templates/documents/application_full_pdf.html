@@ -13,51 +13,55 @@
 
 <h2>Identificação</h2>
 <div class="field"><span class="lbl">Protocolo:</span> <span class="val">{{ application.protocol }}</span></div>
-<div class="field"><span class="lbl">Nome do pesquisador(a):</span> <span class="val">{{ application.researcher_name }}</span></div>
-<div class="field"><span class="lbl">E-mail de contato:</span> <span class="val">{{ application.contact_email }}</span></div>
-<div class="field"><span class="lbl">Telefone:</span> <span class="val">{{ application.contact_phone|default:"—" }}</span></div>
-<div class="field"><span class="lbl">CPF:</span> <span class="val">{{ application.tax_id|default:"—" }}</span></div>
+<div class="field"><span class="lbl">Data da inscrição:</span> <span class="val">{{ application.created_at|date:"d/m/Y" }}</span></div>
+<div class="field"><span class="lbl">Nome do pesquisador:</span> <span class="val">{{ application.researcher_name }}</span></div>
+<div class="field"><span class="lbl">Telefones para contato{% if application.has_whatsapp %} (Whatsapp){% endif %}:</span> <span class="val">{{ application.contact_phone|default:"—" }}</span></div>
+<div class="field"><span class="lbl">E-mail:</span> <span class="val">{{ application.contact_email }}</span></div>
 <div class="field"><span class="lbl">Instituição/Unidade:</span> <span class="val">{{ application.institution_name|default:"—" }}</span></div>
 <div class="field"><span class="lbl">Curso:</span> <span class="val">{{ application.course_name|default:"—" }}</span></div>
-<div class="field"><span class="lbl">Orientador(a):</span> <span class="val">{{ application.mentor_name|default:"—" }}</span></div>
+<div class="field"><span class="lbl">Vínculo com a Instituição:</span> <span class="val">{% for sel in application.catalog_selections.all %}{% if sel.option.category == "institutional_tie" %}{{ sel.option.label }}{% if sel.other_text %} — {{ sel.other_text }}{% endif %}{% if not forloop.last %}, {% endif %}{% endif %}{% empty %}—{% endfor %}</span></div>
+<div class="field"><span class="lbl">Colaborador(es) ou orientador:</span> <span class="val">{{ application.mentor_name|default:"—" }}</span></div>
+<div class="field"><span class="lbl">Finalidade do projeto:</span> <span class="val">{% for sel in application.catalog_selections.all %}{% if sel.option.category == "project_purpose" %}{{ sel.option.label }}{% if sel.other_text %} — {{ sel.other_text }}{% endif %}{% if not forloop.last %}, {% endif %}{% endif %}{% empty %}—{% endfor %}</span></div>
+<div class="field"><span class="lbl">Agência financiadora do projeto:</span> <span class="val">{% for sel in application.catalog_selections.all %}{% if sel.option.category == "funding_agency" %}{{ sel.option.label }}{% if sel.other_text %} — {{ sel.other_text }}{% endif %}{% if not forloop.last %}, {% endif %}{% endif %}{% empty %}—{% endfor %}</span></div>
+<div class="field"><span class="lbl">Área de conhecimento:</span> <span class="val">{% for sel in application.catalog_selections.all %}{% if sel.option.category == "knowledge_area" %}{{ sel.option.label }}{% if sel.other_text %} — {{ sel.other_text }}{% endif %}{% if not forloop.last %}, {% endif %}{% endif %}{% empty %}—{% endfor %}</span></div>
 
-<h2>Dados da Inscrição</h2>
-<div class="field"><span class="lbl">Modalidade:</span> <span class="val">{{ application.get_modality_display }}</span></div>
-<div class="field"><span class="lbl">Período letivo:</span> <span class="val">{{ application.term }}</span></div>
-<div class="field"><span class="lbl">Status do ciclo:</span> <span class="val">{{ application.get_lifecycle_status_display }}</span></div>
-<div class="field"><span class="lbl">Título do projeto:</span> <span class="val">{{ application.project_title|default:"—" }}</span></div>
-
-<h2>Resumo do Projeto</h2>
-<div class="field"><span class="lbl">Contexto:</span> <div class="val">{{ application.context_summary|default:"—" }}</div></div>
-<div class="field"><span class="lbl">Objetivos gerais:</span> <div class="val">{{ application.general_objectives|default:"—" }}</div></div>
-<div class="field"><span class="lbl">Variáveis e medições:</span> <div class="val">{{ application.variables_and_measurements|default:"—" }}</div></div>
-<div class="field"><span class="lbl">Fatores contextuais:</span> <div class="val">{{ application.contextual_factors|default:"—" }}</div></div>
-<div class="field"><span class="lbl">Amostragem e limitações:</span> <div class="val">{{ application.sampling_and_limitations|default:"—" }}</div></div>
-<div class="field"><span class="lbl">Plano de gestão de dados:</span> <div class="val">{{ application.data_management_plan|default:"—" }}</div></div>
-<div class="field"><span class="lbl">Resultados esperados:</span> <div class="val">{{ application.expected_results|default:"—" }}</div></div>
-<div class="field"><span class="lbl">Apoio esperado do CEA:</span> <div class="val">{{ application.expected_support|default:"—" }}</div></div>
-
-<h2>Catálogo selecionado</h2>
-{% if application.catalog_selections.all %}
-<div class="field">
-{% for sel in application.catalog_selections.all %}
-    <div><span class="lbl">{{ sel.option.get_category_display }}:</span> <span class="val">{{ sel.option.label }}{% if sel.other_text %} — {{ sel.other_text }}{% endif %}</span></div>
-{% endfor %}
+<div class="cea-block">
+    <div class="cea-block-title">A SER PREENCHIDO PELO CEA</div>
+    <div class="field"><span class="lbl">Data da 1ª reunião:</span> <span class="val">____/____/________</span></div>
+    <div class="field"><span class="lbl">Decisão:</span> <span class="val">________________________________________</span></div>
 </div>
-{% else %}
-<div class="val">Nenhuma seleção.</div>
-{% endif %}
+
+<h2>Descrição do Projeto</h2>
+<div class="field"><span class="lbl">1. Título do projeto, mesmo sendo provisório:</span> <div class="val">{{ application.project_title|default:"—" }}</div></div>
+<div class="field"><span class="lbl">2. Aspectos gerais da área de concentração, com ênfase naqueles que motivaram o projeto:</span> <div class="val">{{ application.context_summary|default:"—" }}</div></div>
+<div class="field"><span class="lbl">3. Objetivos gerais:</span> <div class="val">{{ application.general_objectives|default:"—" }}</div></div>
+<div class="field"><span class="lbl">4. Que características (ou variáveis) foram ou serão observadas para atingir os objetivos? Como foram ou serão efetuadas as medidas dessas características (ou variáveis)? Quais as unidades de medida?</span> <div class="val">{{ application.variables_and_measurements|default:"—" }}</div></div>
+<div class="field"><span class="lbl">5. Que outras características (ou variáveis) poderiam influenciar essas medidas? Existe possibilidade destas serem controladas?</span> <div class="val">{{ application.contextual_factors|default:"—" }}</div></div>
+<div class="field"><span class="lbl">6. Como foi (ou será) conduzida a investigação para que os objetivos do item 3 sejam atingidos? Quais as restrições que foram ou serão naturalmente impostas à coleta de dados? Quantas unidades amostrais* foram ou serão analisadas? Indique as limitações de tempo e custo.</span> <div class="val">{{ application.sampling_and_limitations|default:"—" }}</div></div>
+<div class="field"><span class="lbl">7. Como os dados estão ou serão armazenados? Existe a possibilidade de apresentá-los em mídia eletrônica (CD, DVD, etc)?</span> <div class="val">{{ application.data_management_plan|default:"—" }}</div></div>
+<div class="field"><span class="lbl">8. Supondo que os dados já tivessem sido analisados de forma apropriada, indique o tipo de conclusões que seriam satisfatórias, tendo em vista seu comentário no item 3. Simule resultados possíveis e comente-os.</span> <div class="val">{{ application.expected_results|default:"—" }}</div></div>
+<div class="field"><span class="lbl">9. Que tipo de ajuda você espera do CEA?</span> <div class="val">{{ application.expected_support|default:"—" }}</div></div>
+<div class="field">
+    <span class="lbl">10. Caso seja pertinente, anexe a esta ficha de inscrição algum plano de pesquisa, relatório, resumo ou trabalho publicado que se relacione com este projeto.</span>
+    <div class="val">
+        {% for attachment in application.attachments.all %}
+            <div><a href="{% url 'documents:application_attachment_download' attachment.pk %}">{{ attachment.file_asset.original_filename }}</a></div>
+        {% empty %}
+            Não foram feitos anexos.
+        {% endfor %}
+    </div>
+</div>
 
 {% if application.wants_refund_receipt %}
 <h2>Recibo para Reembolso</h2>
-<div class="field"><span class="lbl">Observações do recibo:</span> <div class="val">{{ application.refund_receipt_details|default:"—" }}</div></div>
+<div class="field"><span class="lbl">Dados que devem constar no recibo:</span> <div class="val">{{ application.refund_receipt_details|default:"—" }}</div></div>
 <h2>Dados Bancários</h2>
-<div class="field"><span class="lbl">Titular:</span> <span class="val">{{ application.refund_account_holder_name|default:"—" }}</span></div>
-<div class="field"><span class="lbl">CPF/CNPJ do titular:</span> <span class="val">{{ application.refund_account_holder_tax_id|default:"—" }}</span></div>
-<div class="field"><span class="lbl">Banco:</span> <span class="val">{{ application.refund_bank_name|default:"—" }}</span></div>
-<div class="field"><span class="lbl">Agência:</span> <span class="val">{{ application.refund_branch_number|default:"—" }}</span></div>
-<div class="field"><span class="lbl">Conta:</span> <span class="val">{{ application.refund_bank_account_number|default:"—" }}</span></div>
-<div class="field"><span class="lbl">Tipo de conta:</span> <span class="val">{{ application.get_refund_bank_account_type_display|default:"—" }}</span></div>
+<div class="field"><span class="lbl">Nome completo:</span> <span class="val">{{ application.refund_account_holder_name|default:"—" }}</span></div>
+<div class="field"><span class="lbl">CPF/CNPJ:</span> <span class="val">{{ application.refund_account_holder_tax_id|default:"—" }}</span></div>
+<div class="field"><span class="lbl">Nome do Banco:</span> <span class="val">{{ application.refund_bank_name|default:"—" }}</span></div>
+<div class="field"><span class="lbl">Número da Agência:</span> <span class="val">{{ application.refund_branch_number|default:"—" }}</span></div>
+<div class="field"><span class="lbl">Número da Conta:</span> <span class="val">{{ application.refund_bank_account_number|default:"—" }}</span></div>
+<div class="field"><span class="lbl">Tipo da Conta:</span> <span class="val">{{ application.get_refund_bank_account_type_display|default:"—" }}</span></div>
 {% endif %}
 </body>
 </html>

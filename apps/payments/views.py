@@ -1,13 +1,15 @@
 from typing import cast
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
 
 from applications.models import ServiceApplication
 from bank_slips.services import BankSlipPaymentService
 from pix.services import PixPaymentService
+from terms.models import AcademicTerm
+from terms.utils import resolve_term
+from users.mixins import RoleRequiredMixin
 from users.models import User
 
 from .forms import ManualPaymentConfirmationForm, PaymentMethodForm, RefundRequestForm
@@ -25,20 +27,6 @@ _manual_service = ManualPaymentService()
 _refund_service = RefundRequestService()
 _overdue_service = OverdueBillingService()
 _pending_service = PendingPaymentService()
-
-
-class RoleRequiredMixin(LoginRequiredMixin):
-    """Exige que o usuário autenticado possua um dos papéis listados."""
-
-    allowed_roles: frozenset[str] = frozenset()
-
-    def dispatch(self, request, *args, **kwargs):
-        user = cast(User, request.user)
-        if not user.is_authenticated:
-            return self.handle_no_permission()
-        if user.role not in self.allowed_roles and not user.is_superuser:
-            raise PermissionDenied("Você não tem permissão para acessar esta área.")
-        return super().dispatch(request, *args, **kwargs)
 
 
 class FeePaymentView(LoginRequiredMixin, View):
@@ -235,21 +223,39 @@ class RefundActionView(RoleRequiredMixin, View):
 
 
 class OverdueBillingListView(RoleRequiredMixin, View):
-    """Painel de inadimplência: boletos vencidos e cobrança em massa.
+    """Painel de inadimplência: boletos vencidos agrupados por inscrição.
 
-    Porta do ``ApplicationController@overdueIndex`` do sistema legado.
+    Porta do ``ApplicationController@overdueIndex`` do sistema legado, incluindo
+    filtro por semestre (default = atual), seleção em massa e histórico de
+    cobrança por linha.
     """
 
     allowed_roles = frozenset({User.Role.SECRETARIAT, User.Role.ADMINISTRATOR})
     template_name = "payments/overdue_list.html"
 
     def get(self, request):
-        slips = _overdue_service.get_overdue_slips()
-        return render(request, self.template_name, {"slips": slips})
+        terms = list(AcademicTerm.objects.all())
+        raw_term = request.GET.get("term") or request.GET.get("semester_id")
+        selected_term = None if raw_term == "all" else resolve_term(request)
+        rows = _overdue_service.build_overdue_rows(term=selected_term)
+        return render(
+            request,
+            self.template_name,
+            {
+                "rows": rows,
+                "terms": terms,
+                "selected_term": selected_term,
+                "selected_term_id": (
+                    str(selected_term.pk)
+                    if selected_term is not None
+                    else ("all" if raw_term == "all" else None)
+                ),
+            },
+        )
 
 
 class OverdueReminderView(RoleRequiredMixin, View):
-    """Secretaria dispara e-mails de cobrança para os boletos vencidos.
+    """Secretaria dispara e-mails de cobrança para os boletos vencidos selecionados.
 
     Porta do ``ApplicationController@sendOverdueReminders`` do sistema legado.
     """
@@ -258,7 +264,9 @@ class OverdueReminderView(RoleRequiredMixin, View):
 
     def post(self, request):
         user = cast(User, request.user)
-        _overdue_service.send_overdue_reminders(actor=user)
+        raw_ids = request.POST.getlist("slip_ids")
+        slip_ids = [int(pk) for pk in raw_ids if pk.isdigit()]
+        _overdue_service.send_overdue_reminders(actor=user, slip_ids=slip_ids or None)
         return redirect("payments:overdue_list")
 
 

@@ -898,7 +898,7 @@ class MeetingViewTests(TestCase):
                 "virtual_link": "https://meet.example.com/sala",
             },
         )
-        self.assertRedirects(response, reverse("meetings:queue"))
+        self.assertRedirects(response, reverse("meetings:screening_list"))
         proj.refresh_from_db()
         self.assertEqual(
             proj.lifecycle_status,
@@ -929,7 +929,7 @@ class MeetingViewTests(TestCase):
             reverse("meetings:screening_schedule", args=[proj.protocol]),
             {"action": "cancel"},
         )
-        self.assertRedirects(response, reverse("meetings:queue"))
+        self.assertRedirects(response, reverse("meetings:screening_list"))
         screening.refresh_from_db()
         self.assertEqual(screening.state, ProjectScreening.State.CANCELED)
 
@@ -946,7 +946,7 @@ class MeetingViewTests(TestCase):
                 "virtual_link": "https://meet.example.com/sala",
             },
         )
-        self.assertRedirects(response, reverse("meetings:queue"))
+        self.assertRedirects(response, reverse("meetings:consultation_list"))
         cons.refresh_from_db()
         self.assertEqual(
             cons.lifecycle_status,
@@ -969,7 +969,7 @@ class MeetingViewTests(TestCase):
             reverse("meetings:consultation_schedule", args=[cons.protocol]),
             {"action": "cancel"},
         )
-        self.assertRedirects(response, reverse("meetings:queue"))
+        self.assertRedirects(response, reverse("meetings:consultation_list"))
         meeting.refresh_from_db()
         self.assertEqual(meeting.state, ConsultationMeeting.State.CANCELED)
 
@@ -987,7 +987,7 @@ class MeetingViewTests(TestCase):
             reverse("meetings:screening_decision", args=[screening.pk]),
             {"decision": "approved_as_project", "decision_note": "Aprovado"},
         )
-        self.assertRedirects(response, reverse("meetings:queue"))
+        self.assertRedirects(response, reverse("meetings:screening_list"))
         proj.refresh_from_db()
         # Fluxo sequencial: aprovado como projeto cria a Taxa de Projeto e aguarda o pagamento.
         self.assertEqual(
@@ -1010,7 +1010,7 @@ class MeetingViewTests(TestCase):
             reverse("meetings:screening_decision", args=[screening.pk]),
             {"decision": "not_approved", "decision_note": "Recusado"},
         )
-        self.assertRedirects(response, reverse("meetings:queue"))
+        self.assertRedirects(response, reverse("meetings:screening_list"))
         proj.refresh_from_db()
         self.assertEqual(
             proj.lifecycle_status, ServiceApplication.LifecycleStatus.NOT_APPROVED
@@ -1085,7 +1085,7 @@ class MeetingViewTests(TestCase):
             reverse("meetings:screening_decision", args=[screening.pk]),
             {"submit_feedback": "1", "teacher_feedback": "screening_completed"},
         )
-        self.assertRedirects(response, reverse("meetings:queue"))
+        self.assertRedirects(response, reverse("meetings:screening_list"))
         screening.refresh_from_db()
         self.assertEqual(
             screening.teacher_feedback,
@@ -1102,7 +1102,7 @@ class MeetingViewTests(TestCase):
             reverse("meetings:screening_decision", args=[screening.pk]),
             {"submit_feedback": "", "teacher_feedback": "screening_completed"},
         )
-        self.assertRedirects(response, reverse("meetings:queue"))
+        self.assertRedirects(response, reverse("meetings:screening_list"))
         screening.refresh_from_db()
         self.assertEqual(
             screening.teacher_feedback,
@@ -1119,7 +1119,7 @@ class MeetingViewTests(TestCase):
             reverse("meetings:screening_decision", args=[screening.pk]),
             {"form_action": "feedback", "teacher_feedback": "screening_completed"},
         )
-        self.assertRedirects(response, reverse("meetings:queue"))
+        self.assertRedirects(response, reverse("meetings:screening_list"))
         screening.refresh_from_db()
         self.assertEqual(
             screening.teacher_feedback,
@@ -1141,7 +1141,7 @@ class MeetingViewTests(TestCase):
             reverse("meetings:consultation_decision", args=[meeting.pk]),
             {"form_action": "feedback", "teacher_feedback": "consultation_completed"},
         )
-        self.assertRedirects(response, reverse("meetings:queue"))
+        self.assertRedirects(response, reverse("meetings:consultation_list"))
         meeting.refresh_from_db()
         self.assertEqual(
             meeting.teacher_feedback,
@@ -1169,7 +1169,7 @@ class MeetingViewTests(TestCase):
             reverse("meetings:consultation_decision", args=[meeting.pk]),
             {"decision": "approved_as_consultation", "decision_note": "Aprovado"},
         )
-        self.assertRedirects(response, reverse("meetings:queue"))
+        self.assertRedirects(response, reverse("meetings:consultation_list"))
         cons.refresh_from_db()
         self.assertEqual(
             cons.lifecycle_status,
