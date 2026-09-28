@@ -110,6 +110,9 @@ class ProjectScreeningService:
                 description=f"Triagem agendada para {scheduled_date} às {scheduled_time}.",
                 metadata={"screening_id": screening.pk, "mode": meeting_mode},
             )
+        from notifications.services import NotificationService
+
+        NotificationService().notify_screening_scheduled(application, screening)
         return screening
 
     def reschedule_screening(
@@ -161,6 +164,9 @@ class ProjectScreeningService:
                 description=f"Triagem reagendada para {scheduled_date} às {scheduled_time}.",
                 metadata={"screening_id": screening.pk},
             )
+        from notifications.services import NotificationService
+
+        NotificationService().notify_screening_scheduled(application, screening)
         return screening
 
     def cancel_screening(
@@ -235,6 +241,9 @@ class ProjectScreeningService:
                     "decision": decision_enum.value,
                 },
             )
+        from notifications.services import NotificationService
+
+        NotificationService().notify_screening_decided(application, screening)
         return screening
 
     def record_feedback(
@@ -389,6 +398,9 @@ class ConsultationMeetingService:
                 description=f"Reunião agendada para {scheduled_date} às {scheduled_time}.",
                 metadata={"meeting_id": meeting.pk, "mode": meeting_mode},
             )
+        from notifications.services import NotificationService
+
+        NotificationService().notify_consultation_scheduled(application, meeting)
         return meeting
 
     def reschedule_consultation(
@@ -438,6 +450,9 @@ class ConsultationMeetingService:
                 description=f"Reunião reagendada para {scheduled_date} às {scheduled_time}.",
                 metadata={"meeting_id": meeting.pk},
             )
+        from notifications.services import NotificationService
+
+        NotificationService().notify_consultation_scheduled(application, meeting)
         return meeting
 
     def cancel_consultation(
@@ -509,6 +524,9 @@ class ConsultationMeetingService:
                 description=f"Decisão da reunião: {decision_enum.value}.",
                 metadata={"meeting_id": meeting.pk, "decision": decision_enum.value},
             )
+        from notifications.services import NotificationService
+
+        NotificationService().notify_consultation_decided(application, meeting)
         return meeting
 
     def record_feedback(

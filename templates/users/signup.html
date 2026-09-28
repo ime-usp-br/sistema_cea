@@ -1,0 +1,31 @@
+{% extends "base/base.html" %}
+
+{% block title %}Criar conta | Inscrições CEA{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 640px; margin: 0 auto;">
+    <div class="card-body">
+        <h1 class="page-title">Criar conta de candidato</h1>
+        <p class="muted mb-3">
+            Informe seus dados. Enviaremos um link de confirmação para o e-mail informado;
+            o acesso só é liberado após a confirmação.
+        </p>
+        <form method="post" novalidate class="form">
+            {% csrf_token %}
+            {{ form.as_p }}
+            {% if form.non_field_errors %}
+                <div class="alert alert-error">
+                    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                </div>
+            {% endif %}
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-block" data-loading-text="Criando…">Criar conta</button>
+            </div>
+        </form>
+        <p class="mt-2 text-center muted" style="font-size: 0.875rem;">
+            Já tem conta? <a href="{% url 'login' %}">Entrar</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

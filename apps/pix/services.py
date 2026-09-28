@@ -265,6 +265,9 @@ class PixPaymentService:
                     "paid_at": now.isoformat(),
                 },
             )
+        from notifications.services import NotificationService
+
+        NotificationService().notify_payment_confirmed(application, instrument)
 
     def _mark_requires_review(
         self,

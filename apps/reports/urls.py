@@ -4,6 +4,7 @@ from .views import (
     AuditReportView,
     FinancialExportCsvView,
     FinancialExportXlsxView,
+    FinancialReportSyncView,
     FinancialReportView,
 )
 
@@ -14,6 +15,11 @@ urlpatterns = [
         "gestao/relatorios/financeiro/",
         FinancialReportView.as_view(),
         name="financial_report",
+    ),
+    path(
+        "gestao/relatorios/financeiro/<str:protocol>/sincronizar/",
+        FinancialReportSyncView.as_view(),
+        name="financial_sync",
     ),
     path(
         "gestao/relatorios/financeiro/csv/",

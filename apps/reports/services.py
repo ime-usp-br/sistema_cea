@@ -256,6 +256,47 @@ class ReportService:
 
     # ---- Auditoria ----
 
+    # ---- Sincronização de pagamentos por linha (D7 opcional) ----
+
+    def sync_application_payments(self, application: ServiceApplication) -> dict[str, int]:
+        """Consulta gateways e atualiza os instrumentos E/V da inscrição.
+
+        Porta do ``FinancialReportController@sync`` do legado: dispara a
+        verificação SOAP do boleto (status ``E``/``V``) e a consulta do Pix
+        ativo, sem depender de webhook.
+        """
+        from bank_slips.models import BankSlipPaymentInstrument
+        from bank_slips.services import BankSlipPaymentService
+        from pix.services import PixPaymentService
+
+        paid_states = {
+            PaymentInstrument.State.PAID,
+            PaymentInstrument.State.MANUAL_CONFIRMED,
+        }
+        synced = {"bank_slips": 0, "pix": 0}
+        for fee in application.fee_requirements.all():
+            for instrument in fee.payment_instruments.all():
+                if instrument.state in paid_states:
+                    continue
+                if instrument.method == PaymentInstrument.Method.BANK_SLIP:
+                    slip = BankSlipPaymentInstrument.objects.filter(
+                        payment_instrument=instrument
+                    ).first()
+                    if slip is not None and slip.bank_status in {
+                        BankSlipPaymentInstrument.BankStatus.EMITTED,
+                        BankSlipPaymentInstrument.BankStatus.VERIFY,
+                    }:
+                        BankSlipPaymentService().sync_bank_slip_status(slip)
+                        synced["bank_slips"] += 1
+                elif instrument.method == PaymentInstrument.Method.PIX:
+                    pix = getattr(instrument, "pix_instrument", None)
+                    if pix is not None:
+                        PixPaymentService().check_pix_status(pix)
+                        synced["pix"] += 1
+        return synced
+
+    # ---- Auditoria ----
+
     def build_audit_report_data(self, term: Any = None) -> list[dict[str, Any]]:
         """Reúne submissões, revisões e decisões de auditoria (TS-REP-006)."""
         applications = (

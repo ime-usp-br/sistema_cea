@@ -130,28 +130,84 @@ def advance_lifecycle_after_application_fee(application: ServiceApplication) -> 
     """Avança o fluxo da inscrição após o pagamento de uma taxa (TS-PAY-008).
 
     Sequência do Projeto (após pagar):
-      - pagar a taxa de inscrição  -> awaiting_dataset_submission (auditoria);
-      - pagar a taxa de projeto    -> approved_as_project.
-    Consulta: ao pagar a taxa de inscrição -> awaiting_consultation_scheduling.
+      - pagar a taxa de inscrição (sem taxa de projeto) -> awaiting_dataset_submission
+        (auditoria);
+      - pagar a taxa de projeto (já criada)            -> approved_as_project.
+    Enquanto houver taxa de projeto pendente, a inscrição permanece em
+    ``awaiting_payment`` (D3: o candidato paga a taxa de projeto pela UI).
+
+    Consulta: quando não há mais taxas pendentes (ex.: complemento de R$ 60)
+    -> awaiting_consultation_scheduling.
     """
     if application.lifecycle_status != ServiceApplication.LifecycleStatus.AWAITING_PAYMENT:
         return
     if application.modality == ServiceApplication.Modality.PROJECT:
-        has_project_fee = application.fee_requirements.filter(
+        project_fee = application.fee_requirements.filter(
             fee_type=FeeRequirement.FeeType.PROJECT_FEE
-        ).exists()
-        if has_project_fee:
+        ).first()
+        if project_fee is not None and project_fee.is_paid:
             application.lifecycle_status = (
                 ServiceApplication.LifecycleStatus.APPROVED_AS_PROJECT
             )
+        elif project_fee is not None:
+            # Taxa de projeto criada e ainda pendente: mantém aguardando pagamento.
+            return
         else:
             application.lifecycle_status = (
                 ServiceApplication.LifecycleStatus.AWAITING_DATASET_SUBMISSION
             )
     else:
+        pending_fees = [
+            fee
+            for fee in application.fee_requirements.all()
+            if not fee.is_waived and not fee.is_paid
+        ]
+        if pending_fees:
+            return
         application.lifecycle_status = (
             ServiceApplication.LifecycleStatus.AWAITING_CONSULTATION_SCHEDULING
         )
+
+
+class FeeSelectionService:
+    """Seleciona a taxa a pagar na área do candidato (D3).
+
+    Ordem canônica do legado: inscrição → projeto → complemento. Sem taxa
+    explícita, devolve a próxima pendente; se todas estiverem pagas, a
+    primeira taxa existente (para exibição de status).
+    """
+
+    FEE_ORDER: tuple[str, ...] = (
+        FeeRequirement.FeeType.APPLICATION_FEE.value,
+        FeeRequirement.FeeType.PROJECT_FEE.value,
+        FeeRequirement.FeeType.SUPPLEMENT_FEE.value,
+    )
+
+    def ordered_fees(self, application: ServiceApplication) -> list[FeeRequirement]:
+        fees = list(application.fee_requirements.all())
+        return sorted(fees, key=self._sort_key)
+
+    def _sort_key(self, fee: FeeRequirement) -> tuple[int, int]:
+        try:
+            rank = self.FEE_ORDER.index(fee.fee_type)
+        except ValueError:  # pragma: no cover - protegido pela enum do model
+            rank = len(self.FEE_ORDER)
+        return (rank, fee.pk or 0)
+
+    def select_fee(
+        self, application: ServiceApplication, fee_id: int | None = None
+    ) -> FeeRequirement | None:
+        fees = self.ordered_fees(application)
+        if not fees:
+            return None
+        if fee_id is not None:
+            for fee in fees:
+                if fee.pk == fee_id:
+                    return fee
+        for fee in fees:
+            if not fee.is_waived and not fee.is_paid:
+                return fee
+        return fees[0]
 
 
 class FeeCalculationService:
@@ -281,6 +337,11 @@ class PaymentOrchestrationService:
                 description=f"Instrumento {method_enum.value} criado.",
                 metadata={"instrument_id": instrument.pk, "method": method_enum.value},
             )
+        from notifications.services import NotificationService
+
+        NotificationService().notify_payment_created(
+            fee_requirement.application, instrument
+        )
         return instrument
 
     def _release_stale_tokens(self, fee_requirement: FeeRequirement) -> None:
@@ -381,6 +442,9 @@ class ManualPaymentService:
                     "confirmed_at": now.isoformat(),
                 },
             )
+        from notifications.services import NotificationService
+
+        NotificationService().notify_payment_confirmed(application, instrument)
         return confirmation
 
 

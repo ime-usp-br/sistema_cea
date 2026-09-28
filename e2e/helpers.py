@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import os
+
 from playwright.sync_api import Page
 
-# A aplicação CEA é exposta em http://cea.local (reverse proxy nginx apontando
-# para o container Django), conforme cadastrado no /etc/hosts.
-BASE_URL = "http://cea.local"
+# URL da aplicação sob teste. Configurável por E2E_BASE_URL; o padrão aponta
+# para o ambiente de desenvolvimento publicado em cea.dev.ime.
+BASE_URL = os.getenv("E2E_BASE_URL", "http://cea.dev.ime").rstrip("/")
 
 
 def select_catalog_option(page: Page, code: str, category: str | None = None) -> None:
@@ -72,3 +74,83 @@ def fill_valid_consultation(page: Page) -> None:
     select_catalog_option(page, "publication")
     select_catalog_option(page, "social_human")
     select_catalog_option(page, "cnpq")
+
+
+# ---------------------------------------------------------------------------
+# Helpers de jornada (pagamento, auditoria, agendamento e decisão)
+# ---------------------------------------------------------------------------
+
+
+def pay_fee(page: Page, protocol: str, method: str = "pix") -> None:
+    """Paga a próxima taxa pendente pela UI e confirma via rota de simulação."""
+    page.goto(f"{BASE_URL}/pagamento/inscricao/{protocol}/")
+    page.wait_for_load_state("networkidle")
+    page.select_option('select[name="method"]', method)
+    page.click("button[type='submit']")
+    page.wait_for_load_state("networkidle")
+    simulate_payment(page)
+
+
+def simulate_payment(page: Page) -> None:
+    """Aciona o botão só-DEBUG de confirmação de pagamento da tela atual."""
+    page.click("button:has-text('Simular pagamento (dev)')")
+    page.wait_for_load_state("networkidle")
+
+
+def submit_dataset_external_link(
+    page: Page, protocol: str, url: str = "https://example.com/dados-e2e"
+) -> None:
+    """Candidato envia dados para auditoria por link externo."""
+    page.goto(f"{BASE_URL}/auditoria/inscricao/{protocol}/enviar/")
+    page.wait_for_load_state("networkidle")
+    page.select_option('select[name="channel"]', "external_link")
+    page.fill('input[name="external_url"]', url)
+    page.check('input[name="external_link_declaration"]')
+    page.click("button[type='submit']")
+    page.wait_for_load_state("networkidle")
+
+
+def review_submission(page: Page, outcome: str, note: str = "Revisão E2E") -> None:
+    """Docente revisa a submissão aberta na fila (`outcome` no vocabulário do form)."""
+    page.select_option('select[name="outcome"]', outcome)
+    page.fill('textarea[name="note"]', note)
+    page.click("button[type='submit']")
+    page.wait_for_load_state("networkidle")
+
+
+def schedule_screening(page: Page, protocol: str, date_str: str) -> None:
+    """Secretaria agenda uma triagem online para uma data (YYYY-MM-DD)."""
+    page.goto(f"{BASE_URL}/agendamentos/triagem/{protocol}/")
+    page.wait_for_load_state("networkidle")
+    page.fill('input[name="scheduled_date"]', date_str)
+    page.fill('input[name="scheduled_time"]', "10:00")
+    page.select_option('select[name="meeting_mode"]', "online")
+    page.fill('input[name="virtual_link"]', "https://meet.example.com/e2e")
+    page.click("button[type='submit']")
+    page.wait_for_load_state("networkidle")
+
+
+def schedule_consultation(page: Page, protocol: str, date_str: str) -> None:
+    """Secretaria agenda uma reunião de consulta online para uma data (YYYY-MM-DD)."""
+    page.goto(f"{BASE_URL}/agendamentos/reuniao/{protocol}/")
+    page.wait_for_load_state("networkidle")
+    page.fill('input[name="scheduled_date"]', date_str)
+    page.fill('input[name="scheduled_time"]', "10:00")
+    page.select_option('select[name="meeting_mode"]', "online")
+    page.fill('input[name="virtual_link"]', "https://meet.example.com/e2e")
+    page.click("button[type='submit']")
+    page.wait_for_load_state("networkidle")
+
+
+def register_feedback(page: Page, feedback: str) -> None:
+    """Docente registra o feedback na tela de decisão aberta."""
+    page.select_option('select[name="teacher_feedback"]', feedback)
+    page.click("button[name='submit_feedback']")
+    page.wait_for_load_state("networkidle")
+
+
+def register_decision(page: Page, decision: str) -> None:
+    """Secretaria registra a decisão na tela de decisão aberta."""
+    page.select_option('select[name="decision"]', decision)
+    page.click("button:has-text('Registrar decisão')")
+    page.wait_for_load_state("networkidle")

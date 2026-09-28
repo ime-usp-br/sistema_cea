@@ -21,22 +21,69 @@
     <div class="card" style="max-width: 640px;">
         <div class="card-body">
             <div class="empty-state">
-                <p>Não há taxa de inscrição disponível para esta inscrição.</p>
+                <p>Não há taxas disponíveis para esta inscrição.</p>
             </div>
         </div>
     </div>
 {% else %}
+    {% if fees|length > 1 %}
+    <div class="card" style="max-width: 780px;">
+        <div class="card-header"><h2 class="card-title">Taxas da inscrição</h2></div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Taxa</th>
+                            <th>Valor</th>
+                            <th>Situação</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in fees %}
+                            <tr>
+                                <td>{{ item.get_fee_type_display }}</td>
+                                <td class="tabular-nums">R$ {{ item.amount|floatformat:2 }}</td>
+                                <td>
+                                    {% if item.is_waived %}
+                                        <span class="badge badge-warning">Dispensada</span>
+                                    {% elif item.is_paid %}
+                                        <span class="badge badge-success">Paga</span>
+                                    {% elif item.pk == fee.pk %}
+                                        <span class="badge badge-primary">Selecionada</span>
+                                    {% else %}
+                                        <span class="badge badge-neutral">Pendente</span>
+                                    {% endif %}
+                                </td>
+                                <td class="actions">
+                                    {% if not item.is_waived and not item.is_paid %}
+                                        <a href="{% url 'payments:fee_payment' application.protocol %}?fee={{ item.pk }}" class="btn btn-sm btn-primary">Pagar</a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="card" style="max-width: 640px;">
         <div class="card-body">
             <dl class="detail-list" style="grid-template-columns: 1fr;">
-                <div><dt>Taxa de inscrição</dt><dd>R$ {{ fee.amount|floatformat:2 }}</dd></div>
+                <div><dt>{{ fee.get_fee_type_display }}</dt><dd>R$ {{ fee.amount|floatformat:2 }}</dd></div>
             </dl>
-            {% if fee.is_paid %}
+            {% if fee.is_waived %}
+                <div class="alert alert-warning"><strong>Taxa dispensada.</strong></div>
+            {% elif fee.is_paid %}
                 <div class="alert alert-success"><strong>Taxa paga.</strong></div>
             {% elif form %}
                 <h3>Escolha a forma de pagamento</h3>
                 <form method="post" class="form">
                     {% csrf_token %}
+                    <input type="hidden" name="fee_id" value="{{ fee.pk }}">
                     {{ form.as_p }}
                     {% if form.non_field_errors %}
                         <div class="alert alert-error">{{ form.non_field_errors }}</div>
@@ -49,7 +96,7 @@
         </div>
     </div>
 
-    <h2>Instrumentos de pagamento</h2>
+    <h2>Instrumentos de pagamento — {{ fee.get_fee_type_display }}</h2>
     <div class="table-responsive">
         <table class="table">
             <thead>

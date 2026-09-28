@@ -9,6 +9,7 @@ from .views import (
     RefundActionView,
     RefundRequestCreateView,
     RefundRequestListView,
+    SimulatePaymentView,
 )
 
 app_name = "payments"
@@ -23,6 +24,11 @@ urlpatterns = [
         "pagamento/instrumento/<int:instrument_id>/confirmar-manual/",
         ManualPaymentConfirmationView.as_view(),
         name="manual_confirmation",
+    ),
+    path(
+        "pagamento/instrumento/<int:instrument_id>/simular/",
+        SimulatePaymentView.as_view(),
+        name="simulate_payment",
     ),
     path("reembolsos/", RefundRequestListView.as_view(), name="refund_list"),
     path(

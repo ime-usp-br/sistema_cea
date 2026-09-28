@@ -10,6 +10,11 @@ def enable_local_login(request) -> dict[str, bool]:
     return {'enable_local_login': settings.ENABLE_LOCAL_LOGIN}
 
 
+def payment_simulation(request) -> dict[str, bool]:
+    """Expose a flag for the DEBUG-only payment simulation button (T6)."""
+    return {'allow_payment_simulation': bool(settings.DEBUG)}
+
+
 def nav_context(request) -> dict:
     """Expose role flags and the active navigation section to templates.
 

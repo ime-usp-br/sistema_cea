@@ -10,12 +10,21 @@ from django.views import View
 
 from applications.models import ServiceApplication
 from payments.models import FeeRequirement
+from payments.services import FeeSelectionService
 from users.models import User
 
 from .models import BankSlipPaymentInstrument
 from .services import BankSlipPaymentService
 
 _slip_service = BankSlipPaymentService()
+_fee_selection = FeeSelectionService()
+
+
+def _parse_fee_id(raw: object) -> int | None:
+    if raw is None:
+        return None
+    text = str(raw).strip()
+    return int(text) if text.isdigit() else None
 
 
 class RoleRequiredMixin(LoginRequiredMixin):
@@ -37,22 +46,19 @@ class BaseBankSlipView(LoginRequiredMixin, View):
         user = cast(User, request.user)
         return get_object_or_404(ServiceApplication, protocol=protocol, owner=user)
 
-    def get_fee(self, application: ServiceApplication) -> FeeRequirement | None:
-        return (
-            application.fee_requirements.filter(
-                fee_type=FeeRequirement.FeeType.APPLICATION_FEE
-            )
-            .order_by("-created_at")
-            .first()
-        )
+    def get_fee(
+        self, application: ServiceApplication, fee_id: int | None = None
+    ) -> FeeRequirement | None:
+        return _fee_selection.select_fee(application, fee_id)
 
 
 class GenerateBankSlipView(BaseBankSlipView):
-    """Candidato gera um boleto para a taxa da inscrição."""
+    """Candidato gera um boleto para uma taxa da inscrição (D3)."""
 
     def post(self, request: HttpRequest, protocol: str):
         application = self.get_application(request, protocol)
-        fee = self.get_fee(application)
+        fee_id = _parse_fee_id(request.POST.get("fee_id") or request.GET.get("fee"))
+        fee = self.get_fee(application, fee_id)
         if fee is None:
             return redirect("payments:fee_payment", protocol=application.protocol)
         try:

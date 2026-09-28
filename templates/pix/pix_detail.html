@@ -90,6 +90,15 @@
                     <svg class="icon-check" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 </button>
             </div>
+
+            {% if allow_payment_simulation and pix.payment_instrument.state != 'paid' and pix.payment_instrument.state != 'manual_confirmed' %}
+                <form method="post" action="{% url 'payments:simulate_payment' pix.payment_instrument.pk %}" class="form mt-2">
+                    {% csrf_token %}
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-secondary">Simular pagamento (dev)</button>
+                    </div>
+                </form>
+            {% endif %}
         </div>
     </div>
 {% else %}

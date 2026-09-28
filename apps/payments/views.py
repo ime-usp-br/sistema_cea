@@ -1,7 +1,11 @@
 from typing import cast
 
+from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views import View
 
 from applications.models import ServiceApplication
@@ -15,6 +19,7 @@ from users.models import User
 from .forms import ManualPaymentConfirmationForm, PaymentMethodForm, RefundRequestForm
 from .models import FeeRequirement, PaymentInstrument, RefundRequest
 from .services import (
+    FeeSelectionService,
     ManualPaymentService,
     ModalityChangeService,
     OverdueBillingService,
@@ -27,6 +32,15 @@ _manual_service = ManualPaymentService()
 _refund_service = RefundRequestService()
 _overdue_service = OverdueBillingService()
 _pending_service = PendingPaymentService()
+_fee_selection = FeeSelectionService()
+
+
+def _parse_fee_id(raw: object) -> int | None:
+    """Converte o id da taxa recebido por GET/POST em int (ou None)."""
+    if raw is None:
+        return None
+    text = str(raw).strip()
+    return int(text) if text.isdigit() else None
 
 
 class FeePaymentView(LoginRequiredMixin, View):
@@ -38,42 +52,46 @@ class FeePaymentView(LoginRequiredMixin, View):
         user = cast(User, request.user)
         return get_object_or_404(ServiceApplication, protocol=protocol, owner=user)
 
-    def get_fee(self, application: ServiceApplication) -> FeeRequirement | None:
-        return (
-            application.fee_requirements.filter(
-                fee_type=FeeRequirement.FeeType.APPLICATION_FEE
-            )
-            .order_by("-created_at")
-            .first()
-        )
+    def get_fee(
+        self, application: ServiceApplication, fee_id: int | None = None
+    ) -> FeeRequirement | None:
+        return _fee_selection.select_fee(application, fee_id)
 
     def get(self, request, protocol: str):
         application = self.get_application(request, protocol)
-        fee = self.get_fee(application)
+        fee = self.get_fee(application, _parse_fee_id(request.GET.get("fee")))
+        fees = _fee_selection.ordered_fees(application)
         if fee is None:
             return render(
                 request,
                 self.template_name,
-                {"application": application, "fee": None, "form": None},
+                {"application": application, "fee": None, "fees": fees, "form": None},
             )
         form = PaymentMethodForm()
         return render(
             request,
             self.template_name,
-            {"application": application, "fee": fee, "form": form},
+            {"application": application, "fee": fee, "fees": fees, "form": form},
         )
 
     def post(self, request, protocol: str):
         application = self.get_application(request, protocol)
-        fee = self.get_fee(application)
+        fee_id = _parse_fee_id(request.POST.get("fee_id") or request.GET.get("fee"))
+        fee = self.get_fee(application, fee_id)
+        fees = _fee_selection.ordered_fees(application)
         if fee is None:
             return redirect("payments:fee_payment", protocol=application.protocol)
+        if fee.is_paid:
+            return redirect(
+                f"{reverse('payments:fee_payment', kwargs={'protocol': application.protocol})}"
+                f"?fee={fee.pk}"
+            )
         form = PaymentMethodForm(request.POST)
         if not form.is_valid():
             return render(
                 request,
                 self.template_name,
-                {"application": application, "fee": fee, "form": form},
+                {"application": application, "fee": fee, "fees": fees, "form": form},
                 status=400,
             )
         try:
@@ -95,7 +113,7 @@ class FeePaymentView(LoginRequiredMixin, View):
             return render(
                 request,
                 self.template_name,
-                {"application": application, "fee": fee, "form": form},
+                {"application": application, "fee": fee, "fees": fees, "form": form},
                 status=400,
             )
 
@@ -204,7 +222,9 @@ class RefundRequestCreateView(LoginRequiredMixin, View):
                 {"application": application, "form": form},
                 status=400,
             )
-        return redirect("payments:refund_list")
+        # O candidato não acessa a lista de reembolsos (área da Secretaria):
+        # volta à própria inscrição, onde vê a solicitação registrada.
+        return redirect("applications:detail", protocol=application.protocol)
 
 
 class RefundActionView(RoleRequiredMixin, View):
@@ -279,3 +299,42 @@ class PendingPaymentsListView(RoleRequiredMixin, View):
     def get(self, request):
         rows = _pending_service.list_pending_applications()
         return render(request, self.template_name, {"rows": rows})
+
+
+class SimulatePaymentView(LoginRequiredMixin, View):
+    """Confirma um pagamento localmente em desenvolvimento (T6/E2E).
+
+    Só existe com ``DEBUG=True``; permite fechar o fluxo no navegador sem
+    depender do webhook de retorno da USP. A geração continua no gateway dev
+    real — apenas a confirmação é simulada.
+    """
+
+    def post(self, request, instrument_id: int):
+        if not settings.DEBUG:
+            raise Http404("Simulação de pagamento indisponível.")
+        instrument = get_object_or_404(
+            PaymentInstrument.objects.select_related("fee_requirement__application"),
+            pk=instrument_id,
+        )
+        user = cast(User, request.user)
+        application = instrument.fee_requirement.application
+        is_staff = user.is_superuser or user.role in {
+            User.Role.SECRETARIAT,
+            User.Role.ADMINISTRATOR,
+        }
+        if not is_staff and application.owner_id != user.pk:
+            raise PermissionDenied("Você não tem acesso a este pagamento.")
+
+        if instrument.method == PaymentInstrument.Method.PIX:
+            pix = getattr(instrument, "pix_instrument", None)
+            if pix is None:
+                raise Http404("Pix não encontrado para este instrumento.")
+            PixPaymentService().simulate_payment(pix)
+            return redirect("pix:detail", protocol=application.protocol)
+        if instrument.method == PaymentInstrument.Method.BANK_SLIP:
+            slip = getattr(instrument, "bank_slip_instrument", None)
+            if slip is None:
+                raise Http404("Boleto não encontrado para este instrumento.")
+            BankSlipPaymentService().simulate_payment(slip)
+            return redirect("bank_slips:detail", protocol=application.protocol)
+        raise Http404("Método de pagamento não simulável.")

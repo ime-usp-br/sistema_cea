@@ -15,14 +15,64 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
+from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
 from base.views import index, logout_view
+from users.views import UserLoginView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('auth/', include('django.contrib.auth.urls')),
+    # Autenticação local (D8): login customizado (mensagem de e-mail não
+    # confirmado) + fluxo de recuperação de senha do Django com templates
+    # próprios em templates/registration/.
+    path('auth/login/', UserLoginView.as_view(), name='login'),
+    path(
+        'auth/password_reset/',
+        auth_views.PasswordResetView.as_view(
+            template_name='registration/password_reset_form.html',
+            email_template_name='registration/password_reset_email.html',
+            subject_template_name='registration/password_reset_subject.txt',
+        ),
+        name='password_reset',
+    ),
+    path(
+        'auth/password_reset/done/',
+        auth_views.PasswordResetDoneView.as_view(
+            template_name='registration/password_reset_done.html'
+        ),
+        name='password_reset_done',
+    ),
+    path(
+        'auth/reset/<uidb64>/<token>/',
+        auth_views.PasswordResetConfirmView.as_view(
+            template_name='registration/password_reset_confirm.html'
+        ),
+        name='password_reset_confirm',
+    ),
+    path(
+        'auth/reset/done/',
+        auth_views.PasswordResetCompleteView.as_view(
+            template_name='registration/password_reset_complete.html'
+        ),
+        name='password_reset_complete',
+    ),
+    path(
+        'auth/password_change/',
+        auth_views.PasswordChangeView.as_view(
+            template_name='registration/password_change_form.html'
+        ),
+        name='password_change',
+    ),
+    path(
+        'auth/password_change/done/',
+        auth_views.PasswordChangeDoneView.as_view(
+            template_name='registration/password_change_done.html'
+        ),
+        name='password_change_done',
+    ),
     path('', index, name='index'),
+    path('', include('users.urls')),
     path('', include('applications.urls')),
     path('', include('audits.urls')),
     path('', include('payments.urls')),

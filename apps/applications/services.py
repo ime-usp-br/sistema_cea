@@ -39,8 +39,8 @@ class TermTransferService:
         period_rank = 0 if term.period == "first" else 1
         return (term.year, period_rank)
 
-    def get_next_term(self, current_term: Any):
-        """Retorna o semestre imediatamente posterior ao atual, se existir."""
+    def find_next_term(self, current_term: Any):
+        """Retorna o semestre imediatamente posterior ao atual, ou ``None``."""
         from terms.models import AcademicTerm
 
         ordered = sorted(AcademicTerm.objects.all(), key=self._sort_key)
@@ -49,9 +49,7 @@ class TermTransferService:
                 if index + 1 < len(ordered):
                     return ordered[index + 1]
                 break
-        raise TermTransferError(
-            "Não há um próximo semestre disponível para a transferência."
-        )
+        return None
 
     def transfer_to_next_semester(
         self,
@@ -59,16 +57,44 @@ class TermTransferService:
         decided_by: Any = None,
         note: str | None = None,
     ) -> ServiceApplication:
-        """Transfere a inscrição para o próximo semestre (TS-TRM-006)."""
+        """Transfere a inscrição para o próximo semestre (TS-TRM-001/002).
+
+        Sem próximo semestre disponível, a transferência fica **pendente**
+        (``transfer_pending``) em vez de lançar erro; ao criar um novo período,
+        :meth:`migrate_pending_applications` conclui a migração (TS-TRM-002/003).
+        """
         with transaction.atomic():
-            next_term = self.get_next_term(application.term)
+            next_term = self.find_next_term(application.term)
+            if next_term is None:
+                application.transfer_pending = True
+                application.transfer_reason = (
+                    note
+                    or "Não há próximo semestre disponível; transferência pendente."
+                )
+                application.save(
+                    update_fields=["transfer_pending", "transfer_reason", "updated_at"]
+                )
+                ApplicationEvent.objects.create(
+                    application=application,
+                    event_code="term.transfer_pending",
+                    actor=decided_by,
+                    description=application.transfer_reason,
+                )
+                return application
             application.term = next_term
             application.transfer_pending = False
+            application.transfer_reason = None
             application.lifecycle_status = (
                 ServiceApplication.LifecycleStatus.TRANSFERRED
             )
             application.save(
-                update_fields=["term", "transfer_pending", "lifecycle_status", "updated_at"]
+                update_fields=[
+                    "term",
+                    "transfer_pending",
+                    "transfer_reason",
+                    "lifecycle_status",
+                    "updated_at",
+                ]
             )
             ApplicationEvent.objects.create(
                 application=application,
@@ -78,6 +104,51 @@ class TermTransferService:
                 metadata={"next_term_id": next_term.pk},
             )
         return application
+
+    def migrate_pending_applications(self, new_term: Any, actor: Any = None) -> int:
+        """Move inscrições pendentes para ``new_term`` (TS-TRM-003).
+
+        Disparado ao criar um ``AcademicTerm``: as inscrições com
+        ``transfer_pending=True`` são movidas, têm o fluxo reiniciado no
+        agendamento (triagem para Projeto; reunião para Consulta) e ganham o
+        evento ``term.transfer_auto``. Auditoria, taxas, instrumentos e dono
+        permanecem vinculados à inscrição.
+        """
+        pending = ServiceApplication.objects.filter(transfer_pending=True)
+        migrated = 0
+        for application in pending:
+            with transaction.atomic():
+                application.term = new_term
+                application.transfer_pending = False
+                application.transfer_reason = None
+                if application.modality == ServiceApplication.Modality.PROJECT:
+                    application.lifecycle_status = (
+                        ServiceApplication.LifecycleStatus.AWAITING_SCREENING_SCHEDULING
+                    )
+                else:
+                    application.lifecycle_status = (
+                        ServiceApplication.LifecycleStatus.AWAITING_CONSULTATION_SCHEDULING
+                    )
+                application.save(
+                    update_fields=[
+                        "term",
+                        "transfer_pending",
+                        "transfer_reason",
+                        "lifecycle_status",
+                        "updated_at",
+                    ]
+                )
+                ApplicationEvent.objects.create(
+                    application=application,
+                    event_code="term.transfer_auto",
+                    actor=actor,
+                    description=(
+                        f"Transferência automática para o semestre {new_term}."
+                    ),
+                    metadata={"new_term_id": new_term.pk},
+                )
+            migrated += 1
+        return migrated
 
 
 class ProtocolGenerationError(RuntimeError):
@@ -210,6 +281,12 @@ class ApplicationSubmissionService:
         from payments.services import FeeCalculationService
 
         FeeCalculationService().create_application_fee(application)
+
+        # Gatilho do legado ``NotifyInscribedAboutApplication``/``NotifyCEAAboutApplication``
+        # (D6): confirma a submissão para o candidato e avisa a equipe CEA.
+        from notifications.services import NotificationService
+
+        NotificationService().notify_application_submitted(application)
         return application
 
     def _add_catalog_selections(

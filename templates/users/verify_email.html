@@ -1,0 +1,24 @@
+{% extends "base/base.html" %}
+
+{% block title %}Confirmação de e-mail | Inscrições CEA{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 640px; margin: 0 auto;">
+    <div class="card-body text-center">
+        <h1 class="page-title">Confirmação de e-mail</h1>
+        {% if success %}
+            <div class="alert alert-success"><strong>{{ message }}</strong></div>
+            <div class="form-actions" style="justify-content: center;">
+                <a href="{% url 'login' %}" class="btn btn-primary">Entrar</a>
+            </div>
+        {% else %}
+            <div class="alert alert-error"><strong>{{ message }}</strong></div>
+            <div class="form-actions" style="justify-content: center;">
+                <a href="{% url 'users:resend_verification' %}" class="btn btn-secondary">Solicitar novo link</a>
+                <a href="{% url 'login' %}" class="btn btn-ghost">Voltar ao login</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

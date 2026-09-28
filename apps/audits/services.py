@@ -193,7 +193,7 @@ class DatasetAuditService:
                 note=note,
                 reviewed_at=now,
             )
-            self._apply_review_outcome(submission, application, outcome_enum)
+            self._apply_review_outcome(submission, application, outcome_enum, note)
         return review
 
     def resolve_rejection(
@@ -233,6 +233,8 @@ class DatasetAuditService:
 
     def enable_audit(self, *, application: ServiceApplication) -> None:
         """Habilita manualmente a auditoria (TS-AUD-016)."""
+        from applications.models import ApplicationEvent
+
         if application.owner_id is None:
             raise DatasetAuditError(
                 "A auditoria só pode ser habilitada para inscrições com dono."
@@ -256,6 +258,11 @@ class DatasetAuditService:
                     "lifecycle_status",
                     "updated_at",
                 ]
+            )
+            ApplicationEvent.objects.create(
+                application=application,
+                event_code="audit.enabled",
+                description="Auditoria de dados habilitada manualmente.",
             )
 
     def _assert_submittable(self, application: ServiceApplication) -> None:
@@ -295,7 +302,11 @@ class DatasetAuditService:
         submission: DatasetAuditSubmission,
         application: ServiceApplication,
         outcome_enum: DatasetAuditReview.Outcome,
+        note: str | None = None,
     ) -> None:
+        from notifications.services import NotificationService
+
+        notification_service = NotificationService()
         if outcome_enum == DatasetAuditReview.Outcome.NEEDS_CORRECTION:
             submission.state = DatasetAuditSubmission.State.NEEDS_CORRECTION
             submission.save(update_fields=["state", "updated_at"])
@@ -305,6 +316,7 @@ class DatasetAuditService:
             application.dataset_audit_state = (
                 ServiceApplication.DatasetAuditState.NEEDS_CORRECTION
             )
+            notification_service.notify_correction_requested(application, note)
         elif outcome_enum == DatasetAuditReview.Outcome.APPROVED:
             submission.state = DatasetAuditSubmission.State.APPROVED
             submission.save(update_fields=["state", "updated_at"])
@@ -316,6 +328,7 @@ class DatasetAuditService:
             application.lifecycle_status = (
                 ServiceApplication.LifecycleStatus.AWAITING_SCREENING_SCHEDULING
             )
+            notification_service.notify_dataset_approved(application)
         else:  # rejected
             submission.state = DatasetAuditSubmission.State.REJECTED
             submission.save(update_fields=["state", "updated_at"])
@@ -325,6 +338,7 @@ class DatasetAuditService:
             application.dataset_audit_state = (
                 ServiceApplication.DatasetAuditState.REJECTED_PENDING_RESOLUTION
             )
+            notification_service.notify_dataset_rejected(application, note)
         application.save(
             update_fields=["lifecycle_status", "dataset_audit_state", "updated_at"]
         )

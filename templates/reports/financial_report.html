@@ -33,6 +33,7 @@
         </form>
         <a href="{% url 'reports:financial_csv' %}?term={{ selected_term_id|default:'' }}" class="btn btn-outline-success btn-sm">Exportar CSV</a>
         <a href="{% url 'reports:financial_xlsx' %}?term={{ selected_term_id|default:'' }}" class="btn btn-outline-success btn-sm">Exportar Excel</a>
+        <form id="csrf-holder" style="display:none;">{% csrf_token %}</form>
     </div>
 </div>
 
@@ -52,6 +53,7 @@
                     <th>Taxa de Inscrição</th>
                     <th>Taxa de Projeto</th>
                     <th>Complemento</th>
+                    <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -95,6 +97,12 @@
                             <div class="tabular-nums">R$ {{ row.fees.supplement_fee.amount|floatformat:2 }}</div>
                             <div><span class="badge badge-neutral">{{ row.fees.supplement_fee.status }}</span></div>
                         </td>
+                        <td>
+                            <button type="button"
+                                    class="btn btn-sm btn-ghost js-sync-payments"
+                                    data-protocol="{{ row.protocol }}"
+                                    data-url="{% url 'reports:financial_sync' row.protocol %}">Sincronizar</button>
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -105,4 +113,45 @@
         <p>Não há inscrições no semestre atual.</p>
     </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var csrfInput = document.querySelector("#csrf-holder input[name='csrfmiddlewaretoken']");
+    document.querySelectorAll(".js-sync-payments").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            btn.disabled = true;
+            var original = btn.textContent;
+            btn.textContent = "Sincronizando…";
+            fetch(btn.dataset.url, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": csrfInput ? csrfInput.value : "",
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            })
+            .then(function (response) {
+                return response.json().then(function (data) {
+                    return { ok: response.ok, data: data };
+                });
+            })
+            .then(function (result) {
+                if (result.ok) {
+                    window.location.reload();
+                } else {
+                    btn.disabled = false;
+                    btn.textContent = original;
+                    window.alert("Falha ao sincronizar: " + (result.data.error || "erro desconhecido"));
+                }
+            })
+            .catch(function () {
+                btn.disabled = false;
+                btn.textContent = original;
+                window.alert("Falha ao sincronizar os pagamentos.");
+            });
+        });
+    });
+})();
+</script>
 {% endblock %}

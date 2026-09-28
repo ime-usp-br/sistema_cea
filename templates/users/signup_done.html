@@ -1,0 +1,25 @@
+{% extends "base/base.html" %}
+
+{% block title %}Confirme seu e-mail | Inscrições CEA{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 640px; margin: 0 auto;">
+    <div class="card-body text-center">
+        <h1 class="page-title">Confirme seu e-mail</h1>
+        {% if email %}
+            <p class="muted">Enviamos um link de confirmação para <strong>{{ email }}</strong>.</p>
+        {% else %}
+            <p class="muted">Enviamos um link de confirmação para o seu e-mail.</p>
+        {% endif %}
+        <p class="muted">
+            Abra a mensagem e clique no link para ativar sua conta. Se não recebeu,
+            verifique a caixa de spam ou solicite um novo link.
+        </p>
+        <div class="form-actions" style="justify-content: center;">
+            <a href="{% url 'users:resend_verification' %}" class="btn btn-secondary">Reenviar link</a>
+            <a href="{% url 'login' %}" class="btn btn-ghost">Ir para o login</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

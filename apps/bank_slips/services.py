@@ -205,6 +205,7 @@ class BankSlipPaymentService:
                     "paid_at": now.isoformat(),
                 },
             )
+        NotificationService().notify_payment_confirmed(application, instrument)
 
     def _mark_requires_review(self, slip: BankSlipPaymentInstrument) -> None:
         instrument = slip.payment_instrument

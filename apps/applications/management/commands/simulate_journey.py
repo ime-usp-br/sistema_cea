@@ -180,6 +180,11 @@ class Command(BaseCommand):
             help="Protocolo da inscrição alvo (padrão: mais recente do usuário simulado).",
         )
         parser.add_argument(
+            "--owner",
+            default=SIM_USERNAME,
+            help="Username do candidato dono da inscrição (padrão: sim_candidate).",
+        )
+        parser.add_argument(
             "--interval",
             type=float,
             default=0.0,
@@ -196,7 +201,7 @@ class Command(BaseCommand):
         # temporário (mesmo padrão dos testes) para não depender de permissões.
         media_root = tempfile.mkdtemp(prefix="cea-simulacao-media-")
         with override_settings(MEDIA_ROOT=media_root):
-            self._bootstrap_actors()
+            self._bootstrap_actors(options)
             self._application = None
 
             if options["all"]:
@@ -290,14 +295,16 @@ class Command(BaseCommand):
     # Setup do ambiente simulado
     # ------------------------------------------------------------------
 
-    def _bootstrap_actors(self) -> None:
+    def _bootstrap_actors(self, options: Any) -> None:
         from users.models import User
 
+        owner_username = (options.get("owner") or SIM_USERNAME).strip() or SIM_USERNAME
         self._candidate = self._get_or_create_user(
-            SIM_USERNAME,
+            owner_username,
             User.Role.CANDIDATE,
             "Candidato(a) de Simulação",
-            "sim_candidate@example.com",
+            f"{owner_username}@example.com",
+            reset_password=owner_username == SIM_USERNAME,
         )
         self._teacher = self._get_or_create_user(
             SIM_TEACHER_USERNAME,
@@ -312,11 +319,21 @@ class Command(BaseCommand):
             "sim_secretariat@example.com",
         )
 
-    def _get_or_create_user(self, username: str, role: str, full_name: str, email: str) -> Any:
+    def _get_or_create_user(
+        self,
+        username: str,
+        role: str,
+        full_name: str,
+        email: str,
+        reset_password: bool = False,
+    ) -> Any:
         from users.models import User
 
         user = User.objects.filter(username=username).first()
         if user is not None:
+            if reset_password:
+                user.set_password(SIM_PASSWORD)
+                user.save(update_fields=["password", "updated_at"])
             return user
         user = User(
             username=username,

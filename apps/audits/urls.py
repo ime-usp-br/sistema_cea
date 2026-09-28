@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     DatasetSubmitView,
+    EnableAuditView,
     RejectedResolutionListView,
     SubmissionFileDownloadView,
     SubmissionResolutionView,
@@ -13,6 +14,11 @@ app_name = "audits"
 
 urlpatterns = [
     path("auditoria/inscricao/<str:protocol>/enviar/", DatasetSubmitView.as_view(), name="submit"),
+    path(
+        "auditoria/inscricao/<str:protocol>/habilitar/",
+        EnableAuditView.as_view(),
+        name="enable_audit",
+    ),
     path("auditoria/fila/", TeacherReviewQueueView.as_view(), name="teacher_queue"),
     path(
         "auditoria/submissao/<int:submission_id>/revisar/",

@@ -48,7 +48,7 @@ def test_E2E_001_submissao_valida_de_projeto_redireciona_ao_detalhe(
 
     expect(page).to_have_url(re.compile(r".*" + DETAIL_PATH_RE.pattern))
     expect(page.locator("h1.page-title")).to_contain_text("Inscrição")
-    expect(page.locator("body")).to_contain_text("Aguardando envio de dados")
+    expect(page.locator("body")).to_contain_text("Aguardando pagamento")
 
 
 def test_E2E_002_submissao_valida_de_consulta_aguarda_pagamento(

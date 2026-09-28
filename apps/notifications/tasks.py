@@ -58,11 +58,17 @@ def send_notification_task(
         )
         # Paridade com o legado: ``->attachData()`` dos Mailables permitia anexar
         # o Boleto em PDF e a Ficha. O ``send_mail`` nativo não suporta anexos,
-        # portanto usamos ``EmailMessage`` + ``attach``.
+        # portanto usamos ``EmailMessage`` + ``attach``. Anexos enviados pela
+        # fila chegam com ``encoding="base64"`` (o broker JSON não aceita bytes).
         for attachment in attachments or []:
+            content = attachment.get("content")
+            if attachment.get("encoding") == "base64" and isinstance(content, str):
+                import base64
+
+                content = base64.b64decode(content)
             message.attach(
                 filename=attachment.get("filename"),
-                content=attachment.get("content"),
+                content=content,
                 mimetype=attachment.get("mimetype"),
             )
         message.send(fail_silently=False)

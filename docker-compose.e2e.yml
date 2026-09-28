@@ -1,0 +1,25 @@
+# Stack dedicada aos testes E2E de navegador (Playwright).
+# Uso recomendado (semeia os dados e roda a suíte):
+#   ./scripts/run_e2e.sh
+# Ou diretamente:
+#   docker compose -f docker-compose.e2e.yml run --rm --build e2e
+#
+# A aplicação deve estar de pé em E2E_BASE_URL (padrão: http://cea.dev.ime).
+services:
+  e2e:
+    build:
+      context: ./e2e
+    working_dir: /workspace
+    environment:
+      E2E_BASE_URL: "${E2E_BASE_URL:-http://cea.dev.ime}"
+      # Mantém o mesmo projeto Compose usado pelos containers da aplicação,
+      # para que `docker compose exec web ...` funcione via socket.
+      COMPOSE_PROJECT_NAME: "${COMPOSE_PROJECT_NAME:-sistema_cea}"
+    volumes:
+      # Código-fonte completo: os fixtures rodam `docker compose exec` daqui.
+      - .:/workspace
+      # Acesso ao daemon do host (dev/teste).
+      - /var/run/docker.sock:/var/run/docker.sock
+    extra_hosts:
+      - "cea.dev.ime:host-gateway"
+      - "cea.local:host-gateway"

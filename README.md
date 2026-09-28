@@ -143,3 +143,24 @@ poetry run ruff check .
 # Verifica consistência de tipos
 poetry run mypy .
 ```
+
+**Testes E2E de navegador (Playwright em container):**
+
+Sobe um container dedicado (com Chromium) que roda a suíte `e2e/` contra a
+aplicação já em execução. O script semeia os usuários/período via
+`seed_e2e` e depois roda o pytest no container.
+
+```bash
+# A aplicação deve estar de pé (docker compose up -d)
+./scripts/run_e2e.sh
+
+# Rodar apenas um teste/arquivo:
+./scripts/run_e2e.sh test_journeys_e2e.py -k pagar_taxa
+
+# Apontar para outra URL:
+E2E_BASE_URL=http://cea.local ./scripts/run_e2e.sh
+```
+
+O alvo padrão é `http://cea.dev.ime` (configurável por `E2E_BASE_URL`). O
+container e2e resolve os domínios de desenvolvimento pelo host
+(`extra_hosts: host-gateway` em `docker-compose.e2e.yml`).

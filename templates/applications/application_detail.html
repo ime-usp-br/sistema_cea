@@ -175,6 +175,11 @@
     <div class="card-body">
         {% for row in financial_rows %}
             <h3>{{ row.fee.get_fee_type_display }}</h3>
+            {% if is_candidate and not row.fee.is_waived and not row.fee.is_paid %}
+                <p>
+                    <a href="{% url 'payments:fee_payment' object.protocol %}?fee={{ row.fee.pk }}" class="btn btn-sm btn-primary">Pagar {{ row.fee.get_fee_type_display }}</a>
+                </p>
+            {% endif %}
             {% if row.fee.is_waived %}
                 <p><span class="badge badge-warning">Dispensada{% if row.fee.waiver_reason %} — {{ row.fee.waiver_reason }}{% endif %}</span></p>
             {% endif %}
@@ -399,6 +404,13 @@
                 {% csrf_token %}
                 <button type="submit" class="btn btn-primary">Gerar Boleto (Manual)</button>
             </form>
+            {% if object.modality == "project" and not object.dataset_audit_required %}
+                <form method="post" action="{% url 'audits:enable_audit' object.protocol %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-secondary"
+                            onclick="return confirm('Habilitar a auditoria de dados desta inscrição?')">Habilitar auditoria</button>
+                </form>
+            {% endif %}
             {% for slip in slips %}
                 <form method="post" action="{% url 'bank_slips:admin_regenerate' slip.pk %}">
                     {% csrf_token %}

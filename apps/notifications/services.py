@@ -9,6 +9,30 @@ from payments.models import PaymentInstrument
 from .tasks import send_notification_task
 
 
+def _serialize_attachments(
+    attachments: list[dict[str, Any]] | None,
+) -> list[dict[str, Any]] | None:
+    """Codifica o conteúdo binário dos anexos em base64 para a fila.
+
+    O broker Celery usa serialização JSON, que não aceita ``bytes``. Sem isso,
+    o ``.delay`` de um e-mail com PDF anexo (ficha, boleto) falharia na
+    serialização em produção/desenvolvimento.
+    """
+    import base64
+
+    if not attachments:
+        return attachments
+    serialized: list[dict[str, Any]] = []
+    for attachment in attachments:
+        item = dict(attachment)
+        content = item.get("content")
+        if isinstance(content, (bytes, bytearray)):
+            item["content"] = base64.b64encode(bytes(content)).decode("ascii")
+            item["encoding"] = "base64"
+        serialized.append(item)
+    return serialized
+
+
 class NotificationService:
     """Enfileira despachos assíncronos de notificações por e-mail."""
 
@@ -31,7 +55,7 @@ class NotificationService:
             recipient_email=recipient_email,
             context_data=merged_context,
             application_id=application_id,
-            attachments=attachments,
+            attachments=_serialize_attachments(attachments),
             bcc=bcc,
         )
 
@@ -205,6 +229,68 @@ class NotificationService:
             application.pk,
         )
 
+    def notify_screening_decided(
+        self, application: ServiceApplication, screening: ProjectScreening
+    ) -> None:
+        """Notifica o candidato sobre a decisão da triagem (TS-NOT-012)."""
+        from meetings.models import ProjectScreening as ScreeningModel
+
+        context = self._base_context(application)
+        context["screening_id"] = screening.pk
+        context["decision"] = screening.get_decision_display() or ""
+        context["decision_note"] = screening.decision_note or ""
+        context["next_step"] = (
+            "Aguarde o contato da equipe CEA."
+            if screening.decision == ScreeningModel.Decision.NOT_APPROVED
+            else "Acesse o sistema para acompanhar as próximas etapas."
+        )
+        self._enqueue(
+            "screening_decision",
+            application.contact_email,
+            context,
+            application.pk,
+        )
+
+    def notify_consultation_scheduled(
+        self, application: ServiceApplication, meeting: Any
+    ) -> None:
+        """Notifica o candidato sobre o agendamento da reunião de consulta."""
+        context = self._base_context(application)
+        context["meeting_id"] = meeting.pk
+        context["scheduled_date"] = str(meeting.scheduled_date)
+        context["scheduled_time"] = str(meeting.scheduled_time)
+        context["meeting_mode"] = meeting.meeting_mode
+        context["virtual_link"] = meeting.virtual_link or ""
+        context["place"] = meeting.place or ""
+        self._enqueue(
+            "consultation_scheduled",
+            application.contact_email,
+            context,
+            application.pk,
+        )
+
+    def notify_consultation_decided(
+        self, application: ServiceApplication, meeting: Any
+    ) -> None:
+        """Notifica o candidato sobre a decisão da reunião de consulta (TS-NOT-013)."""
+        from meetings.models import ConsultationMeeting as MeetingModel
+
+        context = self._base_context(application)
+        context["meeting_id"] = meeting.pk
+        context["decision"] = meeting.get_decision_display() or ""
+        context["decision_note"] = meeting.decision_note or ""
+        context["next_step"] = (
+            "Aguarde o contato da equipe CEA."
+            if meeting.decision == MeetingModel.Decision.NOT_APPROVED
+            else "Acesse o sistema para acompanhar as próximas etapas."
+        )
+        self._enqueue(
+            "consultation_decision",
+            application.contact_email,
+            context,
+            application.pk,
+        )
+
     def notify_modality_changed(
         self,
         application: ServiceApplication,
@@ -287,6 +373,15 @@ class NotificationService:
             context,
             application.pk,
         )
+
+    def notify_email_verification(self, user: Any, verification_url: str) -> None:
+        """Envia o link de confirmação de e-mail do cadastro externo (D8)."""
+        context = {
+            "candidate_name": user.full_name or user.email,
+            "email": user.email,
+            "verification_url": verification_url,
+        }
+        self._enqueue("email_verification", user.email, context)
 
     @staticmethod
     def _base_context(application: ServiceApplication) -> dict[str, Any]:

@@ -1,5 +1,6 @@
 from typing import Any, cast
 
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.core.files.storage import default_storage
@@ -79,6 +80,21 @@ class DatasetSubmitView(LoginRequiredMixin, View):
                 status=400,
             )
         return redirect("applications:detail", protocol=application.protocol)
+
+
+class EnableAuditView(RoleRequiredMixin, View):
+    """Secretaria habilita manualmente a auditoria de dados (D10 / TS-AUD-016)."""
+
+    allowed_roles = frozenset({User.Role.SECRETARIAT, User.Role.ADMINISTRATOR})
+
+    def post(self, request, protocol: str):
+        application = get_object_or_404(ServiceApplication, protocol=protocol)
+        try:
+            _service.enable_audit(application=application)
+            messages.success(request, "Auditoria de dados habilitada.")
+        except Exception as exc:  # noqa: BLE001 - erro exibido como mensagem
+            messages.error(request, str(exc))
+        return redirect("applications:detail", protocol=protocol)
 
 
 class TeacherReviewQueueView(RoleRequiredMixin, View):

@@ -1,11 +1,52 @@
 import os
 
+from django.contrib.auth.backends import ModelBackend
 from django.urls import reverse
 from django.utils import timezone
 from senhaunica_socialite.backends import SenhaUnicaBackend
 from senhaunica_socialite.client import SenhaUnicaClient
 
 from users.models import IdentityProviderLink, User
+
+
+class EmailVerifiedModelBackend(ModelBackend):
+    """Login local que aceita e-mail ou usuário e exige e-mail confirmado (D8).
+
+    Substitui o ``ModelBackend`` quando ``ENABLE_LOCAL_LOGIN`` está ligado. A
+    conta criada pelo cadastro externo só autentica após confirmar o e-mail;
+    Senha Única continua marcando ``is_email_verified=True``.
+    """
+
+    def authenticate(self, request, username=None, password=None, **kwargs):
+        if username is None:
+            username = kwargs.get(User.USERNAME_FIELD)
+        if username is None or password is None:
+            return None
+        resolved = self._resolve_username(username)
+        user = super().authenticate(
+            request, username=resolved, password=password, **kwargs
+        )
+        if user is None:
+            return None
+        if not self.user_can_authenticate(user):
+            return None
+        if not (
+            user.is_email_verified or user.is_superuser or user.is_staff
+        ):
+            return None
+        return user
+
+    @staticmethod
+    def _resolve_username(identifier: str) -> str:
+        """Permite login por e-mail (fallback para o username)."""
+        if User.objects.filter(username=identifier).exists():
+            return identifier
+        match = (
+            User.objects.filter(email__iexact=identifier)
+            .values_list("username", flat=True)
+            .first()
+        )
+        return match or identifier
 
 
 class CustomSenhaUnicaBackend(SenhaUnicaBackend):

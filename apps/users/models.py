@@ -36,6 +36,34 @@ class User(AbstractUser):
         db_table = "users"
 
 
+class EmailVerificationToken(models.Model):
+    """Token de confirmação de e-mail do cadastro de candidato externo (D8).
+
+    Guarda apenas o hash do token (nunca o valor puro), seguindo o padrão do
+    fluxo de resgate de inscrições (``apps/imports/services.py``).
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="email_verification_tokens",
+    )
+    token_hash = models.CharField(max_length=255, unique=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "email_verification_tokens"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user"], name="idx_email_verif_tokens_user"),
+        ]
+
+    def __str__(self) -> str:
+        return f"Token de verificação do usuário {self.user_id}"
+
+
 class IdentityProviderLink(models.Model):
     """Vínculo de métodos de autenticação ao usuário (Login Híbrido)."""
 

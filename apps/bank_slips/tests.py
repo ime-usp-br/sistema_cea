@@ -332,8 +332,9 @@ class BankSlipScenarioTests(TestCase):
             dispatch.application_id,
             application.pk,
         )
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertIn("timeout", mail.outbox[0].body)
+        failure_emails = [email for email in mail.outbox if "timeout" in email.body]
+        self.assertEqual(len(failure_emails), 1)
+        self.assertIn("timeout", failure_emails[0].body)
 
     @EAGER
     def test_TS_BSL_011_sucesso_nao_notifica_falha(self) -> None:
@@ -612,12 +613,11 @@ class BankSlipScenarioTests(TestCase):
             template__code="bank_slip_generation_failure"
         )
         self.assertEqual(center_fail.recipient_email, "cea@ime.usp.br")
-        candidate_email = next(
+        candidate_emails = [
             email for email in mail.outbox if email.to == ["ana@example.com"]
-        )
-        self.assertIn(
-            "instabilidade momentânea",
-            candidate_email.body.lower(),
+        ]
+        self.assertTrue(
+            any("instabilidade momentânea" in email.body.lower() for email in candidate_emails),
             "O e-mail ao candidato não alertou sobre a falha do boleto.",
         )
 

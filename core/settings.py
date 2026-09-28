@@ -105,6 +105,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'core.context_processors.enable_local_login',
                 'core.context_processors.nav_context',
+                'core.context_processors.payment_simulation',
             ],
         },
     },
@@ -131,7 +132,8 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 if ENABLE_LOCAL_LOGIN:
-    AUTHENTICATION_BACKENDS.append('django.contrib.auth.backends.ModelBackend')
+    # D8: login local exige e-mail confirmado para candidatos externos.
+    AUTHENTICATION_BACKENDS.append('users.backends.EmailVerifiedModelBackend')
 
 
 # Password validation
