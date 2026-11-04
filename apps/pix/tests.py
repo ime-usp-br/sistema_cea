@@ -87,12 +87,8 @@ class PixScenarioTests(TestCase):
             captured["codigoUnidadeDespesa"], 1
         )
 
-    def test_TS_PIX_001_headers_autenticacao(self) -> None:
-        from pix.gateways import PixGateway
-
-        headers = PixGateway()._headers()
-        self.assertIn("X-Username", headers)
-        self.assertIn("X-Password", headers)
+    # A autenticação do gateway é coberta por
+    # ``PixGatewayContractTests.test_headers_autenticacao_enviados`` (valores reais).
 
     # ------------------------------------------------------------------
     # TS-PIX-002 — Armazenamento do Pix gerado
@@ -270,19 +266,35 @@ class PixScenarioTests(TestCase):
             self.service.reconcile_completed_pix("2026-01-01", "2026-03-15")
 
     def test_TS_PIX_009_listarconcluidos_usa_dtaini_dtafim(self) -> None:
-        captured: dict[str, str] = {}
+        captured: dict[str, object] = {}
 
-        def fake_list(dtaini: str, dtafim: str) -> list:
-            captured["dtaini"] = dtaini
-            captured["dtafim"] = dtafim
-            return []
+        class _Response:
+            def json(self) -> list:
+                return []
 
-        with patch(
-            "pix.gateways.PixGateway.list_completed_pix", side_effect=fake_list
-        ):
+            def raise_for_status(self) -> None:
+                return None
+
+        def fake_request(
+            method: str,
+            path: str,
+            *,
+            json_body: dict | None = None,
+            params: dict | None = None,
+        ) -> _Response:
+            captured["method"] = method
+            captured["path"] = path
+            captured["params"] = params or {}
+            return _Response()
+
+        with patch("pix.gateways.PixGateway._request", side_effect=fake_request):
             self.service.reconcile_completed_pix("2026-01-01", "2026-01-10")
-        self.assertEqual(captured["dtaini"], "01/01/2026 00:00:00")
-        self.assertEqual(captured["dtafim"], "10/01/2026 23:59:59")
+        self.assertEqual(captured["method"], "GET")
+        self.assertEqual(captured["path"], "pix/listarConcluidos")
+        params = captured["params"]
+        assert isinstance(params, dict)
+        self.assertEqual(params["dtaini"], "01/01/2026 00:00:00")
+        self.assertEqual(params["dtafim"], "10/01/2026 23:59:59")
 
     # ------------------------------------------------------------------
     # TS-PIX-010 — Simulação de pagamento em desenvolvimento
@@ -512,15 +524,8 @@ class PixGatewayContractTests(TestCase):
         self.assertEqual(path, "pix/pix-1")
         self.assertEqual(params, {"verificar": "1"})
 
-    def test_listar_concluidos_usa_dtaini_dtafim(self) -> None:
-        with self._patch_request([]):
-            result = self.gateway.list_completed_pix("01/08/2026 00:00:00", "25/08/2026 23:59:59")
-        self.assertEqual(result, [])
-        method, path, _body, params = self.calls[0]
-        self.assertEqual(method, "GET")
-        self.assertEqual(path, "pix/listarConcluidos")
-        self.assertEqual(params["dtaini"], "01/08/2026 00:00:00")
-        self.assertEqual(params["dtafim"], "25/08/2026 23:59:59")
+    # A formatação de ``dtaini``/``dtafim`` e o caminho ``pix/listarConcluidos``
+    # são cobertos por ``PixScenarioTests.test_TS_PIX_009_listarconcluidos_usa_dtaini_dtafim``.
 
     def test_pdf_qrcode_e_simular_pagamento(self) -> None:
         with self._patch_request(None, b"%PDF"):

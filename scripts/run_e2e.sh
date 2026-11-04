@@ -23,12 +23,11 @@ curl -sf -o /dev/null "${BASE_URL}/" || {
     exit 1
 }
 
-echo "==> Semeando dados E2E no container web"
-docker compose exec -T web python manage.py seed_e2e
-
 echo "==> Rodando testes E2E no container (Playwright + Chromium)"
+# O fixture ``seed_database`` executa o seed pelo serviço ``web`` do próprio
+# compose E2E e o cleanup marca as inscrições criadas ao final da sessão.
 docker compose -f docker-compose.e2e.yml run --rm --build \
     -e E2E_BASE_URL="${BASE_URL}" \
-    -e E2E_SKIP_SEED=1 \
+    -e E2E_HOST_ROOT="${ROOT}" \
     e2e \
     pytest -q -p no:cacheprovider e2e -c e2e/pytest.ini ${E2E_ARGS:-} "$@"

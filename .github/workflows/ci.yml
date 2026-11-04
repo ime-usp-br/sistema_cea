@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: uspdb
+          POSTGRES_USER: uspuser
+          POSTGRES_PASSWORD: usppass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U uspuser -d uspdb"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    env:
+      DJANGO_ENV: development
+      DEBUG: "True"
+      SECRET_KEY: ci-secret-key
+      ALLOWED_HOSTS: "*"
+      DATABASE_URL: postgres://uspuser:usppass@localhost:5432/uspdb
+      REDIS_URL: redis://localhost:6379/0
+      ENABLE_LOCAL_LOGIN: "True"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Instalar Poetry
+        run: pip install poetry
+
+      - name: Instalar dependências
+        run: |
+          poetry config virtualenvs.create false
+          poetry install --no-interaction --no-ansi
+
+      - name: Lint (Ruff)
+        run: ruff check .
+
+      - name: Tipos (MyPy)
+        run: mypy .
+
+      - name: Testes
+        run: pytest

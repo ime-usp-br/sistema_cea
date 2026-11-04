@@ -136,7 +136,7 @@ class FeeSelectionUITests(TestCase):
     # D3 — seleção e pagamento de qualquer taxa
     # ------------------------------------------------------------------
 
-    def test_TS_PAY_UI_001_projeto_paga_taxa_de_projeto_pela_ui(self) -> None:
+    def test_TS_PAY_009_projeto_paga_taxa_de_projeto_pela_ui(self) -> None:
         application = self._project_awaiting_project_fee()
         project_fee = application.fee_requirements.get(
             fee_type=FeeRequirement.FeeType.PROJECT_FEE
@@ -166,7 +166,7 @@ class FeeSelectionUITests(TestCase):
             ServiceApplication.LifecycleStatus.APPROVED_AS_PROJECT,
         )
 
-    def test_TS_PAY_UI_002_taxa_pendente_e_a_selecionada_por_padrao(self) -> None:
+    def test_TS_PAY_009_taxa_pendente_e_a_selecionada_por_padrao(self) -> None:
         application = self._project_awaiting_project_fee()
         project_fee = application.fee_requirements.get(
             fee_type=FeeRequirement.FeeType.PROJECT_FEE
@@ -176,7 +176,7 @@ class FeeSelectionUITests(TestCase):
         )
         self.assertEqual(response.context["fee"].pk, project_fee.pk)
 
-    def test_TS_PAY_UI_003_nao_permite_pagar_taxa_de_outra_inscricao(self) -> None:
+    def test_TS_PAY_011_nao_permite_pagar_taxa_de_outra_inscricao(self) -> None:
         own = self._create("project")
         foreign = self._create("project", owner=self.other)
         foreign_fee = foreign.fee_requirements.get(
@@ -192,7 +192,7 @@ class FeeSelectionUITests(TestCase):
             PaymentInstrument.objects.filter(fee_requirement=foreign_fee).exists()
         )
 
-    def test_TS_PAY_UI_004_taxa_paga_nao_reabre(self) -> None:
+    def test_TS_PAY_010_taxa_paga_nao_reabre(self) -> None:
         application = self._create("project")
         app_fee = application.fee_requirements.get(
             fee_type=FeeRequirement.FeeType.APPLICATION_FEE
@@ -209,7 +209,7 @@ class FeeSelectionUITests(TestCase):
             PaymentInstrument.objects.filter(fee_requirement=app_fee).count(), 1
         )
 
-    def test_TS_PAY_UI_005_paga_complemento_de_taxa_na_consulta(self) -> None:
+    def test_TS_PAY_009_paga_complemento_de_taxa_na_consulta(self) -> None:
         # Projeto pago convertido em Consulta gera o complemento de R$ 60.
         application = self._create("project")
         app_fee = application.fee_requirements.get(
@@ -243,23 +243,23 @@ class FeeSelectionUITests(TestCase):
             ServiceApplication.LifecycleStatus.AWAITING_CONSULTATION_SCHEDULING,
         )
 
-    def test_TS_PAY_UI_006_advance_nao_aprova_com_taxa_de_projeto_pendente(self) -> None:
-        application = self._create("project")
-        app_fee = application.fee_requirements.get(
-            fee_type=FeeRequirement.FeeType.APPLICATION_FEE
+    def test_TS_PAY_012_advance_nao_aprova_com_taxa_de_projeto_pendente(self) -> None:
+        # Chega ao estado pelo fluxo real (pagamento -> auditoria -> triagem),
+        # sem forçar ``lifecycle_status`` manualmente.
+        application = self._project_awaiting_project_fee()
+        project_fee = application.fee_requirements.get(
+            fee_type=FeeRequirement.FeeType.PROJECT_FEE
         )
-        self._pay_fee(application, app_fee)
-        from payments.services import FeeCalculationService
-
-        FeeCalculationService().create_project_fee(application)
-        application.lifecycle_status = ServiceApplication.LifecycleStatus.AWAITING_PAYMENT
-        application.save(update_fields=["lifecycle_status", "updated_at"])
+        self.assertFalse(project_fee.is_paid)
         advance_lifecycle_after_application_fee(application)
+        application.refresh_from_db()
         self.assertEqual(
             application.lifecycle_status,
             ServiceApplication.LifecycleStatus.AWAITING_PAYMENT,
         )
 
+    # Regressão do redirect para a ficha do candidato (a regra de negócio de
+    # reembolso é coberta por ``apps/payments/tests.py::TS_REF_001``).
     def test_TS_REF_001_candidato_solicita_reembolso_e_volta_a_ficha(self) -> None:
         application = self._create("project")
         app_fee = application.fee_requirements.get(

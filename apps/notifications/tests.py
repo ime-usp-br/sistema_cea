@@ -1,3 +1,5 @@
+import base64
+import json
 import tempfile
 from decimal import Decimal
 from unittest.mock import patch
@@ -189,6 +191,66 @@ class NotificationScenarioTests(TestCase):
         )
         self.assertIsNone(result)
         self.assertEqual(NotificationDispatch.objects.count(), 0)
+
+    # TS-NOT-010 — round-trip base64 do payload da fila (encode)
+    def test_TS_NOT_010_anexo_serializado_e_json_seguro(self) -> None:
+        from notifications.services import _serialize_attachments
+
+        payload = _serialize_attachments(
+            [
+                {
+                    "filename": "ficha.pdf",
+                    "content": b"%PDF-1.4 roundtrip",
+                    "mimetype": "application/pdf",
+                }
+            ]
+        )
+        self.assertIsNotNone(payload)
+        encoded = json.dumps(payload)
+        self.assertNotIn("bytes", encoded)
+        decoded = json.loads(encoded)
+        self.assertEqual(decoded[0]["encoding"], "base64")
+        self.assertEqual(
+            base64.b64decode(decoded[0]["content"]), b"%PDF-1.4 roundtrip"
+        )
+
+    # TS-NOT-010 — round-trip base64 do payload da fila (decode na task)
+    @EAGER
+    def test_TS_NOT_010_task_decodifica_anexo_base64(self) -> None:
+        from notifications.services import _serialize_attachments
+
+        NotificationTemplate.objects.update_or_create(
+            code="payment_slip_regenerated",
+            defaults={
+                "name": "Boleto regenerado",
+                "audience": NotificationTemplate.Audience.CANDIDATE,
+                "subject": "Seu boleto foi reemitido",
+                "body": "Olá {{ candidate_name }}.",
+                "is_active": True,
+            },
+        )
+        payload = _serialize_attachments(
+            [
+                {
+                    "filename": "boleto-456.pdf",
+                    "content": b"%PDF-1.4 fila",
+                    "mimetype": "application/pdf",
+                }
+            ]
+        )
+        dispatch = send_notification_task(
+            "payment_slip_regenerated",
+            "candidate@example.com",
+            {"candidate_name": "Maria"},
+            self.application.pk,
+            attachments=payload,
+        )
+        self.assertIsNotNone(dispatch)
+        self.assertEqual(dispatch.status, NotificationDispatch.Status.SENT)
+        name, content, mimetype = mail.outbox[-1].attachments[0]
+        self.assertEqual(name, "boleto-456.pdf")
+        self.assertEqual(content, b"%PDF-1.4 fila")
+        self.assertEqual(mimetype, "application/pdf")
 
     # TS-NOT-012 — anexos suportados via EmailMessage (paridade com attachData do legado)
     @EAGER

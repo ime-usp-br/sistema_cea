@@ -25,6 +25,11 @@ Ele cobre:
 - integrações externas;
 - segurança e requisitos não funcionais.
 
+> **Convenção de IDs:** neste documento o ID usa hífen (`TS-NOT-001`); no código Python o teste usa
+> underscore (`def test_TS_NOT_001_...`). Todo ID citado em nome de teste deve existir aqui — o
+> meta-teste em `apps/base/tests.py` falha caso contrário. A matriz completa está em
+> `docs/TEST_TRACEABILITY.md`.
+
 ---
 
 ## 2. Premissas testáveis
@@ -345,6 +350,115 @@ Os testes devem considerar as seguintes regras operacionais:
 - não aparece em listas padrão;
 - pode ser restaurada.
 
+## TS-APP-011 — Listagem global e payload válido
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- listagem de todas as inscrições exige Secretaria/Administrador;
+- payload completo de Projeto válido é aceito.
+
+---
+
+## TS-APP-012 — Projeto com dados não coletados
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- inscrição de Projeto com “dados já coletados = Não” é bloqueada com mensagem clara.
+
+---
+
+## TS-APP-013 — Projeto sem campo descritivo
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- falta de campo descritivo obrigatório impede o envio.
+
+---
+
+## TS-APP-014 — Orientador e declaração
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- Iniciação Científica/Mestrado exigem nome do orientador e declaração;
+- finalidade sem vínculo acadêmico não exige orientador.
+
+---
+
+## TS-APP-015 — Consulta válida completa
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- Consulta com todos os campos obrigatórios é aceita.
+
+---
+
+## TS-APP-016 — Consulta sem autorização de dados
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- ausência de autorização de uso dos dados bloqueia o envio.
+
+---
+
+## TS-APP-017 — Reembolso completo
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- dados bancários e detalhes do recibo completos permitem solicitar reembolso.
+
+---
+
+## TS-APP-018 — Reembolso com dados incompletos
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- omitir campo bancário ou detalhes do recibo bloqueia a solicitação.
+
+---
+
+## TS-APP-019 — CPF bancário inválido
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- CPF/CNPJ bancário inválido é rejeitado.
+
+---
+
+## TS-APP-020 — Sem reembolso e dados bancários vazios
+
+**Prioridade:** P2
+
+**Resultado esperado:**
+- quando não há reembolso, dados bancários podem ficar vazios.
+
+---
+
+## TS-APP-022 — Regressão de payload representativo
+
+**Prioridade:** P2
+
+**Resultado esperado:**
+- payload representativo continua aceito após mudanças de validação.
+
+---
+
+## TS-APP-024 — Inscrição fora do período
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- Projeto fora da janela de submissão é bloqueado;
+- Consulta não é bloqueada pela janela.
+
 ---
 
 # 7. Cenários de auditoria de dados
@@ -571,6 +685,15 @@ Os testes devem considerar as seguintes regras operacionais:
 - fluxo de correção ou rejeição registrado;
 - candidato notificado quando aplicável.
 
+## TS-AUD-018 — Download de arquivo de auditoria
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- docente e Secretaria baixam o arquivo da submissão;
+- candidato não acessa arquivo de terceiros;
+- submissão sem arquivo retorna 404.
+
 ---
 
 # 8. Cenários de taxas e regras financeiras
@@ -776,6 +899,102 @@ Os testes devem considerar as seguintes regras operacionais:
 
 **Para Consulta:**
 - após pagamento, inscrição vai para `awaiting_consultation_scheduling`.
+
+---
+
+## TS-PAY-009 — Candidato paga Taxa de Projeto/Complemento pela UI
+
+**Prioridade:** P0
+
+**Resultado esperado:**
+- área do candidato lista as taxas não pagas;
+- Taxa de Projeto e Complemento de Taxa podem ser pagas por Pix/boleto;
+- taxa pendente é a selecionada por padrão.
+
+---
+
+## TS-PAY-010 — Taxa já paga não reabre
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- tentar pagar novamente uma taxa paga não cria outro instrumento.
+
+---
+
+## TS-PAY-011 — Taxa de outra inscrição
+
+**Prioridade:** P0
+
+**Resultado esperado:**
+- candidato não consegue pagar taxa pertencente a outra inscrição.
+
+---
+
+## TS-PAY-012 — Lifecycle com Taxa de Projeto pendente
+
+**Prioridade:** P0
+
+**Resultado esperado:**
+- inscrição permanece em `awaiting_payment` enquanto a Taxa de Projeto não é paga;
+- pagamento da Taxa de Projeto leva a `approved_as_project`.
+
+---
+
+## TS-PAY-013 — Simulação de pagamento em desenvolvimento
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- rota de simulação só existe com `DEBUG=True`;
+- confirma Pix; rejeita método manual e instrumento de terceiros.
+
+---
+
+## TS-PAY-014 — Cobrança em massa de boletos vencidos
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- apenas os boletos marcados recebem cobrança;
+- histórico de cobrança e evento são registrados por boleto.
+
+---
+
+## TS-PAY-019 — Painel de boletos vencidos
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- Secretaria acessa a tela de Cobranças Manuais.
+
+---
+
+## TS-PAY-020 — Seleção de boletos vencidos
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- serviço lista boletos vencidos e ignora pagos ou com vencimento futuro.
+
+---
+
+## TS-PAY-021 — Permissão da tela de cobranças
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- candidato recebe 403; Secretaria recebe 200.
+
+---
+
+## TS-PAY-022 — Pagamentos pendentes
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- painel lista inscrições com taxa a pagar;
+- pagamento remove a inscrição da lista.
 
 ---
 
@@ -1029,6 +1248,23 @@ Os testes devem considerar as seguintes regras operacionais:
 **Resultado esperado:**
 - boleto passa para `P` em até alguns minutos no ambiente de teste.
 
+## TS-BSL-011 — Falha SOAP notifica a equipe CEA
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- falha na geração do boleto dispara aviso para a equipe CEA;
+- sucesso não dispara aviso de falha.
+
+---
+
+## TS-BSL-012 — Regeneração automática de boletos vencidos
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- task regenera boletos vencidos e notifica o candidato.
+
 ---
 
 # 12. Cenários de pagamento manual
@@ -1278,6 +1514,23 @@ Os testes devem considerar as seguintes regras operacionais:
 - taxas e instrumentos permanecem vinculados;
 - pagamentos confirmados continuam válidos.
 
+## TS-TRM-006 — Transferência manual pela Secretaria
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- Secretaria transfere a inscrição para o próximo período disponível;
+- evento `term.transferred` é registrado.
+
+---
+
+## TS-TRM-007 — Editar período não re-migra
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- editar um período existente não executa a migração automática novamente.
+
 ---
 
 # 16. Cenários de triagens e reuniões
@@ -1404,6 +1657,31 @@ Os testes devem considerar as seguintes regras operacionais:
 - feedback permitido apenas após data/hora agendada;
 - antes disso, operação bloqueada.
 
+## TS-MEET-013 — Reagendamento limpa campos do modo anterior
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- trocar online ↔ presencial limpa link/local obsoletos sem erro.
+
+---
+
+## TS-MEET-014 — Consulta aprovada como Projeto gera taxa
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- decisão `approved_as_project` em Consulta cria a Taxa de Projeto.
+
+---
+
+## TS-MEET-015 — Alias da fila de agendamentos
+
+**Prioridade:** P2
+
+**Resultado esperado:**
+- a rota antiga `meetings:queue` continua respondendo durante a transição.
+
 ---
 
 # 17. Cenários de notificações
@@ -1501,6 +1779,43 @@ Os testes devem considerar as seguintes regras operacionais:
 **Resultado esperado:**
 - despacho marcado como `failed`;
 - erro registrado.
+
+---
+
+## TS-NOT-011 — Mudança de modalidade notifica candidato
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- candidato recebe e-mail com a nova modalidade.
+
+---
+
+## TS-NOT-012 — Anexos e notificações de agendamento
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- PDF de boleto é anexado ao e-mail;
+- triagem agendada e decidida notificam o candidato.
+
+---
+
+## TS-NOT-013 — Reunião de consulta agendada e decidida
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- candidato recebe e-mail no agendamento e na decisão da reunião.
+
+---
+
+## TS-NOT-014 — Reemissão de boleto com cópia oculta ao CEA
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- e-mail de reemissão vai ao candidato com BCC para o centro.
 
 ---
 
@@ -1813,6 +2128,14 @@ Os testes devem considerar as seguintes regras operacionais:
 - mostra correções;
 - mostra decisões docentes e administrativas.
 
+## TS-REP-007 — Relatório agrupado e export por semestre
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- relatório tem uma linha por inscrição com as três taxas;
+- export CSV/XLSX usa o nome `relatorio_financeiro_<ano>_<periodo>` e contém os valores.
+
 ---
 
 # 22. Cenários de eventos
@@ -1984,6 +2307,14 @@ Os testes devem considerar as seguintes regras operacionais:
 - tamanho validado;
 - arquivos armazenados fora de execução direta.
 
+## TS-SEC-008 — Permissões de admin da Secretaria e Administrador
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- Secretaria acessa Semestres e E-mails, mas não gerencia Usuários;
+- Administrador acessa tudo via grupo RBAC.
+
 ---
 
 # 25. Cenários não funcionais
@@ -2035,6 +2366,77 @@ Os testes devem considerar as seguintes regras operacionais:
 
 **Resultado esperado:**
 - caracteres como `&`, `<`, `>`, `%`, `$`, `#`, `^`, `~` não quebram o documento.
+
+## TS-NFR-006 — PDF com dados bancários e de reembolso
+
+**Prioridade:** P2
+
+**Resultado esperado:**
+- PDF exibe dados bancários e de reembolso quando aplicável;
+- sem recibo, esses dados não são impressos.
+
+---
+
+## TS-NAV-001 — Fluxo completo do candidato sem URLs manuais
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- candidato percorre painel, inscrição, pagamento e auditoria por links.
+
+---
+
+## TS-NAV-002 — Fluxo de auditoria da Secretaria sem URLs manuais
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- Secretaria percorre fila, revisão e resolução por links.
+
+---
+
+## TS-NAV-003 — Menu segmentado por papel
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- cada papel vê apenas os itens de menu permitidos.
+
+---
+
+## TS-NAV-004 — Breadcrumbs em todas as páginas
+
+**Prioridade:** P2
+
+**Resultado esperado:**
+- páginas exibem breadcrumb consistente.
+
+---
+
+## TS-NAV-005 — Links de retorno consistentes
+
+**Prioridade:** P2
+
+**Resultado esperado:**
+- botões “Voltar” retornam à origem esperada.
+
+---
+
+## TS-NAV-006 — Relatórios ligam às inscrições
+
+**Prioridade:** P2
+
+**Resultado esperado:**
+- protocolos do relatório navegam para a ficha da inscrição.
+
+---
+
+## TS-NAV-007 — Instrumentos ligam a boleto/Pix/recibo
+
+**Prioridade:** P2
+
+**Resultado esperado:**
+- instrumentos financeiros ligam às telas correspondentes.
 
 ---
 

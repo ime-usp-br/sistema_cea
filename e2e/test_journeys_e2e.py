@@ -16,7 +16,7 @@ from playwright.sync_api import Page, expect
 
 
 def _detail(page: Page) -> None:
-    page.wait_for_load_state("networkidle")
+    expect(page.locator("h1.page-title")).to_be_visible()
 
 
 def test_E2E_N3_01_pagar_taxa_de_inscricao_por_pix(login, create_application, page: Page) -> None:
@@ -80,22 +80,28 @@ def test_E2E_N9_02_transferir_semestre_nao_quebra(
     page.once("dialog", lambda dialog: dialog.accept())
     page.click("button:has-text('Transferir semestre')")
     _detail(page)
-    # Existe período posterior (2099) no seed: a transferência conclui sem 500.
+    # O seed garante um período posterior (dinâmico): a transferência conclui sem 500.
     expect(page).to_have_url(re.compile(rf".*/inscricoes/{protocol}/$"))
     expect(page.locator("body")).to_contain_text("term.transferred")
 
 
-def test_E2E_N9_03_backoffice_lista_e_relatorio(login_as, create_application, page: Page) -> None:
-    create_application("consultation")
+def test_E2E_N9_03_backoffice_lista_e_relatorio(
+    login_as, create_application, seed_term, page: Page
+) -> None:
+    protocol = create_application("consultation")
     login_as("secretariat")
-    page.goto(f"{BASE_URL}/inscricoes/")
+    page.goto(f"{BASE_URL}/inscricoes/?term=all")
     _detail(page)
     expect(page.locator("body")).to_contain_text("Inscri")
+    expect(page.locator("body")).to_contain_text(protocol)
+    expect(page.locator("body")).to_contain_text(str(seed_term["year"]))
 
     page.goto(f"{BASE_URL}/gestao/relatorios/financeiro/?term=all")
     _detail(page)
     expect(page.locator("body")).to_contain_text("Relatório Financeiro")
     expect(page.locator("body")).to_contain_text("Taxa de Projeto")
+    expect(page.locator("body")).to_contain_text(protocol)
+    expect(page.locator("body")).to_contain_text("R$ 140,00")
 
 
 def test_E2E_N1_02_cadastro_bloqueia_login_ate_confirmar(page: Page) -> None:
@@ -114,7 +120,7 @@ def test_E2E_N1_02_cadastro_bloqueia_login_ate_confirmar(page: Page) -> None:
     page.fill("#id_username", email)
     page.fill("#id_password", "senha-forte-123")
     page.click("button[type='submit']")
-    _detail(page)
+    # A página de login usa <h2>; espera pela mensagem de bloqueio, não pelo título.
     expect(page.locator("body")).to_contain_text("Confirme seu e-mail")
 
 

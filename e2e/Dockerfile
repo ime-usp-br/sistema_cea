@@ -1,8 +1,9 @@
 # Container isolado para rodar a suíte E2E de navegador (Playwright).
 #
 # Além do Python/pytest/Chromium, inclui o CLI do Docker e o plugin do Compose
-# para que os fixtures possam executar `docker compose exec web manage.py ...`
-# (seed e `simulate_journey`) através do socket do host montado em runtime.
+# para que os fixtures possam executar `docker compose -f docker-compose.e2e.yml
+# run web manage.py ...` (seed, `simulate_journey` e cleanup) através do socket
+# do host montado em runtime.
 #
 # Build:
 #   docker compose -f docker-compose.e2e.yml build

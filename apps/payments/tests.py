@@ -620,7 +620,7 @@ class PaymentScenarioTests(TestCase):
     # 14c. Cobrança em massa / inadimplência (OverdueBillingService)
     # ------------------------------------------------------------------
 
-    def test_TS_PAY_010_overdue_billing_service_retorna_boletos_vencidos(self) -> None:
+    def test_TS_PAY_020_overdue_billing_service_retorna_boletos_vencidos(self) -> None:
         """Garante que o serviço localiza boletos expirados no passado e ativos localmente."""
         application = self.create_consultation()
         fee = application.fee_requirements.first()
@@ -647,7 +647,7 @@ class PaymentScenarioTests(TestCase):
         self.assertEqual(slips.count(), 1)
         self.assertEqual(slips.first().bank_slip_reference, "boleto-vencido-123")
 
-    def test_TS_PAY_010b_overdue_billing_ignora_boletos_pagos_ou_futuros(self) -> None:
+    def test_TS_PAY_020b_overdue_billing_ignora_boletos_pagos_ou_futuros(self) -> None:
         """Só boletos vencidos e ainda ativos entram na lista de inadimplência."""
         application = self.create_consultation()
         fee = application.fee_requirements.first()
@@ -687,7 +687,7 @@ class PaymentScenarioTests(TestCase):
         self.assertNotIn("boleto-pago", references)
         self.assertNotIn("boleto-futuro", references)
 
-    def test_TS_PAY_011_overdue_billing_view_requer_permissao_secretaria(self) -> None:
+    def test_TS_PAY_021_overdue_billing_view_requer_permissao_secretaria(self) -> None:
         """Garante a View que substitui a rota de inadimplentes no Django."""
         self.client.force_login(self.candidate)
         response = self.client.get(reverse("payments:overdue_list"))
@@ -697,7 +697,7 @@ class PaymentScenarioTests(TestCase):
         response = self.client.get(reverse("payments:overdue_list"))
         self.assertEqual(response.status_code, 200)
 
-    def test_TS_PAY_012_pagamentos_pendentes_lista_inscricoes_com_taxa_a_pagar(self) -> None:
+    def test_TS_PAY_022_pagamentos_pendentes_lista_inscricoes_com_taxa_a_pagar(self) -> None:
         """Painel de pagamentos pendentes exige secretaria e lista inscrições com taxa devida."""
         self.client.force_login(self.candidate)
         response = self.client.get(reverse("payments:pending_payments"))

@@ -1,3 +1,4 @@
+import json
 from datetime import date
 from typing import Any
 
@@ -27,12 +28,16 @@ class Command(BaseCommand):
         from users.models import User
         from users.permissions_sync import ensure_secretariat_admin_permissions
 
+        # Período bem à frente do usado por ``simulate_journey`` (ano+1), para
+        # que a transferência de semestre do E2E tenha um alvo disponível sem
+        # depender de um ano fixo no código.
+        e2e_year = date.today().year + 10
         term, term_created = AcademicTerm.objects.get_or_create(
-            year=2099,
+            year=e2e_year,
             period=AcademicTerm.Period.FIRST,
             defaults={
                 "submission_start_date": date.today(),
-                "submission_end_date": date(2099, 12, 31),
+                "submission_end_date": date(e2e_year, 12, 31),
             },
         )
 
@@ -72,6 +77,19 @@ class Command(BaseCommand):
                 f"docente '{teacher.username}' ({'criado' if teacher_created else 'existente'}), "
                 f"secretaria '{secretariat.username}' ({'criado' if secretariat_created else 'existente'}), "
                 f"{catalog_count} opções de catálogo disponíveis."
+            )
+        )
+        # Saída de máquina consumida pelo fixture ``seed_term`` do E2E.
+        self.stdout.write(
+            json.dumps(
+                {
+                    "term": {
+                        "id": term.pk,
+                        "year": term.year,
+                        "period": term.period,
+                    }
+                },
+                ensure_ascii=False,
             )
         )
 

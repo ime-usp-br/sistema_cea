@@ -55,40 +55,13 @@ class LegacyParityGapsTests(TestCase):
     # ------------------------------------------------------------------
     # GAP 2: NOTIFICAÇÃO DE MUDANÇA DE MODALIDADE (NotifyServiceChange)
     # ------------------------------------------------------------------
-    @EAGER
-    def test_TS_NOT_011_mudanca_de_modalidade_notifica_candidato(self):
-        """O Laravel enviava o email NotifyServiceChange com o novo boleto."""
-        from payments.services import FeeCalculationService, ModalityChangeService
-
-        application = ServiceApplication.objects.create(
-            term=self.term,
-            owner=self.candidate,
-            modality="project",
-            protocol="999999999",
-            contact_email=self.candidate.email,
-            researcher_name="Bruno Modalidade",
-        )
-        FeeCalculationService().create_application_fee(application)
-
-        # Executa o serviço de mudança de modalidade
-        ModalityChangeService().convert_to_consultation(
-            application=application, decided_by=self.secretariat
-        )
-
-        # DEVE existir um despacho de e-mail com o código de template correto
-        dispatches = NotificationDispatch.objects.filter(
-            application=application,
-            template__code="service_modality_changed",  # Template precisa ser adicionado no seeder!
-        )
-        self.assertTrue(
-            dispatches.exists(),
-            "O candidato deve ser notificado por e-mail ao sofrer mudança de modalidade pela Secretaria.",
-        )
+    # Coberto de forma integrada (destinatário, assunto e corpo) em
+    # ``apps/notifications/test_triggers.py::test_TS_NOT_011_...``.
 
     # ------------------------------------------------------------------
     # GAP 3: PAINEL DE INADIMPLÊNCIA (Overdue Billing)
     # ------------------------------------------------------------------
-    def test_TS_PAY_009_secretaria_acessa_painel_de_boletos_vencidos(self):
+    def test_TS_PAY_019_secretaria_acessa_painel_de_boletos_vencidos(self):
         """Garante que a tela de cobranças manuais / inadimplência foi portada."""
         self.client.force_login(self.secretariat)
 

@@ -41,8 +41,8 @@ class SecretariatAdminPermissionsTests(TestCase):
     def _login(self, user: User) -> None:
         self.client.force_login(user)
 
-    # TS-ADM-SEC-TERMOS
-    def test_TS_ADM_SECRETARIA_acessa_semestres_e_emails(self) -> None:
+    # TS-SEC-008 — Secretaria acessa apenas Semestres e E-mails no admin
+    def test_TS_SEC_008_secretaria_acessa_semestres_e_emails(self) -> None:
         self._login(self.secretariat)
         self.secretariat.refresh_from_db()
         self.assertTrue(self.secretariat.is_staff)
@@ -56,22 +56,23 @@ class SecretariatAdminPermissionsTests(TestCase):
         )
         self.assertEqual(templates_response.status_code, 200)
 
-    # TS-ADM-SEC-NAO-USUARIOS (Secretaria não gerencia usuários: sem add/change)
-    def test_TS_ADM_SECRETARIA_nao_acessa_usuarios(self) -> None:
+    # TS-SEC-008 — Secretaria não gerencia usuários (sem add/change)
+    def test_TS_SEC_008_secretaria_nao_acessa_usuarios(self) -> None:
         self._login(self.secretariat)
         self.assertFalse(self.secretariat.has_perm("users.add_user"))
         self.assertFalse(self.secretariat.has_perm("users.change_user"))
         response = self.client.get(reverse("admin:users_user_add"))
         self.assertNotEqual(response.status_code, 200)
 
-    # TS-ADM-ADMIN-TUDO
-    def test_TS_ADM_ADMIN_acessa_tudo(self) -> None:
-        # O Administrador do Django padrão precisa de superuser OU permissões
-        # via grupos; o ``ensure_secretariat_admin_permissions`` só trata a
-        # Secretaria, então elevamos o Admin local via superuser.
-        self.admin.is_superuser = True
-        self.admin.save()
+    # TS-SEC-008 — o Administrador recebe acesso total via grupo RBAC
+    def test_TS_SEC_008_admin_acessa_tudo(self) -> None:
         self._login(self.admin)
+        self.admin.refresh_from_db()
+        self.assertTrue(self.admin.is_staff)
+        self.assertFalse(self.admin.is_superuser)
+        self.assertTrue(self.admin.has_perm("users.add_user"))
+        self.assertTrue(self.admin.has_perm("users.change_user"))
+        self.assertTrue(self.admin.has_perm("terms.change_academicterm"))
         self.assertEqual(
             self.client.get(reverse("admin:users_user_changelist")).status_code,
             200,

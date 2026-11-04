@@ -190,6 +190,11 @@ class Command(BaseCommand):
             default=0.0,
             help="Pausa (segundos) entre etapas no modo --all.",
         )
+        parser.add_argument(
+            "--json",
+            action="store_true",
+            help="Emite uma linha JSON final com protocolo, estado e período.",
+        )
 
     # ------------------------------------------------------------------
     # Fluxo principal
@@ -245,6 +250,8 @@ class Command(BaseCommand):
             if self._application is None:
                 return
             self._print_status(self._application)
+            if options.get("json"):
+                self._print_json(self._application)
 
     def _run_all(self, options: Any) -> None:
         steps = self._canonical_steps(options["modality"])
@@ -264,6 +271,8 @@ class Command(BaseCommand):
                 self._print_status(current)
             if options["interval"]:
                 time.sleep(float(options["interval"]))
+        if self._application is not None and options.get("json"):
+            self._print_json(self._application)
 
     def _canonical_steps(self, modality: str) -> list[tuple[str, Any]]:
         """Sequência canônica (caminho feliz) para --step e --all.
@@ -738,6 +747,26 @@ class Command(BaseCommand):
 
     def _print_event(self, description: str, application: Any) -> None:
         self.stdout.write(self.style.SUCCESS(f"✔ {description}"))
+
+    def _print_json(self, application: Any) -> None:
+        """Emite a saída de máquina consumida pelos testes E2E (--json)."""
+        import json
+
+        self.stdout.write(
+            json.dumps(
+                {
+                    "protocol": application.protocol,
+                    "lifecycle_status": application.lifecycle_status,
+                    "modality": application.modality,
+                    "term": {
+                        "id": application.term_id,
+                        "year": application.term.year,
+                        "period": application.term.period,
+                    },
+                },
+                ensure_ascii=False,
+            )
+        )
 
     def _print_status(self, application: Any) -> None:
         from applications.models import ApplicationEvent, ServiceApplication

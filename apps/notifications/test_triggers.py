@@ -8,6 +8,8 @@ depender de um worker real nem de rede.
 import tempfile
 from datetime import date, time, timedelta
 
+from django.conf import settings
+from django.core import mail
 from django.test import TestCase, override_settings
 
 from applications.models import ServiceApplication
@@ -15,8 +17,13 @@ from applications.services import ApplicationSubmissionService
 from audits.services import DatasetAuditService
 from meetings.services import ConsultationMeetingService, ProjectScreeningService
 from notifications.models import NotificationDispatch
+from notifications.services import NotificationService
 from payments.models import FeeRequirement
-from payments.services import ManualPaymentService, PaymentOrchestrationService
+from payments.services import (
+    ManualPaymentService,
+    ModalityChangeService,
+    PaymentOrchestrationService,
+)
 from terms.models import AcademicTerm
 from users.models import User
 
@@ -65,18 +72,36 @@ class NotificationTriggerTests(TestCase):
             )
         )
 
+    def _dispatch(
+        self, application: ServiceApplication, template_code: str
+    ) -> NotificationDispatch:
+        return NotificationDispatch.objects.get(
+            application=application, template__code=template_code
+        )
+
     def test_TS_NOT_001_submissao_notifica_candidato_e_centro(self) -> None:
         application = self._create("consultation")
         codes = self._codes(application)
         self.assertIn("application_submitted_candidate", codes)
         self.assertIn("application_submitted_center", codes)
-        self.assertTrue(
-            NotificationDispatch.objects.filter(
-                application=application, status=NotificationDispatch.Status.SENT
-            ).exists()
+        candidate_dispatch = self._dispatch(
+            application, "application_submitted_candidate"
         )
+        center_dispatch = self._dispatch(application, "application_submitted_center")
+        self.assertEqual(candidate_dispatch.recipient_email, self.candidate.email)
+        self.assertEqual(center_dispatch.recipient_email, settings.NOTIFICATION_CENTER_EMAIL)
+        self.assertEqual(candidate_dispatch.status, NotificationDispatch.Status.SENT)
+        self.assertEqual(center_dispatch.status, NotificationDispatch.Status.SENT)
+        self.assertEqual(len(mail.outbox), 2)
+        candidate_email = next(
+            message
+            for message in mail.outbox
+            if message.to == [self.candidate.email]
+        )
+        self.assertIn(application.protocol, candidate_email.subject)
+        self.assertIn(application.researcher_name, candidate_email.body)
 
-    def test_TS_NOT_002_auditoria_dispara_correcao_aprovacao_e_rejeicao(self) -> None:
+    def test_TS_NOT_002_auditoria_correcao_notifica_candidato(self) -> None:
         application = self._create("project")
         app_fee = application.fee_requirements.get(
             fee_type=FeeRequirement.FeeType.APPLICATION_FEE
@@ -102,7 +127,52 @@ class NotificationTriggerTests(TestCase):
             outcome="needs_correction",
             note="Ajustar coluna.",
         )
-        self.assertIn("dataset_correction_requested", self._codes(application))
+        dispatch = self._dispatch(application, "dataset_correction_requested")
+        self.assertEqual(dispatch.recipient_email, self.candidate.email)
+        self.assertEqual(dispatch.status, NotificationDispatch.Status.SENT)
+        correction_email = next(
+            message
+            for message in mail.outbox
+            if "Correção solicitada" in message.subject
+        )
+        self.assertEqual(correction_email.to, [self.candidate.email])
+        self.assertIn("Ajustar coluna.", correction_email.body)
+
+    def test_TS_NOT_004_auditoria_rejeitada_notifica_candidato_e_centro(self) -> None:
+        application = self._create("project")
+        app_fee = application.fee_requirements.get(
+            fee_type=FeeRequirement.FeeType.APPLICATION_FEE
+        )
+        instrument = PaymentOrchestrationService().create_payment_instrument(
+            fee_requirement=app_fee, method="pix", created_by=self.candidate
+        )
+        ManualPaymentService().confirm_manual_payment(
+            instrument=instrument, confirmed_by=self.secretariat
+        )
+        application.refresh_from_db()
+        submission = DatasetAuditService().submit_dataset(
+            application=application,
+            submitted_by=self.candidate,
+            channel="external_link",
+            external_url="https://example.com/dados",
+            external_link_declaration=True,
+        )
+        DatasetAuditService().review_submission(
+            submission=submission,
+            reviewer=self.teacher,
+            outcome="rejected",
+            note="Dados insuficientes.",
+        )
+        candidate_dispatch = self._dispatch(application, "dataset_rejected")
+        center_dispatch = self._dispatch(
+            application, "dataset_rejected_secretariat"
+        )
+        self.assertEqual(candidate_dispatch.recipient_email, self.candidate.email)
+        self.assertEqual(
+            center_dispatch.recipient_email, settings.NOTIFICATION_CENTER_EMAIL
+        )
+        self.assertEqual(candidate_dispatch.status, NotificationDispatch.Status.SENT)
+        self.assertEqual(center_dispatch.status, NotificationDispatch.Status.SENT)
 
     def test_TS_NOT_003_revisao_aprovada_notifica(self) -> None:
         application = self._create("project")
@@ -136,11 +206,29 @@ class NotificationTriggerTests(TestCase):
         instrument = PaymentOrchestrationService().create_payment_instrument(
             fee_requirement=fee, method="pix", created_by=self.candidate
         )
-        self.assertIn("payment_created", self._codes(application))
+        created_dispatch = self._dispatch(application, "payment_created")
+        self.assertEqual(created_dispatch.recipient_email, self.candidate.email)
+        self.assertEqual(created_dispatch.status, NotificationDispatch.Status.SENT)
+        created_email = next(
+            message
+            for message in mail.outbox
+            if message.subject == f"Pagamento disponível — inscrição {application.protocol}"
+        )
+        self.assertIn(application.researcher_name, created_email.body)
+        self.assertIn(str(instrument.amount), created_email.body)
+
         ManualPaymentService().confirm_manual_payment(
             instrument=instrument, confirmed_by=self.secretariat
         )
-        self.assertIn("payment_confirmed", self._codes(application))
+        confirmed_dispatch = self._dispatch(application, "payment_confirmed")
+        self.assertEqual(confirmed_dispatch.recipient_email, self.candidate.email)
+        self.assertEqual(confirmed_dispatch.status, NotificationDispatch.Status.SENT)
+        confirmed_email = next(
+            message
+            for message in mail.outbox
+            if message.subject == f"Pagamento confirmado — inscrição {application.protocol}"
+        )
+        self.assertIn(application.researcher_name, confirmed_email.body)
 
     def test_TS_NOT_012_triagem_agendada_e_decidida_notifica(self) -> None:
         application = self._create("project")
@@ -219,15 +307,25 @@ class NotificationTriggerTests(TestCase):
         )
         self.assertIn("consultation_decision", self._codes(application))
 
-    def test_TS_NOT_010_anexos_serializaveis_em_json(self) -> None:
-        # Garante que o payload do Celery (serialização JSON) aceita os anexos.
-        from notifications.services import _serialize_attachments
+    def test_TS_NOT_011_mudanca_de_modalidade_notifica_candidato(self) -> None:
+        application = self._create("project")
+        mail.outbox.clear()
+        ModalityChangeService().convert_to_consultation(application=application)
+        dispatch = self._dispatch(application, "service_modality_changed")
+        self.assertEqual(dispatch.recipient_email, self.candidate.email)
+        self.assertEqual(dispatch.status, NotificationDispatch.Status.SENT)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn(application.protocol, mail.outbox[0].subject)
+        self.assertIn(application.researcher_name, mail.outbox[0].body)
 
-        payload = _serialize_attachments(
-            [{"filename": "f.pdf", "content": b"%PDF-1.4", "mimetype": "application/pdf"}]
+    def test_TS_NOT_014_reemissao_boleto_envia_copia_oculta_ao_centro(self) -> None:
+        application = self._create("consultation")
+        mail.outbox.clear()
+        NotificationService().notify_bank_slip_regenerated(
+            application, "payment_slip_regenerated"
         )
-        assert payload is not None
-        import json
-
-        encoded = json.dumps(payload)
-        self.assertIn("base64", encoded)
+        dispatch = self._dispatch(application, "payment_slip_regenerated")
+        self.assertEqual(dispatch.recipient_email, self.candidate.email)
+        self.assertEqual(dispatch.status, NotificationDispatch.Status.SENT)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn(settings.NOTIFICATION_CENTER_EMAIL, mail.outbox[0].bcc)

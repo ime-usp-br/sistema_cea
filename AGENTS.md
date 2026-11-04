@@ -58,6 +58,7 @@ O sistema possui comandos de gestão para popular e simular o fluxo completo de 
 | `manage.py simulate_journey` | **Simula a jornada ponta a ponta** (inscrição → pagamento → auditoria → triagem/reunião → estado final) passo a passo via flags, usando a camada de serviço real e mockando apenas os gateways externos de Pix/Boleto. |
 | `manage.py seed_demo [--users N] [--count N] [--modality project\|consultation]` | Popula o banco de DEV com candidatos e inscrições válidas (não avança o fluxo). |
 | `manage.py seed_e2e` | Cria período letivo e um candidato E2E com credenciais conhecidas (usado pelo Playwright). |
+| `manage.py e2e_cleanup --protocol <protocolo>` | Marca como excluídas (soft delete) as inscrições criadas pela suíte E2E. |
 | `manage.py import_legacy_data` | Importa dados legados (resgate/migração). |
 
 #### simulate_journey — usuários criados
@@ -82,6 +83,7 @@ O comando cria (se não existirem) usuários com credenciais conhecidas:
 | `--step N` | Executa apenas a etapa N da sequência canônica da modalidade. |
 | `--all` | Executa a jornada completa até o estado final (para na 1ª falha). |
 | `--status` / `--protocol <protocolo>` | Imprime o estado atual da inscrição mais recente (ou a do `--protocol`). |
+| `--json` | Emite uma linha JSON final (protocolo, estado e período), consumida pelos fixtures E2E. |
 
 Exemplos:
 
@@ -157,6 +159,11 @@ Ao gerar código de testes, você deve:
 
 - Traduzir explicitamente os cenários de `TEST_SCENARIOS.md` para código.
 - Nomear os testes fazendo referência ao ID do cenário. Exemplo: `def test_TS_PAY_005_apenas_um_instrumento_ativo_por_taxa(self):`.
+- **Convenção de IDs:** o documento usa hífen (`TS-NOT-001`); o teste Python usa underscore
+  (`test_TS_NOT_001_...`). Todo ID citado no nome do teste deve existir em `docs/TEST_SCENARIOS.md`
+  (verificado pelo meta-teste em `apps/base/tests.py`).
+- Em testes de notificação, afirmar também **destinatário** (candidato vs.
+  `settings.NOTIFICATION_CENTER_EMAIL`) e **BCC** quando o fluxo usar cópia oculta.
 - Usar _Mocks_ e _Patching_ para chamadas externas (Pix via API Rest, Boleto via SOAP). **Nenhum teste gerado deve depender de conectividade de rede externa**.
 - Verificar efeitos colaterais: certifique-se de que o teste valide não apenas o retorno da API/Serviço, mas também o registro de auditoria em `application_events`.
 

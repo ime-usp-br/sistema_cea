@@ -88,7 +88,7 @@ class TermTransferPendingTests(TestCase):
             2,
         )
 
-    def test_TS_TRM_editar_periodo_nao_remigra(self) -> None:
+    def test_TS_TRM_007_editar_periodo_nao_remigra(self) -> None:
         application = self._application()
         TermTransferService().transfer_to_next_semester(
             application, decided_by=self.secretariat

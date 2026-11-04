@@ -24,7 +24,7 @@ class GroupedFinancialReportTests(TestCase):
         )
         self.service = ReportService()
 
-    def test_TS_REP_AGRUPADO_uma_linha_por_inscricao_com_tres_taxas(self) -> None:
+    def test_TS_REP_007_uma_linha_por_inscricao_com_tres_taxas(self) -> None:
         application = ApplicationSubmissionService().create_application(
             term=self.term,
             owner=self.candidate,
@@ -47,9 +47,26 @@ class GroupedFinancialReportTests(TestCase):
             },
         )
 
-    def test_TS_REP_EXPORT_FILENAME_usa_semestre(self) -> None:
+    def test_TS_REP_007_export_csv_usa_semestre_e_contem_taxas(self) -> None:
+        application = ApplicationSubmissionService().create_application(
+            term=self.term,
+            owner=self.candidate,
+            modality=ServiceApplication.Modality.PROJECT,
+            researcher_name="Maria",
+            contact_email="c@example.com",
+        )
+        FeeCalculationService().create_project_fee(application)
+        FeeCalculationService().create_supplement_fee(application)
         response = self.service.export_financial_csv(term=self.term)
         self.assertIn(
             "relatorio_financeiro_2026_first.csv",
             response["Content-Disposition"],
         )
+        content = response.content.decode("utf-8-sig")
+        self.assertIn(application.protocol, content)
+        self.assertIn("Taxa de Inscrição", content)
+        self.assertIn("Taxa de Projeto", content)
+        self.assertIn("Complemento", content)
+        self.assertIn("80.00", content)
+        self.assertIn("250.00", content)
+        self.assertIn("60.00", content)

@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.test import TestCase
 from django.urls import reverse
 
@@ -66,12 +68,12 @@ class ReportScenarioTests(TestCase):
         app = self.create_project()
         self.create_paid_instrument(app, PaymentInstrument.Method.PIX)
         rows = self.service.build_financial_report_data()
-        self.assertTrue(rows)
         self.assertEqual(len(rows), 1)
         row = rows[0]
         self.assertEqual(row["protocol"], app.protocol)
         self.assertEqual(row["candidate"], "Maria Pesquisadora")
         fee_cell = row["fees"]["application_fee"]
+        self.assertEqual(fee_cell["amount"], Decimal("80.00"))
         self.assertEqual(fee_cell["method"], "pix")
         self.assertEqual(fee_cell["status"], "Pago")
 

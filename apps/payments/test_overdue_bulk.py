@@ -29,7 +29,9 @@ class OverdueBulkSelectionTests(TestCase):
         )
         self.client.force_login(self.secretariat)
 
-    def _make_overdue_slip(self) -> BankSlipPaymentInstrument:
+    def _make_overdue_slip(
+        self,
+    ) -> tuple[BankSlipPaymentInstrument, ServiceApplication]:
         owner = User.objects.create_user(
             username=f"cand{User.objects.count()}",
             email=f"cand{User.objects.count()}@example.com",
@@ -58,12 +60,12 @@ class OverdueBulkSelectionTests(TestCase):
             document_amount=Decimal("140.00"),
             bank_status=BankSlipPaymentInstrument.BankStatus.EMITTED,
         )
-        return slip
+        return slip, application
 
-    # TS-PAY-COB-SELECT
-    def test_TS_PAY_COB_send_somente_slips_selecionados(self) -> None:
-        first = self._make_overdue_slip()
-        second = self._make_overdue_slip()
+    # TS-PAY-014 — cobrança em massa apenas dos selecionados
+    def test_TS_PAY_014_cobranca_envia_somente_slips_selecionados(self) -> None:
+        first, first_application = self._make_overdue_slip()
+        second, second_application = self._make_overdue_slip()
         with patch(
             "notifications.services.NotificationService.notify_overdue_reminder"
         ) as notify:
@@ -71,28 +73,33 @@ class OverdueBulkSelectionTests(TestCase):
                 actor=self.secretariat, slip_ids=[first.pk]
             )
         self.assertEqual(sent, 1)
-        self.assertEqual(notify.call_count, 1)
-        self.assertEqual(
+        notify.assert_called_once()
+        self.assertTrue(
             ApplicationEvent.objects.filter(
-                event_code="payment.overdue_reminder_sent"
-            ).count(),
-            1,
+                application=first_application,
+                event_code="payment.overdue_reminder_sent",
+            ).exists()
         )
-        # Ainda existe o segundo boleto vencido (não cobrado).
-        self.assertTrue(second.pk)
+        # O segundo boleto vencido não foi cobrado nem gerou evento.
+        self.assertFalse(
+            ApplicationEvent.objects.filter(
+                application=second_application,
+                event_code="payment.overdue_reminder_sent",
+            ).exists()
+        )
 
-    # TS-PAY-COB-VIEW
-    def test_TS_PAY_COB_view_exibe_checkbox_e_historico(self) -> None:
-        slip = self._make_overdue_slip()
+    # TS-PAY-014 — a tela exibe checkbox e histórico de cobrança
+    def test_TS_PAY_014_view_exibe_checkbox_e_historico(self) -> None:
+        slip, _application = self._make_overdue_slip()
         response = self.client.get(reverse("payments:overdue_list"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, f'value="{slip.pk}"')
         self.assertContains(response, "Histórico de Cobrança")
         self.assertContains(response, "Enviar e-mail de cobrança para os selecionados")
 
-    # TS-PAY-COB-POST
-    def test_TS_PAY_COB_post_com_slip_ids_dispara_cobranca(self) -> None:
-        slip = self._make_overdue_slip()
+    # TS-PAY-014 — o POST cobra apenas os boletos marcados
+    def test_TS_PAY_014_post_com_slip_ids_dispara_cobranca(self) -> None:
+        slip, _application = self._make_overdue_slip()
         with patch(
             "notifications.services.NotificationService.notify_overdue_reminder"
         ) as notify:

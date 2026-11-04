@@ -1,10 +1,12 @@
 # Stack dedicada aos testes E2E de navegador (Playwright).
 # Uso recomendado (semeia os dados e roda a suíte):
 #   ./scripts/run_e2e.sh
-# Ou diretamente:
-#   docker compose -f docker-compose.e2e.yml run --rm --build e2e
+# Ou diretamente (o caminho absoluto do host é obrigatório):
+#   docker compose -f docker-compose.e2e.yml run --rm --build -e E2E_HOST_ROOT="$PWD" e2e
 #
 # A aplicação deve estar de pé em E2E_BASE_URL (padrão: http://cea.dev.ime).
+# Ao rodar o serviço ``e2e`` diretamente, informe o caminho absoluto do host:
+#   docker compose -f docker-compose.e2e.yml run --rm -e E2E_HOST_ROOT="$PWD" e2e
 services:
   e2e:
     build:
@@ -12,14 +14,35 @@ services:
     working_dir: /workspace
     environment:
       E2E_BASE_URL: "${E2E_BASE_URL:-http://cea.dev.ime}"
+      # Caminho absoluto do repositório no HOST. Necessário porque o serviço
+      # ``web`` é criado a partir de dentro deste container; bind mounts
+      # relativos seriam resolvidos pelo daemon contra o host.
+      E2E_HOST_ROOT: "${E2E_HOST_ROOT:-.}"
       # Mantém o mesmo projeto Compose usado pelos containers da aplicação,
-      # para que `docker compose exec web ...` funcione via socket.
+      # para que o serviço ``web`` abaixo compartilhe a rede/banco.
       COMPOSE_PROJECT_NAME: "${COMPOSE_PROJECT_NAME:-sistema_cea}"
     volumes:
-      # Código-fonte completo: os fixtures rodam `docker compose exec` daqui.
+      # Código-fonte completo: os fixtures executam o serviço ``web`` daqui.
       - .:/workspace
       # Acesso ao daemon do host (dev/teste).
       - /var/run/docker.sock:/var/run/docker.sock
     extra_hosts:
       - "cea.dev.ime:host-gateway"
       - "cea.local:host-gateway"
+
+  # Serviço de management usado pelos fixtures (seed/simulate_journey/cleanup).
+  # Reutiliza a imagem já construída pela aplicação e a mesma rede/banco.
+  web:
+    image: "${COMPOSE_PROJECT_NAME:-sistema_cea}-web"
+    working_dir: /app
+    environment:
+      DJANGO_ENV: "${DJANGO_ENV:-development}"
+      DEBUG: "${DEBUG:-True}"
+      SECRET_KEY: "${SECRET_KEY:-django-insecure-change-me}"
+      ALLOWED_HOSTS: "${ALLOWED_HOSTS:-*}"
+      DATABASE_URL: "${DATABASE_URL:-postgres://uspuser:usppass@db:5432/uspdb}"
+      REDIS_URL: "${REDIS_URL:-redis://redis:6379/0}"
+      ENABLE_LOCAL_LOGIN: "${ENABLE_LOCAL_LOGIN:-True}"
+      NOTIFICATION_CENTER_EMAIL: "${NOTIFICATION_CENTER_EMAIL:-cea@ime.usp.br}"
+    volumes:
+      - "${E2E_HOST_ROOT:-.}:/app"

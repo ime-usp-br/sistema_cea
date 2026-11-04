@@ -59,7 +59,7 @@ class SimulatePaymentViewTests(TestCase):
             fee_requirement=self.fee, method=PaymentInstrument.Method.PIX
         )
 
-    def test_TS_PAY_SIM_001_confirmar_pix_em_dev(self) -> None:
+    def test_TS_PAY_013_confirmar_pix_em_dev(self) -> None:
         instrument = self._create_pix()
         self.client.force_login(self.candidate)
         response = self.client.post(
@@ -75,7 +75,7 @@ class SimulatePaymentViewTests(TestCase):
         )
 
     @override_settings(DEBUG=False)
-    def test_TS_PAY_SIM_002_rota_indisponivel_sem_debug(self) -> None:
+    def test_TS_PAY_013_rota_indisponivel_sem_debug(self) -> None:
         instrument = self._create_pix()
         self.client.force_login(self.candidate)
         response = self.client.post(
@@ -83,7 +83,7 @@ class SimulatePaymentViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 404)
 
-    def test_TS_PAY_SIM_003_nao_simula_pagamento_de_terceiros(self) -> None:
+    def test_TS_PAY_013_nao_simula_pagamento_de_terceiros(self) -> None:
         instrument = self._create_pix()
         self.client.force_login(self.other)
         response = self.client.post(
@@ -93,7 +93,7 @@ class SimulatePaymentViewTests(TestCase):
         instrument.refresh_from_db()
         self.assertNotEqual(instrument.state, PaymentInstrument.State.PAID)
 
-    def test_TS_PAY_SIM_004_metodo_manual_nao_simulavel(self) -> None:
+    def test_TS_PAY_013_metodo_manual_nao_simulavel(self) -> None:
         instrument = PaymentInstrument.objects.create(
             fee_requirement=self.fee,
             method=PaymentInstrument.Method.MANUAL,

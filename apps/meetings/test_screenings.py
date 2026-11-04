@@ -125,7 +125,7 @@ class MeetingsScreeningConsultationTests(TestCase):
         self.assertNotContains(response, "Taxa Projeto")
 
     # TS-MTG-ALIAS-QUEUE
-    def test_TS_MTG_alias_queue_continua_disponivel(self) -> None:
+    def test_TS_MEET_015_alias_queue_continua_disponivel(self) -> None:
         self.client.force_login(self.secretariat)
         response = self.client.get(reverse("meetings:queue"))
         self.assertEqual(response.status_code, 200)

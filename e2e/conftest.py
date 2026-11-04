@@ -1,27 +1,25 @@
 """Fixtures dos testes E2E de navegador (Playwright).
 
 Os testes rodam contra a aplicação Django em execução (padrão:
-http://cea.dev.ime, configurável por ``E2E_BASE_URL``), por isso precisam de
-dados pré-existentes no banco de desenvolvimento. O fixture de sessão
-``seed_database`` garante que o período letivo e os usuários
-candidato/docente/secretaria existam, de forma idempotente, antes de qualquer
-cenário rodar.
+http://cea.dev.ime, configurável por ``E2E_BASE_URL``). Os comandos de seed e
+de preparação usam o serviço ``web`` declarado em ``docker-compose.e2e.yml``,
+que compartilha o banco da aplicação — sem depender de ``docker compose exec``
+no projeto principal.
 
-Quando a suíte roda **dentro do container e2e** não há acesso ao
-``docker compose exec`` usado para semear: nesse caso define-se
-``E2E_SKIP_SEED=1`` (feito por ``scripts/run_e2e.sh``, que semeia antes).
+Cada inscrição criada é registrada e, ao fim da sessão, marcada como excluída
+via ``manage.py e2e_cleanup`` (exclusão lógica, sem apagar dados).
 """
 
 from __future__ import annotations
 
-import os
+import json
 import re
 import subprocess
 from collections.abc import Callable
 
 import pytest
 from helpers import BASE_URL
-from playwright.sync_api import Page
+from playwright.sync_api import Page, expect
 
 E2E_USERNAME = "e2e_candidate"
 E2E_PASSWORD = "e2e-senha-123"
@@ -36,12 +34,15 @@ E2E_USERS = {
 
 
 def run_manage(*args: str) -> str:
-    """Executa um comando ``manage.py`` no container web e devolve o stdout."""
+    """Executa um comando ``manage.py`` no serviço web do compose E2E."""
     result = subprocess.run(
         [
             "docker",
             "compose",
-            "exec",
+            "-f",
+            "docker-compose.e2e.yml",
+            "run",
+            "--rm",
             "-T",
             "web",
             "python",
@@ -55,19 +56,46 @@ def run_manage(*args: str) -> str:
     return result.stdout
 
 
+def _last_json_line(output: str) -> dict:
+    """Extrai a última linha JSON emitida por ``seed_e2e``/``simulate_journey``."""
+    for line in reversed(output.splitlines()):
+        candidate = line.strip()
+        if candidate.startswith("{"):
+            return json.loads(candidate)
+    raise AssertionError(f"Saída JSON não encontrada:\n{output}")
+
+
 @pytest.fixture(scope="session", autouse=True)
-def seed_database() -> None:
-    """Semeia os dados mínimos (período + 3 usuários) no banco de DEV do container."""
-    if os.getenv("E2E_SKIP_SEED") == "1":
+def seed_database() -> dict:
+    """Semeia os dados mínimos e devolve o período canônico do E2E."""
+    return _last_json_line(run_manage("seed_e2e"))
+
+
+@pytest.fixture(scope="session")
+def seed_term(seed_database: dict) -> dict:
+    """Período letivo criado/garantido pelo seed E2E (id/ano/semestre)."""
+    return seed_database["term"]
+
+
+@pytest.fixture(scope="session")
+def created_protocols() -> list[str]:
+    """Protocolos de inscrições criadas durante a sessão (para cleanup)."""
+    return []
+
+
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_e2e_data(
+    seed_database: dict, created_protocols: list[str]
+) -> object:
+    """Marca como excluídas as inscrições criadas pela suíte ao final."""
+    yield
+    protocols = sorted(set(created_protocols))
+    if not protocols:
         return
-    try:
-        run_manage("seed_e2e")
-    except (subprocess.CalledProcessError, FileNotFoundError) as exc:
-        raise RuntimeError(
-            "Não foi possível semear os dados E2E via `docker compose exec web "
-            "python manage.py seed_e2e`. Rode o seed manualmente e use "
-            "E2E_SKIP_SEED=1, ou execute ./scripts/run_e2e.sh."
-        ) from exc
+    args: list[str] = ["e2e_cleanup"]
+    for protocol in protocols:
+        args.extend(["--protocol", protocol])
+    run_manage(*args)
 
 
 @pytest.fixture
@@ -80,7 +108,8 @@ def login_as(page: Page) -> Callable[..., None]:
         page.fill("#id_username", username)
         page.fill("#id_password", password)
         page.click("button[type='submit']")
-        page.wait_for_load_state("networkidle")
+        expect(page).not_to_have_url(re.compile(r".*/auth/login/?$"))
+        expect(page.locator("h1.page-title")).to_be_visible()
 
     return _login
 
@@ -96,7 +125,9 @@ def login(login_as: Callable[..., None]) -> Callable[..., None]:
 
 
 @pytest.fixture
-def create_application() -> Callable[..., str]:
+def create_application(
+    created_protocols: list[str],
+) -> Callable[..., str]:
     """Cria uma inscrição real para o candidato E2E via ``simulate_journey``.
 
     Retorna o protocolo de 9 dígitos. Flags extras são repassadas ao comando
@@ -112,10 +143,20 @@ def create_application() -> Callable[..., str]:
             "--owner",
             E2E_USERNAME,
             *flags,
+            "--json",
         )
-        match = re.search(r"Inscrição (\d{9})", output)
-        if match is None:
-            raise AssertionError(f"Protocolo não encontrado na saída:\n{output}")
-        return match.group(1)
+        protocol = _last_json_line(output)["protocol"]
+        created_protocols.append(protocol)
+        return protocol
 
     return _create
+
+
+@pytest.fixture
+def track_protocol(created_protocols: list[str]) -> Callable[[str], None]:
+    """Registra um protocolo criado pela UI para o cleanup da sessão."""
+
+    def _track(protocol: str) -> None:
+        created_protocols.append(protocol)
+
+    return _track

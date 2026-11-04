@@ -27,8 +27,13 @@ DETAIL_PATH_RE = re.compile(r"/inscricoes/\d{9}/$")
 
 def _go_to_new_application(page: Page) -> None:
     page.goto(f"{BASE_URL}/inscricoes/nova/")
-    page.wait_for_load_state("networkidle")
     expect(page.locator("#form-inscricao")).to_be_visible()
+
+
+def _track_current_application(page: Page, track_protocol) -> None:
+    match = re.search(r"/inscricoes/(\d{9})/", page.url)
+    assert match is not None, f"Protocolo não encontrado na URL {page.url}"
+    track_protocol(match.group(1))
 
 
 # ---------------------------------------------------------------------------
@@ -37,31 +42,31 @@ def _go_to_new_application(page: Page) -> None:
 
 
 def test_E2E_001_submissao_valida_de_projeto_redireciona_ao_detalhe(
-    login, page: Page
+    login, page: Page, track_protocol
 ) -> None:
     login()
     _go_to_new_application(page)
 
     fill_valid_project(page)
     page.click("button[type='submit']")
-    page.wait_for_load_state("networkidle")
 
     expect(page).to_have_url(re.compile(r".*" + DETAIL_PATH_RE.pattern))
+    _track_current_application(page, track_protocol)
     expect(page.locator("h1.page-title")).to_contain_text("Inscrição")
     expect(page.locator("body")).to_contain_text("Aguardando pagamento")
 
 
 def test_E2E_002_submissao_valida_de_consulta_aguarda_pagamento(
-    login, page: Page
+    login, page: Page, track_protocol
 ) -> None:
     login()
     _go_to_new_application(page)
 
     fill_valid_consultation(page)
     page.click("button[type='submit']")
-    page.wait_for_load_state("networkidle")
 
     expect(page).to_have_url(re.compile(r".*" + DETAIL_PATH_RE.pattern))
+    _track_current_application(page, track_protocol)
     expect(page.locator("h1.page-title")).to_contain_text("Inscrição")
     expect(page.locator("body")).to_contain_text("Aguardando pagamento")
 
