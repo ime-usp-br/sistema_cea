@@ -15,6 +15,7 @@ import sys
 from pathlib import Path
 
 import environ
+from django.core.exceptions import ImproperlyConfigured
 
 # Initialize environment variables
 env = environ.Env(
@@ -218,10 +219,60 @@ CELERY_BEAT_SCHEDULE = {
 
 
 # ---- E-mail (notificações) ----
+# Aceita os nomes padrão do Django (EMAIL_*) e também os nomes herdados do
+# sistema legado Laravel (MAIL_*), para facilitar a migração da configuração.
+# MAIL_DRIVER=log/console imprime o e-mail no stdout do container em vez de
+# enviá-lo; use MAIL_DRIVER=smtp para envio real.
+_mail_driver = env('MAIL_DRIVER', default='smtp').strip().lower()
+_mail_encryption = env('MAIL_ENCRYPTION', default='tls').strip().lower()
+
+EMAIL_BACKEND = env(
+    'EMAIL_BACKEND',
+    default=(
+        'django.core.mail.backends.console.EmailBackend'
+        if _mail_driver in {'log', 'console'}
+        else 'django.core.mail.backends.smtp.EmailBackend'
+    ),
+)
+EMAIL_HOST = env('EMAIL_HOST', default=env('MAIL_HOST', default='localhost'))
+EMAIL_PORT = env.int('EMAIL_PORT', default=env.int('MAIL_PORT', default=25))
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default=env('MAIL_USERNAME', default=''))
+EMAIL_HOST_PASSWORD = env(
+    'EMAIL_HOST_PASSWORD', default=env('MAIL_PASSWORD', default='')
+)
+EMAIL_USE_TLS = env.bool(
+    'EMAIL_USE_TLS', default=_mail_encryption in {'tls', 'starttls'}
+)
+EMAIL_USE_SSL = env.bool(
+    'EMAIL_USE_SSL', default=_mail_encryption in {'ssl', 'smtps'}
+)
+EMAIL_TIMEOUT = env.int('EMAIL_TIMEOUT', default=15)
+
+if EMAIL_USE_TLS and EMAIL_USE_SSL:
+    raise ImproperlyConfigured(
+        'EMAIL_USE_TLS e EMAIL_USE_SSL são mutuamente exclusivos.'
+    )
+
 # E-mail padrão usado no remetente dos disparos de notificação.
-DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@cea.ime.usp.br')
+_mail_from_address = env(
+    'DEFAULT_FROM_EMAIL',
+    default=env('MAIL_FROM_ADDRESS', default='noreply@cea.ime.usp.br'),
+)
+_mail_from_name = env('MAIL_FROM_NAME', default='').strip()
+DEFAULT_FROM_EMAIL = (
+    f'{_mail_from_name} <{_mail_from_address}>'
+    if _mail_from_name
+    else _mail_from_address
+)
+SERVER_EMAIL = env('SERVER_EMAIL', default=_mail_from_address)
+
 # Destinatário dos avisos internos para a equipe CEA.
-NOTIFICATION_CENTER_EMAIL = env('NOTIFICATION_CENTER_EMAIL', default='cea@ime.usp.br')
+NOTIFICATION_CENTER_EMAIL = env(
+    'NOTIFICATION_CENTER_EMAIL',
+    default=env('MAIL_CEA', default='cea@ime.usp.br'),
+)
+# Destinatário padrão do comando ``send_test_email`` (homologação/dev).
+MAIL_DEV_TEST = env('MAIL_DEV_TEST', default='')
 
 
 # ---- Integração Pix (API REST/JSON - WSPIX) ----

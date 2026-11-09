@@ -4,6 +4,7 @@ from datetime import timedelta
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
+from django.conf import settings
 from django.core import mail
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -327,7 +328,9 @@ class BankSlipScenarioTests(TestCase):
         dispatch = NotificationDispatch.objects.get(
             template__code="bank_slip_generation_failure"
         )
-        self.assertEqual(dispatch.recipient_email, "cea@ime.usp.br")
+        self.assertEqual(
+            dispatch.recipient_email, settings.NOTIFICATION_CENTER_EMAIL
+        )
         self.assertEqual(
             dispatch.application_id,
             application.pk,
@@ -586,7 +589,8 @@ class BankSlipScenarioTests(TestCase):
             regenerate_overdue_bank_slips_task()
 
         notified_cea = any(
-            "cea@ime.usp.br" in (email.bcc or []) for email in mail.outbox
+            settings.NOTIFICATION_CENTER_EMAIL in (email.bcc or [])
+            for email in mail.outbox
         )
         self.assertTrue(
             notified_cea,
@@ -612,7 +616,9 @@ class BankSlipScenarioTests(TestCase):
         center_fail = NotificationDispatch.objects.get(
             template__code="bank_slip_generation_failure"
         )
-        self.assertEqual(center_fail.recipient_email, "cea@ime.usp.br")
+        self.assertEqual(
+            center_fail.recipient_email, settings.NOTIFICATION_CENTER_EMAIL
+        )
         candidate_emails = [
             email for email in mail.outbox if email.to == ["ana@example.com"]
         ]
