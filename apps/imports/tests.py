@@ -125,6 +125,39 @@ class LegacyImportScenarioTests(TestCase):
         self.assertIn(PaymentInstrument.State.MANUAL_CONFIRMED, states)
         self.assertEqual(app.payment_state, ServiceApplication.PaymentState.PAID)
 
+    def test_import_agrupa_boletos_substituidos_em_uma_taxa(self):
+        record = dict(LEGACY_RECORD)
+        record["payments"] = [
+            {
+                "fee_type": "application_fee",
+                "method": "bank_slip",
+                "state": "canceled",
+                "amount": "80.00",
+                "reason": "Taxa de Inscrição (Substituído)",
+            },
+            {
+                "fee_type": "application_fee",
+                "method": "bank_slip",
+                "state": "created",
+                "amount": "80.00",
+                "reason": "Taxa de Inscrição",
+            },
+            {
+                "fee_type": "project_fee",
+                "method": "bank_slip",
+                "state": "paid",
+                "amount": "200.00",
+                "reason": "Taxa de Projeto",
+            },
+        ]
+        app = self.import_record(record)
+        application_fees = app.fee_requirements.filter(fee_type="application_fee")
+        self.assertEqual(application_fees.count(), 1)
+        self.assertEqual(application_fees.get().payment_instruments.count(), 2)
+        self.assertEqual(
+            app.payment_state, ServiceApplication.PaymentState.PARTIALLY_PAID
+        )
+
     def test_TS_IMP_005_projeto_importado_sem_auditoria_automatica(self):
         app = self.import_record(LEGACY_RECORD)
         self.assertFalse(app.dataset_audit_required)

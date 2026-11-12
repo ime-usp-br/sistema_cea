@@ -59,7 +59,8 @@ O sistema possui comandos de gestão para popular e simular o fluxo completo de 
 | `manage.py seed_demo [--users N] [--count N] [--modality project\|consultation]` | Popula o banco de DEV com candidatos e inscrições válidas (não avança o fluxo). |
 | `manage.py seed_e2e` | Cria período letivo e um candidato E2E com credenciais conhecidas (usado pelo Playwright). |
 | `manage.py e2e_cleanup --protocol <protocolo>` | Marca como excluídas (soft delete) as inscrições criadas pela suíte E2E. |
-| `manage.py import_legacy_data` | Importa dados legados (resgate/migração). |
+| `manage.py import_legacy_data` | Importa dados legados a partir de JSON (resgate/migração). |
+| `manage.py import_legacy_sql --dump <arquivo.sql> [--storage-root <pasta>] [--update] [--limit N]` | Importa o dump SQL do MariaDB (aplicações, catálogo, períodos, pagamentos/boletos, triagens, reuniões, eventos, anexos e comprovantes). Use `--update` para reimportar sem duplicar; sem `--storage-root`, os arquivos são ignorados com aviso. Guia completo em `docs/IMPORTACAO_DADOS_LEGADOS.md`. |
 
 #### simulate_journey — usuários criados
 
@@ -102,6 +103,23 @@ docker compose exec web python manage.py simulate_journey --protocol 123456789 -
 - **Storage de mídia:** o comando isola `MEDIA_ROOT` em diretório temporário porque o bind mount `/app` pertence ao usuário do host (uid 1001) e o container roda como `appuser` (uid 1000). Uploads reais (Pix QR, anexos, boletos) exigem o diretório `media/` gravável — isso vale para o app inteiro, não só para a simulação.
 - **Uma inscrição por invocação:** ao encadear várias flags numa única chamada, cada flag executa uma vez (argparse deduplica flags repetidas, ex.: `--pay`). Para continuar em outra etapa, repita o comando informando `--protocol` ou deixe alvo padrão na inscrição mais recente.
 - **Testes do comando:** `apps/applications/tests/test_simulate_journey_command.py` cobre as jornadas Projeto/Consulta, rejeição, conversão, `--step` e reembolso.
+
+### 4.2 Importação de dump legado (SQL + storage)
+
+Guia completo: `docs/IMPORTACAO_DADOS_LEGADOS.md`.
+
+Pontos críticos:
+
+- O legado tem projeto e banco em servidores separados, mas ambos são do mesmo projeto.
+- O storage dos anexos é o root do disco `local` do Laravel, **não** necessariamente `storage/app`. Descubra no legado com:
+  `php -r "require 'vendor/autoload.php'; \$app=require 'bootstrap/app.php'; \$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); print_r(config('filesystems.disks'));"`
+  Neste projeto, o root do `local` é `/storage/inscricoes-cea/app`.
+- Gere dump e archive a partir de `$HOME` no servidor legado; não deixe arquivos no diretório do projeto em produção.
+- O archive do storage deve conter `app/<protocolo>/<arquivo>`. Monte-o read-only e rode:
+  `docker compose run --rm -v /home/<usuario>/cea-legacy-storage-local:/legacy-storage:ro web python manage.py import_legacy_sql --dump /app/tmp/<dump>.sql --storage-root /legacy-storage/app --update`
+- `--update` é idempotente; sem ele, a segunda execução falha com “protocolo duplicado” (`TS-IMP-007`).
+- Sem `--storage-root`, anexos e comprovantes são ignorados com aviso.
+- Dump e storage contêm dados pessoais: manter fora do Git (`$HOME` ou `tmp/`) e nunca commitar.
 
 ---
 
