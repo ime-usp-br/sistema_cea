@@ -163,7 +163,7 @@ class ServiceApplication(models.Model):
 
     researcher_name = models.CharField(max_length=255)
     contact_email = models.EmailField(max_length=255)
-    contact_phone = models.CharField(max_length=50, null=True, blank=True)
+    contact_phone = models.CharField(max_length=255, null=True, blank=True)
     has_whatsapp = models.BooleanField(default=False)
     tax_id = models.CharField(max_length=20, null=True, blank=True)
 

@@ -213,7 +213,7 @@ CREATE TABLE service_applications (
 
     researcher_name VARCHAR(255) NOT NULL,
     contact_email VARCHAR(255) NOT NULL,
-    contact_phone VARCHAR(50) NULL,
+    contact_phone VARCHAR(255) NULL,
     has_whatsapp BOOLEAN NOT NULL DEFAULT FALSE,
     tax_id VARCHAR(20) NULL,
 
