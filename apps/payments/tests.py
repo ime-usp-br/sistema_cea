@@ -485,6 +485,48 @@ class PaymentScenarioTests(TestCase):
             )
         self.assertEqual(RefundRequest.objects.filter(application=application).count(), 0)
 
+    def test_TS_REF_005b_reembolso_considera_solicitacoes_anteriores(self) -> None:
+        """O saldo reembolsável desconta pedidos já feitos (evita duplicidade)."""
+        application = self.create_consultation()
+        self.create_and_pay_application_fee(application)
+        self.refund_service.create_refund_request(
+            application=application,
+            requested_by=self.secretariat,
+            amount=Decimal("100.00"),
+        )
+        self.assertEqual(
+            self.refund_service.available_for_refund(application),
+            Decimal("40.00"),
+        )
+        with self.assertRaises(PaymentDomainError):
+            self.refund_service.create_refund_request(
+                application=application,
+                requested_by=self.secretariat,
+                amount=Decimal("50.00"),
+            )
+        refund = self.refund_service.create_refund_request(
+            application=application,
+            requested_by=self.secretariat,
+            amount=Decimal("40.00"),
+        )
+        self.assertEqual(refund.amount, Decimal("40.00"))
+
+    def test_TS_REF_005c_sem_pagamento_mensagem_clara(self) -> None:
+        application = self.create_consultation()
+        self.assertEqual(
+            self.refund_service.available_for_refund(application),
+            Decimal("0.00"),
+        )
+        with self.assertRaisesMessage(
+            PaymentDomainError,
+            "Não há valor pago disponível",
+        ):
+            self.refund_service.create_refund_request(
+                application=application,
+                requested_by=self.secretariat,
+                amount=Decimal("0.50"),
+            )
+
     # ------------------------------------------------------------------
     # 14. Mudança de modalidade
     # ------------------------------------------------------------------

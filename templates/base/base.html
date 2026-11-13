@@ -99,15 +99,41 @@
     <script>
     (function () {
         document.querySelectorAll("form").forEach(function (form) {
-            form.addEventListener("submit", function () {
+            form.addEventListener("submit", function (event) {
+                // Se a validação client-side já bloqueou o envio, não altere o
+                // botão: antes ele ficava desabilitado com "Enviando…" e o
+                // usuário precisava recarregar a página para tentar de novo.
+                if (event.defaultPrevented) return;
                 var submit = form.querySelector('button[type="submit"], input[type="submit"]');
                 if (!submit || submit.disabled) return;
+                submit.dataset.originalText = submit.tagName === "INPUT"
+                    ? submit.value
+                    : submit.textContent;
+                submit.dataset.loadingDisabled = "true";
                 submit.disabled = true;
                 var label = submit.getAttribute("data-loading-text");
                 if (label) {
-                    submit.dataset.originalText = submit.textContent;
-                    submit.textContent = label;
+                    if (submit.tagName === "INPUT") {
+                        submit.value = label;
+                    } else {
+                        submit.textContent = label;
+                    }
                 }
+            });
+        });
+
+        // Ao voltar pelo histórico (bfcache), restaura o estado dos botões.
+        window.addEventListener("pageshow", function () {
+            document.querySelectorAll("[data-loading-disabled]").forEach(function (submit) {
+                var original = submit.dataset.originalText || "";
+                if (submit.tagName === "INPUT") {
+                    submit.value = original;
+                } else {
+                    submit.textContent = original;
+                }
+                submit.disabled = false;
+                delete submit.dataset.originalText;
+                delete submit.dataset.loadingDisabled;
             });
         });
     })();

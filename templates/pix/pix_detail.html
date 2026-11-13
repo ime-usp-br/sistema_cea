@@ -91,6 +91,15 @@
                 </button>
             </div>
 
+            {% if pix.payment_instrument.state == 'active' or pix.payment_instrument.state == 'created' %}
+                <form method="post" action="{% url 'pix:check' application.protocol %}" class="form mt-2">
+                    {% csrf_token %}
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-secondary" data-loading-text="Consultando…">Já paguei / verificar pagamento</button>
+                    </div>
+                </form>
+            {% endif %}
+
             {% if allow_payment_simulation and pix.payment_instrument.state != 'paid' and pix.payment_instrument.state != 'manual_confirmed' %}
                 <form method="post" action="{% url 'payments:simulate_payment' pix.payment_instrument.pk %}" class="form mt-2">
                     {% csrf_token %}

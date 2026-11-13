@@ -12,18 +12,34 @@
 <div class="page-header" style="display: block; text-align: center;">
     <div>
         <h1 class="page-title">FICHA DE INSCRIÇÃO PARA ASSESSORIA ESTATÍSTICA</h1>
-        <p class="page-subtitle" style="margin: 0.35rem auto 0;">{% if form.term.value %}{{ form.term.value }}{% endif %}</p>
+        <p class="page-subtitle" style="margin: 0.35rem auto 0;">{% if selected_term %}{{ selected_term }}{% endif %}</p>
     </div>
 </div>
 
 <div class="card ficha" style="max-width: 900px; margin: 0 auto;">
     <div class="card-body">
-        <form method="post" enctype="multipart/form-data" class="form" id="form-inscricao" novalidate>
+        <form method="post" enctype="multipart/form-data" class="form" id="form-inscricao" novalidate
+              data-project-period-open="{{ project_submission_open|yesno:'true,false' }}"
+              data-project-period-message="{{ project_submission_message }}">
             {% csrf_token %}
             {{ form.term.as_hidden }}
 
             {% if form.non_field_errors %}
                 <div class="alert alert-error">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            {% if form.term.errors %}
+                <div class="alert alert-error" role="alert">
+                    {% for error in form.term.errors %}{{ error }}{% endfor %}
+                </div>
+            {% endif %}
+
+            {% if not project_submission_open %}
+                <div class="alert alert-warning" id="project-period-warning" role="alert">
+                    <strong>Inscrições para Projetos indisponíveis neste período.</strong>
+                    {{ project_submission_message }}
+                    Você ainda pode enviar uma inscrição de <strong>Consulta</strong>.
+                </div>
             {% endif %}
 
             <div id="form-error-summary" class="alert alert-error" style="display: none;" role="alert"></div>
@@ -167,18 +183,22 @@
         document.querySelectorAll('.catalog-option input[type="checkbox"]').forEach(fn);
     }
 
-    // Exclusividade por seção + campo "Outro" inline junto à opção marcada.
+    // Exclusividade por seção + campo "Outro" sempre no mesmo lugar.
+    // Evita mover o input pelo DOM a cada clique (causava perda de foco/lentidão).
     function syncOther() {
-        var other = document.querySelector('.catalog-option input[type="checkbox"][data-other]:checked');
+        var checkedOther = document.querySelector(
+            '.catalog-option input[type="checkbox"][data-other]:checked'
+        );
         var field = document.getElementById('id_catalog_other_text');
         if (!field) return;
         var wrapper = field.closest('.catalog-other-field');
-        if (other) {
-            other.closest('label.catalog-option').after(wrapper);
+        if (!wrapper) return;
+        if (checkedOther) {
             wrapper.style.display = 'flex';
-            field.placeholder = 'Especifique o outro — ' + other.dataset.group;
+            field.placeholder = 'Especifique o outro — ' + checkedOther.dataset.group;
         } else {
             wrapper.style.display = 'none';
+            field.value = '';
         }
     }
 
@@ -254,32 +274,27 @@
         render();
     });
 
-    form.addEventListener('submit', function (e) {
+    // Usa DataTransfer para devolver todos os arquivos acumulados ao input e
+    // deixar o navegador enviar o formulário normalmente. O caminho anterior
+    // (fetch + document.write) reescrevia a página e podia travar o "Enviando…".
+    form.addEventListener('submit', function (event) {
+        if (event.defaultPrevented) return;
         if (files.length === 0) return;
-        e.preventDefault();
         if (form.dataset.ceaValid === 'false') return;
-        var fd = new FormData(form);
-        fd.delete('attachments');
-        files.forEach(function (f) {
-            fd.append('attachments', f);
+        if (typeof DataTransfer === 'undefined') {
+            event.preventDefault();
+            window.alert(
+                'Seu navegador não suporta o envio de vários anexos de uma vez. ' +
+                'Remova os anexos extras ou use um navegador atualizado.'
+            );
+            return;
+        }
+
+        var transfer = new DataTransfer();
+        files.forEach(function (file) {
+            transfer.items.add(file);
         });
-        fetch(form.action, {
-            method: 'POST',
-            body: fd,
-            credentials: 'same-origin'
-        }).then(function (resp) {
-            if (resp.redirected) {
-                window.location.href = resp.url;
-            } else {
-                resp.text().then(function (html) {
-                    document.open();
-                    document.write(html);
-                    document.close();
-                });
-            }
-        }).catch(function () {
-            window.location.reload();
-        });
+        input.files = transfer.files;
     });
 })();
 </script>

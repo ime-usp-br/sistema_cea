@@ -230,6 +230,51 @@ class LegacyClaimScenarioTests(TestCase):
         )
 
     @EAGER_EMAIL
+    def test_TS_CLAIM_001b_protocolo_e_documento_com_mascara_funcionam(self):
+        claim, _token = self.service.request_claim(
+            user=self.candidate,
+            protocol="200.000.001",
+            contact_email_or_tax_id="333.333.333-33",
+        )
+        self.assertIsNotNone(claim.pk)
+        self.assertEqual(claim.application_id, self.application.pk)
+
+    @EAGER_EMAIL
+    def test_TS_CLAIM_001c_email_do_cadastro_atual_tambem_localiza(self):
+        self.application.legacy_contact_email = None
+        self.application.legacy_contact_tax_id = None
+        self.application.save(
+            update_fields=[
+                "legacy_contact_email",
+                "legacy_contact_tax_id",
+                "updated_at",
+            ]
+        )
+        claim, _token = self.service.request_claim(
+            user=self.candidate,
+            protocol="",
+            contact_email_or_tax_id="carla@example.com",
+        )
+        self.assertEqual(claim.application_id, self.application.pk)
+
+    def test_TS_CLAIM_001d_inscricao_do_portal_recebe_mensagem_clara(self):
+        portal = ServiceApplication.all_objects.create(
+            term=self.term,
+            owner=self.candidate,
+            protocol="999999999",
+            modality=ServiceApplication.Modality.CONSULTATION,
+            origin=ServiceApplication.Origin.CREATED_PORTAL,
+            researcher_name="Carla Portal",
+            contact_email="portal@example.com",
+        )
+        with self.assertRaisesMessage(LegacyClaimError, "criada no novo portal"):
+            self.service.request_claim(
+                user=self.candidate,
+                protocol=portal.protocol,
+                contact_email_or_tax_id="portal@example.com",
+            )
+
+    @EAGER_EMAIL
     def test_TS_CLAIM_002_codigo_enviado_como_hash_com_expiracao(self):
         claim, token = self.service.request_claim(
             user=self.candidate,
@@ -428,6 +473,17 @@ class LegacyClaimViewTests(TestCase):
         claim = LegacyOwnershipClaim.objects.get(application=self.application)
         self.assertIsNotNone(claim.pk)
         self.assertEqual(len(mail.outbox), 1)
+
+    def test_view_claim_request_post_aceita_protocolo_com_mascara(self) -> None:
+        self.client.force_login(self.candidate)
+        masked = f"{self.application.protocol[:3]}.{self.application.protocol[3:6]}.{self.application.protocol[6:]}"
+        response = self.client.post(
+            reverse("imports:claim_request"),
+            {"protocol": masked, "contact_email_or_tax_id": "333.333.333-33"},
+        )
+        self.assertRedirects(response, reverse("imports:claim_confirm"))
+        claim = LegacyOwnershipClaim.objects.get(application=self.application)
+        self.assertEqual(claim.protocol, self.application.protocol)
 
     # /vincular-inscricao/confirmar/
     def test_view_claim_confirm_get_sem_sessao_redireciona(self) -> None:

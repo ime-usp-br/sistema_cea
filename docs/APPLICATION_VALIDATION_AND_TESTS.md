@@ -5,10 +5,12 @@
 O formulário de inscrição (`ApplicationForm`) deve aplicar estritamente as regras de negócio do CEA na sua etapa de validação (`clean()`):
 
 ### 1.1 Regras Gerais (Todas as Modalidades)
-- `researcher_name`, `contact_email`, `contact_phone`, `tax_id`, `institution_name` e `term` são obrigatórios.
+- `researcher_name`, `contact_email`, `contact_email_confirmation`, `contact_phone`, `tax_id`, `institution_name` e `term` são obrigatórios.
 - `data_use_authorization_accepted` (Autorização de uso de dados para fins didáticos/científicos) **deve ser obrigatoriamente Marcado (True)**.
-- Se `contact_email` e `contact_email_confirmation` forem informados, devem ser idênticos.
+- `contact_email` e `contact_email_confirmation` devem ser idênticos (o campo de repetição é obrigatório).
 - `tax_id` (CPF/CNPJ) e `refund_account_holder_tax_id` devem passar na validação de dígitos verificadores (`validate_br_tax_id`).
+- `researcher_name`, `mentor_name` e `refund_account_holder_name` não aceitam números ou símbolos estranhos; o nome do pesquisador deve ser completo (ao menos duas palavras).
+- `contact_phone` aceita um ou mais telefones (separados por `,`, `;`, `/` ou ` e `), cada um com DDD + 8 dígitos (fixo) ou DDD + 9 dígitos iniciados por 9 (celular). Quando `has_whatsapp=True`, ao menos um número deve ser celular.
 
 ### 1.2 Regras Específicas da Modalidade "Projeto" (`modality == 'project'`)
 - **Coleta de dados:** `data_already_collected` deve ser obrigatoriamente `True` ("Sim"). Se for `False` ou não informado, o formulário deve retornar erro: *"Para solicitar assessoria em Projeto é necessário já ter coletado os dados."*
@@ -37,10 +39,16 @@ O formulário de inscrição (`ApplicationForm`) deve aplicar estritamente as re
   - `refund_branch_number` é OBRIGATÓRIO.
   - `refund_bank_account_number` é OBRIGATÓRIO.
   - `refund_bank_account_type` é OBRIGATÓRIO (`checking` ou `savings`).
+  - `refund_branch_number` e `refund_bank_account_number` aceitam apenas dígitos (a máscara é removida no servidor).
+  - `refund_receipt_details` não pode conter apenas símbolos; `refund_bank_name` deve conter letras.
 
 ### 1.5 Regras do Catálogo de Opções (`catalog_options` e `catalog_other_text`)
 - Máximo de 1 opção por categoria (`institutional_tie`, `project_purpose`, `knowledge_area`, `funding_agency`).
 - Se qualquer uma das opções selecionadas tiver código `other`, o campo `catalog_other_text` torna-se **OBRIGATÓRIO**.
+
+### 1.6 Reembolso (serviço)
+- O valor solicitado não pode exceder o saldo pago disponível: total efetivamente pago menos reembolsos já solicitados/aprovados/executados.
+- Sem pagamento registrado, a solicitação é recusada com mensagem específica (não apenas "excede o valor pago").
 
 ---
 

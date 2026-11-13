@@ -63,6 +63,7 @@ Os testes devem considerar as seguintes regras operacionais:
 |---|---|
 | `TS-AUTH` | autenticação e contas |
 | `TS-APP` | inscrições |
+| `TS-VAL` | validações da ficha de inscrição |
 | `TS-AUD` | auditoria de dados |
 | `TS-FEE` | taxas e regras financeiras |
 | `TS-PAY` | orquestração de pagamento |
@@ -458,6 +459,82 @@ Os testes devem considerar as seguintes regras operacionais:
 **Resultado esperado:**
 - Projeto fora da janela de submissão é bloqueado;
 - Consulta não é bloqueada pela janela.
+
+---
+
+## TS-VAL-001 — Telefone inválido é rejeitado
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- números sem DDD, com DDD inválido ou com quantidade de dígitos incorreta são rejeitados;
+- o formulário exibe a mensagem no campo de telefone.
+
+---
+
+## TS-VAL-002 — WhatsApp exige celular
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- com `has_whatsapp=True`, ao menos um telefone informado deve ser celular (DDD + 9 dígitos iniciados por 9);
+- caso contrário, o formulário é rejeitado.
+
+---
+
+## TS-VAL-003 — Nome com número ou incompleto é rejeitado
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- o nome do pesquisador deve ser completo e não pode conter números ou símbolos estranhos.
+
+---
+
+## TS-VAL-004 — Confirmação de e-mail é obrigatória
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- o campo "Repetir e-mail" é obrigatório e deve ser idêntico ao e-mail informado.
+
+---
+
+## TS-VAL-005 — Agência e conta aceitam somente números
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- agência e conta com conteúdo não numérico são rejeitadas.
+
+---
+
+## TS-VAL-006 — Recibo e banco com conteúdo inválido
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- dados do recibo contendo apenas símbolos são rejeitados;
+- nome do banco sem letras é rejeitado.
+
+---
+
+## TS-VAL-007 — Erro de período de Projeto aparece na tela
+
+**Prioridade:** P1
+
+**Resultado esperado:**
+- ao tentar enviar Projeto fora do período, o formulário continua na tela com mensagem clara;
+- a tela informa que as inscrições de Projeto estão indisponíveis.
+
+---
+
+## TS-VAL-008 — Mensagem de sucesso após submeter
+
+**Prioridade:** P2
+
+**Resultado esperado:**
+- após criar a inscrição, a página de detalhe exibe a mensagem de sucesso e o protocolo.
 
 ---
 

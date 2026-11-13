@@ -34,6 +34,14 @@ Atualize-a com `python scripts/gen_test_traceability.py` (ou manualmente) ao mov
 | TS-APP-020 | Sem reembolso e dados bancários vazios | `apps/applications/tests/test_massive_application_combinations.py::test_TS_APP_020_sem_reembolso_dados_bancarios_vazios_passa` | Coberto |
 | TS-APP-022 | Regressão de payload representativo | `apps/applications/tests/test_massive_application_combinations.py::test_TS_APP_022_regressao_payload_representativo_aceito` | Coberto |
 | TS-APP-024 | Inscrição fora do período | `apps/applications/tests/test_application_form.py::test_TS_APP_024_bloqueio_inscricao_projeto_fora_do_periodo`<br>`apps/applications/tests/test_application_form.py::test_TS_APP_024_consulta_nao_e_bloqueada_fora_do_periodo` | Coberto |
+| TS-VAL-001 | Telefone inválido é rejeitado | `apps/applications/tests/test_application_form.py::test_TS_VAL_001_telefone_invalido_rejeitado` | Coberto |
+| TS-VAL-002 | WhatsApp exige celular | `apps/applications/tests/test_application_form.py::test_TS_VAL_002_whatsapp_exige_celular` | Coberto |
+| TS-VAL-003 | Nome com número ou incompleto é rejeitado | `apps/applications/tests/test_application_form.py::test_TS_VAL_003_nome_com_numero_ou_incompleto_rejeitado` | Coberto |
+| TS-VAL-004 | Confirmação de e-mail é obrigatória | `apps/applications/tests/test_application_form.py::test_TS_VAL_004_confirmacao_de_email_obrigatoria` | Coberto |
+| TS-VAL-005 | Agência e conta aceitam somente números | `apps/applications/tests/test_application_form.py::test_TS_VAL_005_agencia_e_conta_somente_numeros` | Coberto |
+| TS-VAL-006 | Recibo e banco com conteúdo inválido | `apps/applications/tests/test_application_form.py::test_TS_VAL_006_recibo_e_banco_com_conteudo_invalido` | Coberto |
+| TS-VAL-007 | Erro de período de Projeto aparece na tela | `apps/applications/tests/test_application_form.py::test_TS_VAL_007_erro_de_periodo_de_projeto_aparece_na_tela` | Coberto |
+| TS-VAL-008 | Mensagem de sucesso após submeter | `apps/applications/tests/test_application_form.py::test_TS_VAL_008_mensagem_de_sucesso_apos_submeter` | Coberto |
 | TS-AUD-001 | Projeto com dono exige auditoria | `apps/audits/tests.py::test_TS_AUD_001_projeto_com_dono_exige_auditoria` | Coberto |
 | TS-AUD-002 | Projeto importado sem dono não entra em auditoria | `apps/audits/tests.py::test_TS_AUD_002_projeto_importado_sem_dono_nao_entra_em_auditoria` | Coberto |
 | TS-AUD-003 | Envio de arquivo válido | `apps/applications/tests/test_journey_pagamento_auditoria.py::test_TS_AUD_003_jornada_envio_por_arquivo_e_fila_docente`<br>`apps/audits/tests.py::test_TS_AUD_003_envio_de_arquivo_valido` | Coberto |
@@ -78,7 +86,7 @@ Atualize-a com `python scripts/gen_test_traceability.py` (ou manualmente) ao mov
 | TS-PAY-020 | Seleção de boletos vencidos | `apps/payments/tests.py::test_TS_PAY_020_overdue_billing_service_retorna_boletos_vencidos`<br>`apps/payments/tests.py::test_TS_PAY_020b_overdue_billing_ignora_boletos_pagos_ou_futuros` | Coberto |
 | TS-PAY-021 | Permissão da tela de cobranças | `apps/payments/tests.py::test_TS_PAY_021_overdue_billing_view_requer_permissao_secretaria` | Coberto |
 | TS-PAY-022 | Pagamentos pendentes | `apps/payments/tests.py::test_TS_PAY_022_pagamentos_pendentes_lista_inscricoes_com_taxa_a_pagar` | Coberto |
-| TS-PIX-001 | Geração com payload correto | `apps/applications/tests/test_journey_pagamento_auditoria.py::test_TS_PIX_001_jornada_payload_respeita_contrato`<br>`apps/pix/tests.py::test_TS_PIX_001_geracao_com_payload_correto` | Coberto |
+| TS-PIX-001 | Geração com payload correto | `apps/applications/tests/test_journey_pagamento_auditoria.py::test_TS_PIX_001_jornada_payload_respeita_contrato`<br>`apps/pix/tests.py::test_TS_PIX_001_geracao_com_payload_correto`<br>`apps/pix/tests.py::test_TS_PIX_001b_falha_de_storage_do_qr_nao_invalida_pix` | Coberto |
 | TS-PIX-002 | Armazenamento do Pix gerado | `apps/pix/tests.py::test_TS_PIX_002_armazenamento_do_pix`<br>`apps/pix/tests.py::test_TS_PIX_002_pix_ja_gerado_e_reutilizado` | Coberto |
 | TS-PIX-003 | Consulta com parâmetro verificar | `apps/pix/tests.py::test_TS_PIX_003_consulta_atualiza_pagamento` | Coberto |
 | TS-PIX-004 | Webhook válido | `apps/pix/tests.py::test_TS_PIX_004_webhook_valido_confirma_pagamento` | Coberto |
@@ -109,7 +117,7 @@ Atualize-a com `python scripts/gen_test_traceability.py` (ou manualmente) ao mov
 | TS-REF-002 | Aprovação de reembolso | `apps/payments/tests.py::test_TS_REF_002_aprovacao_de_reembolso` | Coberto |
 | TS-REF-003 | Execução de reembolso | `apps/payments/tests.py::test_TS_REF_003_execucao_de_reembolso` | Coberto |
 | TS-REF-004 | Conversão em vez de reembolso | `apps/payments/tests.py::test_TS_REF_004_conversao_em_vez_de_reembolso` | Coberto |
-| TS-REF-005 | Reembolso não pode exceder valor pago | `apps/payments/tests.py::test_TS_REF_005_reembolso_nao_pode_exceder_valor_pago` | Coberto |
+| TS-REF-005 | Reembolso não pode exceder valor pago | `apps/payments/tests.py::test_TS_REF_005_reembolso_nao_pode_exceder_valor_pago`<br>`apps/payments/tests.py::test_TS_REF_005b_reembolso_considera_solicitacoes_anteriores`<br>`apps/payments/tests.py::test_TS_REF_005c_sem_pagamento_mensagem_clara` | Coberto |
 | TS-MOD-001 | Projeto não pago convertido em Consulta | `apps/payments/tests.py::test_TS_MOD_001_projeto_nao_pago_convertido_em_consulta` | Coberto |
 | TS-MOD-002 | Projeto pago convertido em Consulta | `apps/payments/tests.py::test_TS_MOD_002_projeto_pago_convertido_em_consulta` | Coberto |
 | TS-MOD-003 | Projeto pago com valor igual ou superior a R$ 140,00 | `apps/payments/tests.py::test_TS_MOD_003_projeto_pago_igual_ou_superior_140` | Coberto |
@@ -159,7 +167,7 @@ Atualize-a com `python scripts/gen_test_traceability.py` (ou manualmente) ao mov
 | TS-FILE-004 | Arquivo ausente | — | Sem teste |
 | TS-FILE-005 | Retenção por prazo indeterminado | — | Sem teste |
 | TS-FILE-006 | Link externo não é baixado | — | Sem teste |
-| TS-CLAIM-001 | Solicitação de resgate | `apps/imports/tests.py::test_TS_CLAIM_001_solicitacao_cria_claim` | Coberto |
+| TS-CLAIM-001 | Solicitação de resgate | `apps/imports/tests.py::test_TS_CLAIM_001_solicitacao_cria_claim`<br>`apps/imports/tests.py::test_TS_CLAIM_001b_protocolo_e_documento_com_mascara_funcionam`<br>`apps/imports/tests.py::test_TS_CLAIM_001c_email_do_cadastro_atual_tambem_localiza`<br>`apps/imports/tests.py::test_TS_CLAIM_001d_inscricao_do_portal_recebe_mensagem_clara` | Coberto |
 | TS-CLAIM-002 | Código enviado para e-mail registrado | `apps/imports/tests.py::test_TS_CLAIM_002_codigo_enviado_como_hash_com_expiracao` | Coberto |
 | TS-CLAIM-003 | Código correto vincula inscrição | `apps/imports/tests.py::test_TS_CLAIM_003_codigo_correto_vincula_inscricao` | Coberto |
 | TS-CLAIM-004 | Código incorreto | `apps/imports/tests.py::test_TS_CLAIM_004_codigo_incorreto_nao_vincula_e_limita` | Coberto |

@@ -48,6 +48,7 @@ def test_E2E_001_submissao_valida_de_projeto_redireciona_ao_detalhe(
     _go_to_new_application(page)
 
     fill_valid_project(page)
+    page.once("dialog", lambda dialog: dialog.accept())
     page.click("button[type='submit']")
 
     expect(page).to_have_url(re.compile(r".*" + DETAIL_PATH_RE.pattern))
@@ -63,6 +64,7 @@ def test_E2E_002_submissao_valida_de_consulta_aguarda_pagamento(
     _go_to_new_application(page)
 
     fill_valid_consultation(page)
+    page.once("dialog", lambda dialog: dialog.accept())
     page.click("button[type='submit']")
 
     expect(page).to_have_url(re.compile(r".*" + DETAIL_PATH_RE.pattern))
@@ -88,8 +90,12 @@ def test_E2E_003_projeto_vazio_mostra_resumo_de_erro_e_nao_envia(
     expect(summary).to_be_visible()
     expect(summary).to_contain_text("campos para corrigir")
     expect(page.locator(".js-error").first).to_be_visible()
-    # O formulário não deve ter navegado (envio bloqueado pela validação).
+    # O formulário não deve ter navegado (envio bloqueado pela validação) e o
+    # botão deve continuar habilitado (não pode ficar preso em "Enviando…").
     expect(page).to_have_url(re.compile(r".*inscricoes/nova/"))
+    submit = page.locator("#form-inscricao button[type='submit']")
+    expect(submit).to_be_enabled()
+    expect(submit).to_contain_text("Enviar inscrição")
 
 
 def test_E2E_004_projeto_com_dados_nao_coletados_exibe_bloqueio(

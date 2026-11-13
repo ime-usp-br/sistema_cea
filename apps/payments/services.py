@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Any
 
 from django.db import transaction
+from django.db.models import Sum
 from django.utils import timezone
 
 from applications.models import ApplicationEvent, ServiceApplication
@@ -703,6 +704,25 @@ class ModalityChangeService:
 class RefundRequestService:
     """Gerencia a criação e transição de solicitações de reembolso."""
 
+    ACTIVE_REFUND_STATUSES = (
+        RefundRequest.Status.REQUESTED,
+        RefundRequest.Status.APPROVED,
+        RefundRequest.Status.EXECUTED,
+    )
+
+    def available_for_refund(self, application: ServiceApplication) -> Decimal:
+        """Valor ainda reembolsável (pago menos reembolsos já solicitados)."""
+        total_paid = self._total_paid(application)
+        committed = (
+            RefundRequest.objects.filter(
+                application=application,
+                status__in=self.ACTIVE_REFUND_STATUSES,
+            ).aggregate(total=Sum("amount"))["total"]
+            or Decimal("0.00")
+        )
+        available = total_paid - Decimal(str(committed))
+        return available if available > 0 else Decimal("0.00")
+
     def create_refund_request(
         self,
         *,
@@ -712,10 +732,15 @@ class RefundRequestService:
         reason: str | None = None,
         payment_instrument: PaymentInstrument | None = None,
     ) -> RefundRequest:
-        total_paid = self._total_paid(application)
-        if amount > total_paid:
+        available = self.available_for_refund(application)
+        if available <= 0:
             raise PaymentDomainError(
-                "O valor do reembolso não pode exceder o valor pago."
+                "Não há valor pago disponível para reembolso nesta inscrição."
+            )
+        if amount > available:
+            raise PaymentDomainError(
+                "O valor do reembolso não pode exceder o valor pago disponível "
+                f"(R$ {available:.2f})."
             )  # TS-REF-005
         with transaction.atomic():
             refund = RefundRequest.objects.create(

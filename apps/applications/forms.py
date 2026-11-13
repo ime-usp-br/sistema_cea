@@ -1,13 +1,19 @@
 import os
 
 from django import forms
+from django.core.exceptions import ValidationError
 from django.forms.models import ModelChoiceIterator
 from django.utils import timezone
 
 from terms.models import AcademicTerm
 
 from .models import CatalogOption, ServiceApplication
-from .validators import validate_br_tax_id
+from .validators import (
+    validate_br_tax_id,
+    validate_contact_phone,
+    validate_digits,
+    validate_person_name,
+)
 
 MAX_TOTAL_ATTACHMENT_SIZE = 8 * 1024 * 1024
 
@@ -159,8 +165,18 @@ class ApplicationForm(forms.Form):
     )
     researcher_name = forms.CharField(max_length=255, label="Nome do pesquisador")
     contact_email = forms.EmailField(max_length=255, label="E-mail de contato")
-    contact_email_confirmation = forms.EmailField(max_length=255, required=False, label="Repetir e-mail")
-    contact_phone = forms.CharField(max_length=50, required=False, label="Telefones para contato")
+    contact_email_confirmation = forms.EmailField(
+        max_length=255,
+        required=True,
+        label="Repetir e-mail",
+        error_messages={"required": "Confirme o e-mail de contato."},
+    )
+    contact_phone = forms.CharField(
+        max_length=255,
+        required=True,
+        label="Telefones para contato",
+        error_messages={"required": "Informe ao menos um telefone para contato."},
+    )
     has_whatsapp = forms.BooleanField(required=False, label="WhatsApp")
     tax_id = forms.CharField(max_length=20, required=False, label="CPF/CNPJ")
     # Paridade com o legado (StoreApplicationRequest::institution => required):
@@ -243,12 +259,70 @@ class ApplicationForm(forms.Form):
             return validate_br_tax_id(value)
         return None
 
+    def clean_researcher_name(self):
+        return validate_person_name(
+            self.cleaned_data.get("researcher_name", ""),
+            label="nome do pesquisador",
+            require_full_name=True,
+        )
+
+    def clean_contact_phone(self):
+        return validate_contact_phone(self.cleaned_data.get("contact_phone", ""))
+
     def clean_contact_email_confirmation(self):
         email = self.cleaned_data.get("contact_email")
         confirmation = self.cleaned_data.get("contact_email_confirmation")
-        if email and confirmation and confirmation != email:
+        if not confirmation:
+            raise forms.ValidationError("Confirme o e-mail de contato.")
+        if email and confirmation != email:
             raise forms.ValidationError("Os e-mails não conferem.")
         return confirmation
+
+    def clean_mentor_name(self):
+        return validate_person_name(
+            self.cleaned_data.get("mentor_name", ""),
+            label="nome do orientador",
+        )
+
+    def clean_refund_account_holder_name(self):
+        return validate_person_name(
+            self.cleaned_data.get("refund_account_holder_name", ""),
+            label="nome do titular da conta",
+        )
+
+    def clean_refund_receipt_details(self):
+        value = (self.cleaned_data.get("refund_receipt_details") or "").strip()
+        if value and not any(char.isalnum() for char in value):
+            raise forms.ValidationError(
+                "Informe os dados que devem constar no recibo (texto ou números)."
+            )
+        return value
+
+    def clean_refund_bank_name(self):
+        value = (self.cleaned_data.get("refund_bank_name") or "").strip()
+        if value and not any(char.isalpha() for char in value):
+            raise forms.ValidationError("Informe um nome de banco válido.")
+        return value
+
+    def clean_refund_branch_number(self):
+        value = self.cleaned_data.get("refund_branch_number")
+        if value:
+            return validate_digits(
+                value,
+                label="número da agência",
+                max_length=10,
+            )
+        return value
+
+    def clean_refund_bank_account_number(self):
+        value = self.cleaned_data.get("refund_bank_account_number")
+        if value:
+            return validate_digits(
+                value,
+                label="número da conta",
+                max_length=20,
+            )
+        return value
 
     def clean_refund_account_holder_tax_id(self):
         value = self.cleaned_data.get("refund_account_holder_tax_id")
@@ -281,6 +355,15 @@ class ApplicationForm(forms.Form):
         cleaned_data = super().clean() or {}
         modality = cleaned_data.get("modality")
         catalog_options = cleaned_data.get("catalog_options") or []
+
+        if cleaned_data.get("has_whatsapp") and cleaned_data.get("contact_phone"):
+            try:
+                validate_contact_phone(
+                    cleaned_data["contact_phone"],
+                    require_whatsapp=True,
+                )
+            except ValidationError as exc:
+                self.add_error("contact_phone", exc)
 
         if not cleaned_data.get("data_use_authorization_accepted"):
             self.add_error(

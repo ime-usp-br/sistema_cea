@@ -32,7 +32,10 @@
         "refund_bank_account_type",
     ];
     var LIVE_FIELDS = ["modality", "catalog_options", "wants_refund_receipt", "data_already_collected",
-        "contact_email", "contact_email_confirmation", "catalog_other_text", "mentor_name",
+        "contact_email", "contact_email_confirmation", "contact_phone", "has_whatsapp",
+        "researcher_name", "mentor_name", "refund_account_holder_name",
+        "refund_branch_number", "refund_bank_account_number", "catalog_other_text",
+        "refund_receipt_details", "refund_bank_name",
         "mentor_declaration_accepted", "data_use_authorization_accepted"];
 
     var MESSAGES = {
@@ -40,6 +43,7 @@
         researcher_name: "Informe o nome do pesquisador.",
         contact_email: "Informe um e-mail válido.",
         contact_email_confirmation: "Os e-mails não conferem.",
+        contact_phone: "Informe um telefone válido com DDD (10 ou 11 dígitos).",
         tax_id: "Informe um CPF ou CNPJ válido.",
         data_use_authorization_accepted: "É necessário autorizar o uso dos dados.",
         catalog_options: "Selecione apenas uma opção por seção.",
@@ -48,6 +52,11 @@
         mentor_name: "Informe o nome do orientador.",
         mentor_declaration_accepted: "A declaração de presença do orientador é obrigatória.",
         refund_field: "Este campo é obrigatório quando há recibo de reembolso.",
+        refund_branch_number: "Informe apenas números no campo de agência.",
+        refund_bank_account_number: "Informe apenas números no campo de conta.",
+        refund_account_holder_name: "Informe o nome completo do titular da conta.",
+        refund_receipt_details: "Informe os dados que devem constar no recibo (texto ou números).",
+        refund_bank_name: "Informe um nome de banco válido.",
         project_field: "Este campo é obrigatório para projetos.",
     };
 
@@ -126,22 +135,84 @@
         return false;
     }
 
+    function isPersonName(value, requireFullName) {
+        var trimmed = (value || "").trim();
+        if (!trimmed) return false;
+        if (/\d/.test(trimmed)) return false;
+        if (!/^[A-Za-zÀ-ÖØ-öø-ÿ](?:[A-Za-zÀ-ÖØ-öø-ÿ .'’\-])*$/.test(trimmed)) {
+            return false;
+        }
+        if (requireFullName && trimmed.split(/\s+/).length < 2) return false;
+        return true;
+    }
+
+    function phoneDigits(value) {
+        var digits = onlyDigits(value);
+        if (
+            (digits.length === 12 || digits.length === 13) &&
+            digits.slice(0, 2) === "55"
+        ) {
+            digits = digits.slice(2);
+        }
+        return digits;
+    }
+
+    function isValidPhone(value) {
+        var digits = phoneDigits(value);
+        if (digits.length !== 10 && digits.length !== 11) return false;
+        var ddd = parseInt(digits.slice(0, 2), 10);
+        if (ddd < 11 || ddd > 99) return false;
+        if (digits.length === 11 && digits.charAt(2) !== "9") return false;
+        return true;
+    }
+
+    function splitPhones(value) {
+        return (value || "")
+            .split(/\s*(?:[,;\/]|\s+e\s+)\s*/i)
+            .filter(function (part) { return part.trim() !== ""; });
+    }
+
+    function isValidPhoneList(value, requireWhatsapp) {
+        var parts = splitPhones(value);
+        if (!parts.length) return false;
+        for (var i = 0; i < parts.length; i++) {
+            if (!isValidPhone(parts[i])) return false;
+        }
+        if (requireWhatsapp) {
+            return parts.some(function (part) {
+                var digits = phoneDigits(part);
+                return digits.length === 11 && digits.charAt(2) === "9";
+            });
+        }
+        return true;
+    }
+
     function validate() {
         var errors = {};
         var modality = radioValue("modality");
 
         if (!modality) errors.modality = MESSAGES.modality;
-        if (!valueOf("researcher_name")) errors.researcher_name = "Informe o nome do pesquisador.";
+        if (!valueOf("researcher_name")) {
+            errors.researcher_name = "Informe o nome do pesquisador.";
+        } else if (!isPersonName(valueOf("researcher_name"), true)) {
+            errors.researcher_name = "Informe o nome completo do pesquisador, sem números ou símbolos.";
+        }
         if (!valueOf("contact_email")) {
             errors.contact_email = "Informe um e-mail de contato.";
         } else if (!isEmail(valueOf("contact_email"))) {
             errors.contact_email = MESSAGES.contact_email;
         }
-        if (
-            valueOf("contact_email_confirmation") &&
-            valueOf("contact_email_confirmation") !== valueOf("contact_email")
-        ) {
+        if (!valueOf("contact_email_confirmation")) {
+            errors.contact_email_confirmation = "Confirme o e-mail de contato.";
+        } else if (valueOf("contact_email_confirmation") !== valueOf("contact_email")) {
             errors.contact_email_confirmation = MESSAGES.contact_email_confirmation;
+        }
+        if (!valueOf("contact_phone")) {
+            errors.contact_phone = "Informe ao menos um telefone para contato.";
+        } else if (!isValidPhoneList(valueOf("contact_phone"), isChecked("has_whatsapp"))) {
+            errors.contact_phone = isChecked("has_whatsapp")
+                ? "Informe um telefone válido com DDD que tenha WhatsApp (celular com 9 dígitos)."
+                : MESSAGES.contact_phone;
         }
         if (valueOf("tax_id") && !isValidTaxId(valueOf("tax_id"))) {
             errors.tax_id = MESSAGES.tax_id;
@@ -185,7 +256,11 @@
             );
         });
         if (requiresMentor) {
-            if (!valueOf("mentor_name")) errors.mentor_name = MESSAGES.mentor_name;
+            if (!valueOf("mentor_name")) {
+                errors.mentor_name = MESSAGES.mentor_name;
+            } else if (!isPersonName(valueOf("mentor_name"), false)) {
+                errors.mentor_name = "Informe um nome de orientador válido, sem números ou símbolos.";
+            }
             if (!isChecked("mentor_declaration_accepted")) {
                 errors.mentor_declaration_accepted = MESSAGES.mentor_declaration_accepted;
             }
@@ -195,8 +270,23 @@
             REFUND_FIELDS.forEach(function (name) {
                 if (!valueOf(name)) errors[name] = MESSAGES.refund_field;
             });
+            if (valueOf("refund_account_holder_name") && !isPersonName(valueOf("refund_account_holder_name"), false)) {
+                errors.refund_account_holder_name = MESSAGES.refund_account_holder_name;
+            }
+            if (valueOf("refund_receipt_details") && !/[A-Za-zÀ-ÖØ-öø-ÿ0-9]/.test(valueOf("refund_receipt_details"))) {
+                errors.refund_receipt_details = MESSAGES.refund_receipt_details;
+            }
+            if (valueOf("refund_bank_name") && !/[A-Za-zÀ-ÖØ-öø-ÿ]/.test(valueOf("refund_bank_name"))) {
+                errors.refund_bank_name = MESSAGES.refund_bank_name;
+            }
             if (valueOf("refund_account_holder_tax_id") && !isValidTaxId(valueOf("refund_account_holder_tax_id"))) {
                 errors.refund_account_holder_tax_id = MESSAGES.tax_id;
+            }
+            if (valueOf("refund_branch_number") && (!/^[\d.\-\s]+$/.test(valueOf("refund_branch_number")) || !onlyDigits(valueOf("refund_branch_number")))) {
+                errors.refund_branch_number = MESSAGES.refund_branch_number;
+            }
+            if (valueOf("refund_bank_account_number") && (!/^[\d.\-\s]+$/.test(valueOf("refund_bank_account_number")) || !onlyDigits(valueOf("refund_bank_account_number")))) {
+                errors.refund_bank_account_number = MESSAGES.refund_bank_account_number;
             }
         }
 
@@ -292,6 +382,8 @@
         if (message) markField(name, message);
     }
 
+    var confirmed = false;
+
     form.addEventListener("submit", function (event) {
         attempted = true;
         var errors = validate();
@@ -300,8 +392,34 @@
         form.dataset.ceaValid = String(valid);
         if (!valid) {
             event.preventDefault();
+            return;
+        }
+        if (!confirmed) {
+            var proceed = window.confirm(
+                "O agendamento só será realizado após o pagamento da taxa.\n\n" +
+                "Deseja realmente enviar a inscrição?"
+            );
+            if (!proceed) {
+                event.preventDefault();
+                return;
+            }
+            confirmed = true;
         }
     });
+
+    function enforceProjectPeriod(event) {
+        if (!event.target || event.target.name !== "modality") return;
+        if (event.target.value !== "project") return;
+        if (form.dataset.projectPeriodOpen !== "false") return;
+        var consultation = form.querySelector('input[name="modality"][value="consultation"]');
+        if (consultation) consultation.checked = true;
+        window.alert(
+            form.dataset.projectPeriodMessage ||
+            "As inscrições para Projetos não estão abertas neste período letivo."
+        );
+    }
+
+    form.addEventListener("change", enforceProjectPeriod, true);
 
     function onFieldInteraction(event) {
         var el = event.target;
@@ -316,6 +434,9 @@
         if (el.name === "contact_email") {
             updateFieldError("contact_email_confirmation", errors.contact_email_confirmation);
         }
+        if (el.name === "contact_phone" || el.name === "has_whatsapp") {
+            updateFieldError("contact_phone", errors.contact_phone);
+        }
         if (el.name === "catalog_options") {
             updateFieldError("catalog_other_text", errors.catalog_other_text);
             updateFieldError("mentor_name", errors.mentor_name);
@@ -325,6 +446,9 @@
             REFUND_FIELDS.forEach(function (name) {
                 updateFieldError(name, errors[name]);
             });
+        }
+        if (REFUND_FIELDS.indexOf(el.name) !== -1 && valueOf(el.name)) {
+            updateFieldError(el.name, errors[el.name]);
         }
         if (el.name === "modality") {
             updateFieldError("data_already_collected", errors.data_already_collected);

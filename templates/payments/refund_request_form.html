@@ -18,16 +18,27 @@
 
 <div class="card" style="max-width: 760px;">
     <div class="card-body">
-        <form method="post" class="form">
-            {% csrf_token %}
-            {{ form.as_p }}
-            {% if form.non_field_errors %}
-                <div class="alert alert-error">{{ form.non_field_errors }}</div>
-            {% endif %}
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">Solicitar reembolso</button>
+        {% if available_amount > 0 %}
+            <div class="alert alert-info" role="status">
+                Valor disponível para reembolso nesta inscrição:
+                <strong>R$ {{ available_amount|floatformat:2 }}</strong>.
             </div>
-        </form>
+            <form method="post" class="form">
+                {% csrf_token %}
+                {{ form.as_p }}
+                {% if form.non_field_errors %}
+                    <div class="alert alert-error">{{ form.non_field_errors }}</div>
+                {% endif %}
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Solicitar reembolso</button>
+                </div>
+            </form>
+        {% else %}
+            <div class="alert alert-warning" role="alert">
+                Não há valor pago disponível para reembolso nesta inscrição.
+                O reembolso fica disponível depois que a taxa é efetivamente paga.
+            </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

@@ -257,3 +257,136 @@ class ApplicationFormFakerTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("institution_name", response.context["form"].errors)
         self.assertEqual(ServiceApplication.objects.count(), 0)
+
+    # TS-APP-VAL-001 — telefones precisam de DDD + 8/9 dígitos.
+    def test_TS_VAL_001_telefone_invalido_rejeitado(self) -> None:
+        for phone in (
+            "56552",
+            "256635454555156445845645454541",
+            "11912345",
+            "0091234567",
+            "11812345678",
+        ):
+            with self.subTest(phone=phone):
+                payload = build_valid_form_payload(
+                    modality="consultation",
+                    term_pk=self.term.pk,
+                    contact_phone=phone,
+                    has_whatsapp="",
+                )
+                response = self._post(payload)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn("contact_phone", response.context["form"].errors)
+                self.assertEqual(ServiceApplication.objects.count(), 0)
+
+    def test_TS_VAL_002_whatsapp_exige_celular(self) -> None:
+        payload = build_valid_form_payload(
+            modality="consultation",
+            term_pk=self.term.pk,
+            contact_phone="(11) 3091-6133",
+            has_whatsapp="on",
+        )
+        response = self._post(payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("contact_phone", response.context["form"].errors)
+
+    def test_TS_VAL_003_nome_com_numero_ou_incompleto_rejeitado(self) -> None:
+        for name in ("João 123", "João"):
+            with self.subTest(name=name):
+                payload = build_valid_form_payload(
+                    modality="consultation",
+                    term_pk=self.term.pk,
+                    researcher_name=name,
+                )
+                response = self._post(payload)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn("researcher_name", response.context["form"].errors)
+
+    def test_TS_VAL_004_confirmacao_de_email_obrigatoria(self) -> None:
+        payload = build_valid_form_payload(
+            modality="consultation", term_pk=self.term.pk
+        )
+        payload.pop("contact_email_confirmation", None)
+        response = self._post(payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            "contact_email_confirmation", response.context["form"].errors
+        )
+
+        payload = build_valid_form_payload(
+            modality="consultation", term_pk=self.term.pk
+        )
+        payload["contact_email_confirmation"] = "outro@example.com"
+        response = self._post(payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            "contact_email_confirmation", response.context["form"].errors
+        )
+        self.assertEqual(ServiceApplication.objects.count(), 0)
+
+    def test_TS_VAL_005_agencia_e_conta_somente_numeros(self) -> None:
+        payload = build_valid_form_payload(
+            modality="consultation",
+            term_pk=self.term.pk,
+            wants_refund_receipt="true",
+            refund_receipt_details="Recibo",
+            refund_account_holder_name="Maria da Silva",
+            refund_account_holder_tax_id="529.982.247-25",
+            refund_bank_name="Banco do Brasil",
+            refund_branch_number="abc",
+            refund_bank_account_number="#$%",
+            refund_bank_account_type="checking",
+        )
+        response = self._post(payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("refund_branch_number", response.context["form"].errors)
+        self.assertIn("refund_bank_account_number", response.context["form"].errors)
+        self.assertEqual(ServiceApplication.objects.count(), 0)
+
+    def test_TS_VAL_006_recibo_e_banco_com_conteudo_invalido(self) -> None:
+        payload = build_valid_form_payload(
+            modality="consultation",
+            term_pk=self.term.pk,
+            wants_refund_receipt="true",
+            refund_receipt_details="@#$%¨&(.+-/",
+            refund_account_holder_name="Maria da Silva",
+            refund_account_holder_tax_id="529.982.247-25",
+            refund_bank_name="12345",
+            refund_branch_number="1234",
+            refund_bank_account_number="56789",
+            refund_bank_account_type="checking",
+        )
+        response = self._post(payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("refund_receipt_details", response.context["form"].errors)
+        self.assertIn("refund_bank_name", response.context["form"].errors)
+
+    def test_TS_VAL_007_erro_de_periodo_de_projeto_aparece_na_tela(self) -> None:
+        self.term.submission_start_date = timezone.localdate() - timezone.timedelta(days=30)
+        self.term.submission_end_date = timezone.localdate() - timezone.timedelta(days=1)
+        self.term.save()
+
+        payload = build_valid_form_payload(
+            modality="project", term_pk=self.term.pk
+        )
+        response = self._post(payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("term", response.context["form"].errors)
+        self.assertContains(response, "fora do período")
+        self.assertContains(response, "Inscrições para Projetos indisponíveis")
+        self.assertFalse(response.context["project_submission_open"])
+
+    def test_TS_VAL_008_mensagem_de_sucesso_apos_submeter(self) -> None:
+        payload = build_valid_form_payload(
+            modality="consultation", term_pk=self.term.pk
+        )
+        response = self._post(payload)
+        application = ServiceApplication.objects.get()
+        self.assertRedirects(
+            response,
+            reverse("applications:detail", args=[application.protocol]),
+            fetch_redirect_response=False,
+        )
+        follow = self.client.get(response.url)
+        self.assertContains(follow, "Inscrição enviada com sucesso")
+        self.assertContains(follow, application.protocol)

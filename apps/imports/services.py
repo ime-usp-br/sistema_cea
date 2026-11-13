@@ -1,4 +1,5 @@
 import hashlib
+import re
 import secrets
 from datetime import timedelta
 from typing import Any
@@ -56,8 +57,25 @@ class LegacyClaimService:
         identifier = (contact_email_or_tax_id or "").strip()
         application = self._find_imported_application(protocol, identifier)
         if application is None:
+            protocol_digits = re.sub(r"\D", "", protocol or "")
+            existing = (
+                ServiceApplication.all_objects.filter(protocol=protocol_digits).first()
+                if protocol_digits
+                else None
+            )
+            if existing is not None:
+                if existing.origin != ServiceApplication.Origin.IMPORTED:
+                    raise LegacyClaimError(
+                        "Esta inscrição foi criada no novo portal e já está "
+                        "vinculada a uma conta. Acesse o painel para consultá-la."
+                    )
+                if existing.owner_id is not None:
+                    raise LegacyClaimError(
+                        "Esta inscrição já possui um dono vinculado."
+                    )
             raise LegacyClaimError(
-                "Nenhuma inscrição importada foi encontrada com os dados informados."
+                "Nenhuma inscrição importada foi encontrada com os dados informados. "
+                "Confira o protocolo, o e-mail ou o CPF/CNPJ (com ou sem máscara)."
             )
         if application.owner_id is not None:
             raise LegacyClaimError("Esta inscrição já possui um dono vinculado.")
@@ -195,18 +213,28 @@ class LegacyClaimService:
             .select_related("term")
             .all()
         )
-        protocol = (protocol or "").strip()
-        identifier = identifier.lower()
+        protocol_digits = re.sub(r"\D", "", protocol or "")
+        identifier = (identifier or "").strip().lower()
+        identifier_digits = re.sub(r"\D", "", identifier)
+
         for app in qs:
-            email_match = bool(
-                app.legacy_contact_email
-                and app.legacy_contact_email.lower() == identifier
-            )
+            emails = {
+                value.strip().lower()
+                for value in (app.legacy_contact_email, app.contact_email)
+                if value
+            }
+            tax_ids = {
+                re.sub(r"\D", "", value)
+                for value in (app.legacy_contact_tax_id, app.tax_id)
+                if value
+            }
+            email_match = bool(identifier and identifier in emails)
             tax_match = bool(
-                app.legacy_contact_tax_id
-                and app.legacy_contact_tax_id.lower() == identifier
+                identifier_digits and identifier_digits in tax_ids
             )
-            protocol_match = bool(protocol and app.protocol == protocol)
+            protocol_match = bool(
+                protocol_digits and app.protocol == protocol_digits
+            )
             if protocol_match or email_match or tax_match:
                 return app
         return None

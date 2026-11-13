@@ -31,7 +31,11 @@
         <div class="form-actions">
             {% if is_candidate %}
                 <a href="{% url 'payments:fee_payment' object.protocol %}" class="btn btn-primary">Pagar taxa / ver pagamento</a>
-                <a href="{% url 'payments:refund_create' object.protocol %}" class="btn btn-secondary">Solicitar reembolso</a>
+                {% if can_request_refund %}
+                    <a href="{% url 'payments:refund_create' object.protocol %}" class="btn btn-secondary">Solicitar reembolso</a>
+                {% else %}
+                    <span class="text-muted" style="align-self: center;">Reembolso disponível após o pagamento da taxa.</span>
+                {% endif %}
                 {% if is_candidate and object.owner_id == user.id and object.modality == "project" and object.lifecycle_status == "awaiting_dataset_submission" or is_candidate and object.owner_id == user.id and object.modality == "project" and object.lifecycle_status == "awaiting_dataset_correction" %}
                     <a href="{% url 'audits:submit' object.protocol %}" class="btn btn-primary">
                         {% if object.lifecycle_status == "awaiting_dataset_correction" %}

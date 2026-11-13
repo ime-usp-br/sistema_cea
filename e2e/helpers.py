@@ -50,7 +50,7 @@ def fill_project_descriptive_fields(page: Page) -> None:
 
 def fill_required_basic_fields(page: Page) -> None:
     """Preenche os campos pessoais obrigatórios (comum a Projeto e Consulta)."""
-    page.fill('input[name="researcher_name"]', "Pesquisadora Teste E2E")
+    page.fill('input[name="researcher_name"]', "Pesquisadora Teste Exemplo")
     page.fill('input[name="contact_email"]', "e2e.pesquisadora@example.com")
     page.fill('input[name="contact_email_confirmation"]', "e2e.pesquisadora@example.com")
     page.fill('input[name="contact_phone"]', "(11) 99999-0000")

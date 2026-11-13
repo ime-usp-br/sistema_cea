@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 from django import forms
@@ -9,7 +10,7 @@ class ClaimRequestForm(forms.Form):
     protocol = forms.CharField(
         label="Protocolo",
         required=False,
-        max_length=9,
+        max_length=20,
         widget=forms.TextInput(attrs={"placeholder": "Opcional, ex.: 123456789"}),
     )
     contact_email_or_tax_id = forms.CharField(
@@ -17,6 +18,13 @@ class ClaimRequestForm(forms.Form):
         required=True,
         widget=forms.TextInput(attrs={"placeholder": "E-mail ou CPF/RG cadastrado"}),
     )
+
+    def clean_protocol(self) -> str:
+        value = (self.cleaned_data.get("protocol") or "").strip()
+        digits = re.sub(r"\D", "", value)
+        if value and len(digits) != 9:
+            raise forms.ValidationError("Informe um protocolo com 9 dígitos.")
+        return digits
 
     def clean(self) -> dict[str, Any]:
         cleaned = super().clean() or {}

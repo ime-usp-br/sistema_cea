@@ -62,6 +62,18 @@ class PixGateway:
                 )
                 response.raise_for_status()
                 return response
+        except httpx.HTTPStatusError as exc:
+            body = ""
+            try:
+                body = exc.response.text[:1000]
+            except Exception:  # noqa: BLE001 - corpo é diagnóstico opcional
+                body = ""
+            detail = f"{exc}"
+            if body:
+                detail = f"{detail}. Resposta do gateway: {body}"
+            raise PixGatewayError(
+                f"Falha na requisição {method} {path}: {detail}"
+            ) from exc
         except httpx.HTTPError as exc:
             raise PixGatewayError(
                 f"Falha na requisição {method} {path}: {exc}"

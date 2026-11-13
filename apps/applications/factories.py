@@ -102,6 +102,17 @@ def build_valid_form_payload(
         else fake_br.random.choices(["true", "false"], weights=[10, 2], k=1)[0]
     )
     has_whatsapp = fake_br.random.choices(["on", ""], weights=[4, 8], k=1)[0]
+    ddd = fake_br.random_int(11, 99)
+    if has_whatsapp:
+        contact_phone = (
+            f"({ddd}) 9{fake_br.random_int(1000, 9999)}-"
+            f"{fake_br.random_int(1000, 9999)}"
+        )
+    else:
+        contact_phone = (
+            f"({ddd}) {fake_br.random_int(2000, 5999)}-"
+            f"{fake_br.random_int(1000, 9999)}"
+        )
 
     payload: dict[str, Any] = {
         "term": str(term_pk),
@@ -109,7 +120,7 @@ def build_valid_form_payload(
         "researcher_name": fake_br.name(),
         "contact_email": email,
         "contact_email_confirmation": email,
-        "contact_phone": fake_br.phone_number(),
+        "contact_phone": contact_phone,
         "has_whatsapp": has_whatsapp,
         "tax_id": fake_br.cpf(),
         "institution_name": fake_br.company(),

@@ -1,4 +1,5 @@
 import base64
+import logging
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Any
@@ -19,6 +20,8 @@ from payments.services import (
 
 from .gateways import PixGateway
 from .models import PixPaymentInstrument, PixWebhookEvent
+
+logger = logging.getLogger(__name__)
 
 # Imagem PNG 1x1 usada como placeholder para o QR Code em ambientes de
 # desenvolvimento/teste (sem dependência de biblioteca de geração de QR).
@@ -126,14 +129,22 @@ class PixPaymentService:
             payload["emailPesOrg"] = application.contact_email
         result = self.gateway.generate_pix(payload)
 
+        pix_reference = str(result.get("idfpix", ""))
+        if not pix_reference:
+            raise PixPaymentDomainError("O gateway não retornou um idfpix válido.")
+        qr_code_payload = str(
+            result.get("qrCode") or result.get("qr_code_payload") or ""
+        ).strip()
+        if not qr_code_payload:
+            raise PixPaymentDomainError(
+                "O gateway não retornou o código Pix (copia e cola)."
+            )
+
         payment_instrument = self.orchestration.create_payment_instrument(
             fee_requirement=fee_requirement,
             method=PaymentInstrument.Method.PIX.value,
             created_by=created_by,
         )
-        pix_reference = str(result.get("idfpix", ""))
-        if not pix_reference:
-            raise PixPaymentDomainError("O gateway não retornou um idfpix válido.")
 
         generated_at = now
         expires_at = now + timedelta(seconds=settings.PIX_EXPIRATION_SECONDS)
@@ -141,9 +152,7 @@ class PixPaymentService:
             pix = PixPaymentInstrument.objects.create(
                 payment_instrument=payment_instrument,
                 pix_reference=pix_reference,
-                qr_code_payload=str(
-                    result.get("qrCode") or result.get("qr_code_payload") or ""
-                ),
+                qr_code_payload=qr_code_payload,
                 external_status=str(result.get("status", "ativo")),
                 generated_at=generated_at,
                 expires_at=expires_at,
@@ -151,16 +160,28 @@ class PixPaymentService:
                 payer_tax_id=result.get("payer_tax_id") or doc,
                 bank_return_code=result.get("retornoBancario"),
             )
-            image = create_file_asset_from_bytes(
-                application=application,
-                uploaded_by=created_by,
-                content=_qrcode_image_content(result, pix.qr_code_payload),
-                filename=f"qrcode-pix-{protocol}.png",
-                content_type="image/png",
-                purpose="pix_qrcode_image",
-            )
-            pix.qr_code_image_asset = image
-            pix.save(update_fields=["qr_code_image_asset", "updated_at"])
+            # A imagem do QR é opcional: o payload copia-e-cola já permite o
+            # pagamento. Falha de storage (permissão de mídia, por exemplo) não
+            # deve invalidar o Pix gerado no gateway.
+            try:
+                image = create_file_asset_from_bytes(
+                    application=application,
+                    uploaded_by=created_by,
+                    content=_qrcode_image_content(result, pix.qr_code_payload),
+                    filename=f"qrcode-pix-{protocol}.png",
+                    content_type="image/png",
+                    purpose="pix_qrcode_image",
+                )
+            except Exception:  # noqa: BLE001 - imagem é complementar
+                logger.warning(
+                    "Falha ao armazenar a imagem do QR Code do Pix %s.",
+                    pix_reference,
+                    exc_info=True,
+                )
+                image = None
+            if image is not None:
+                pix.qr_code_image_asset = image
+                pix.save(update_fields=["qr_code_image_asset", "updated_at"])
             record_application_event(
                 application=application,
                 event_code="pix.generated",
@@ -292,9 +313,11 @@ class PixPaymentService:
                 metadata={"pix_reference": pix.pix_reference},
             )
 
-    def check_pix_status(self, pix: PixPaymentInstrument) -> None:
+    def check_pix_status(
+        self, pix: PixPaymentInstrument, *, verify: bool = False
+    ) -> None:
         """Consulta o status no gateway e atualiza o estado local (TS-PIX-003)."""
-        data = self.gateway.check_pix_status(pix.pix_reference)
+        data = self.gateway.check_pix_status(pix.pix_reference, verify=verify)
         status = str(data.get("status", "")).lower()
         if status == "pago" and pix.payment_instrument.state != PaymentInstrument.State.PAID:
             amount = parse_ptbr_amount(data.get("valor"))

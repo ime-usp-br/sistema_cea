@@ -1,5 +1,6 @@
 from typing import cast
 
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -8,7 +9,11 @@ from django.views import View
 from django.views.generic import DetailView, FormView, TemplateView
 
 from payments.models import PaymentInstrument
-from payments.services import ModalityChangeService, fee_status_label
+from payments.services import (
+    ModalityChangeService,
+    RefundRequestService,
+    fee_status_label,
+)
 from terms.models import AcademicTerm
 from terms.utils import resolve_term, term_filter_id
 from users.mixins import RoleRequiredMixin
@@ -32,6 +37,42 @@ class CandidateDashboardView(LoginRequiredMixin, TemplateView):
 class CreateApplicationView(LoginRequiredMixin, FormView):
     template_name = "applications/application_form.html"
     form_class = ApplicationForm
+
+    @staticmethod
+    def _project_submission_open(term: AcademicTerm | None) -> bool:
+        if term is None:
+            return False
+        today = timezone.localdate()
+        if term.submission_start_date and today < term.submission_start_date:
+            return False
+        return not (
+            term.submission_end_date and today > term.submission_end_date
+        )
+
+    @staticmethod
+    def _project_submission_message(term: AcademicTerm | None) -> str:
+        if term is None:
+            return "Nenhum período letivo está cadastrado para receber inscrições."
+        if term.submission_start_date and term.submission_end_date:
+            return (
+                "Período de inscrições de Projetos: "
+                f"{term.submission_start_date:%d/%m/%Y} a "
+                f"{term.submission_end_date:%d/%m/%Y}."
+            )
+        return "O período de inscrição para Projetos não está configurado no sistema."
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        term = AcademicTerm.current()
+        is_open = self._project_submission_open(term)
+        context["selected_term"] = term
+        context["project_submission_open"] = is_open
+        context["project_submission_message"] = (
+            self._project_submission_message(term)
+            if not is_open
+            else ""
+        )
+        return context
 
     def form_valid(self, form):
         service = ApplicationSubmissionService()
@@ -71,6 +112,10 @@ class CreateApplicationView(LoginRequiredMixin, FormView):
             catalog_option_ids=[option.pk for option in form.cleaned_data.get("catalog_options", [])],
             catalog_other_text=form.cleaned_data.get("catalog_other_text"),
             attachments=form.cleaned_data.get("attachments") or [],
+        )
+        messages.success(
+            self.request,
+            f"Inscrição enviada com sucesso! Guarde o protocolo {application.protocol}.",
         )
         return redirect(reverse("applications:detail", args=[application.protocol]))
 
@@ -181,6 +226,10 @@ class ApplicationDetailView(LoginRequiredMixin, DetailView):
             )
             .order_by("-created_at")
         )
+        context["refund_available_amount"] = RefundRequestService().available_for_refund(
+            application
+        )
+        context["can_request_refund"] = context["refund_available_amount"] > 0
         return context
 
 

@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     GeneratePixView,
+    PixCheckView,
     PixDetailView,
     PixQrCodeImageView,
     pix_webhook,
@@ -15,6 +16,11 @@ urlpatterns = [
         "pagamento/inscricao/<str:protocol>/pix/gerar/",
         GeneratePixView.as_view(),
         name="generate",
+    ),
+    path(
+        "pagamento/inscricao/<str:protocol>/pix/verificar/",
+        PixCheckView.as_view(),
+        name="check",
     ),
     path(
         "pagamento/inscricao/<str:protocol>/pix/",

@@ -1,6 +1,7 @@
 import base64
 import tempfile
 from datetime import timedelta
+from decimal import Decimal
 from unittest.mock import patch
 
 from django.test import TestCase, override_settings
@@ -10,6 +11,7 @@ from applications.models import ServiceApplication
 from applications.services import ApplicationSubmissionService
 from files.models import FileAsset
 from payments.models import FeeRequirement, PaymentInstrument
+from payments.services import ManualPaymentService
 from pix.models import PixPaymentInstrument, PixWebhookEvent
 from pix.services import PixPaymentDomainError, PixPaymentService
 from terms.models import AcademicTerm
@@ -111,6 +113,22 @@ class PixScenarioTests(TestCase):
         self.assertEqual(
             pix.expires_at - pix.generated_at, timedelta(seconds=3600)
         )
+
+    def test_TS_PIX_001b_falha_de_storage_do_qr_nao_invalida_pix(self) -> None:
+        application = self.create_consultation()
+        with (
+            patch("pix.gateways.PixGateway.generate_pix", return_value=PIX_RESULT),
+            patch(
+                "pix.services.create_file_asset_from_bytes",
+                side_effect=PermissionError("media read-only"),
+            ),
+        ):
+            pix = self.service.generate_pix_for_fee(
+                fee_requirement=self.get_fee(application),
+                created_by=self.candidate,
+            )
+        self.assertIsNone(pix.qr_code_image_asset_id)
+        self.assertEqual(pix.qr_code_payload, PIX_RESULT["qrCode"])
 
     def test_TS_PIX_002_pix_ja_gerado_e_reutilizado(self) -> None:
         application = self.create_consultation()
@@ -449,6 +467,60 @@ class PixDetailViewPermissionTests(TestCase):
         self.client.force_login(self.other_candidate)
         response = self.client.get(self._detail_url())
         self.assertEqual(response.status_code, 404)
+
+    def test_pix_expirado_permite_gerar_novo(self) -> None:
+        fee = self.application.fee_requirements.get(
+            fee_type=FeeRequirement.FeeType.APPLICATION_FEE
+        )
+        with patch("pix.gateways.PixGateway.generate_pix", return_value=PIX_RESULT):
+            pix = PixPaymentService().generate_pix_for_fee(
+                fee_requirement=fee,
+                created_by=self.candidate,
+            )
+        instrument = pix.payment_instrument
+        instrument.state = PaymentInstrument.State.EXPIRED
+        instrument.save(update_fields=["state", "updated_at"])
+        self.client.force_login(self.candidate)
+        response = self.client.get(self._detail_url())
+        self.assertContains(response, "Gerar Pix")
+        self.assertNotContains(response, PIX_RESULT["qrCode"])
+
+    def test_pix_ativo_mais_recente_tem_prioridade_sobre_pix_pago_antigo(self) -> None:
+        fee = self.application.fee_requirements.get(
+            fee_type=FeeRequirement.FeeType.APPLICATION_FEE
+        )
+        service = PixPaymentService()
+        with patch("pix.gateways.PixGateway.generate_pix", return_value=PIX_RESULT):
+            first = service.generate_pix_for_fee(
+                fee_requirement=fee,
+                created_by=self.candidate,
+            )
+        ManualPaymentService().confirm_manual_payment(
+            instrument=first.payment_instrument,
+            confirmed_by=self.secretariat,
+        )
+        supplement = FeeRequirement.objects.create(
+            application=self.application,
+            fee_type=FeeRequirement.FeeType.SUPPLEMENT_FEE,
+            base_amount=Decimal("50.00"),
+            adjustment_amount=Decimal("0.00"),
+            amount=Decimal("50.00"),
+            reason="Taxa complementar",
+        )
+        new_result = {
+            **PIX_RESULT,
+            "idfpix": "pix-novo-456",
+            "qrCode": "00020126580014br.gov.bcb.pix0136novo-payload",
+        }
+        with patch("pix.gateways.PixGateway.generate_pix", return_value=new_result):
+            service.generate_pix_for_fee(
+                fee_requirement=supplement,
+                created_by=self.candidate,
+            )
+        self.client.force_login(self.candidate)
+        response = self.client.get(self._detail_url())
+        self.assertContains(response, new_result["qrCode"])
+        self.assertNotContains(response, PIX_RESULT["qrCode"])
 
 
 class _FakeResponse:

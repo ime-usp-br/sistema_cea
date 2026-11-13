@@ -191,20 +191,30 @@ class RefundRequestCreateView(LoginRequiredMixin, View):
     def get(self, request, protocol: str):
         application = self.get_application(protocol)
         form = RefundRequestForm()
+        available = _refund_service.available_for_refund(application)
         return render(
             request,
             self.template_name,
-            {"application": application, "form": form},
+            {
+                "application": application,
+                "form": form,
+                "available_amount": available,
+            },
         )
 
     def post(self, request, protocol: str):
         application = self.get_application(protocol)
+        available = _refund_service.available_for_refund(application)
         form = RefundRequestForm(request.POST)
         if not form.is_valid():
             return render(
                 request,
                 self.template_name,
-                {"application": application, "form": form},
+                {
+                    "application": application,
+                    "form": form,
+                    "available_amount": available,
+                },
                 status=400,
             )
         try:
@@ -219,7 +229,11 @@ class RefundRequestCreateView(LoginRequiredMixin, View):
             return render(
                 request,
                 self.template_name,
-                {"application": application, "form": form},
+                {
+                    "application": application,
+                    "form": form,
+                    "available_amount": available,
+                },
                 status=400,
             )
         # O candidato não acessa a lista de reembolsos (área da Secretaria):
