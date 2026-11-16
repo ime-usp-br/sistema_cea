@@ -10,6 +10,8 @@ x-app-environment: &app-environment
   DEBUG: "${DEBUG:-True}"
   SECRET_KEY: "${SECRET_KEY:-django-insecure-change-me}"
   ALLOWED_HOSTS: "${ALLOWED_HOSTS:-*}"
+  CSRF_TRUSTED_ORIGINS: "${CSRF_TRUSTED_ORIGINS:-}"
+  SECURE_PROXY_SSL_HEADER: "${SECURE_PROXY_SSL_HEADER:-}"
   DATABASE_URL: "${DATABASE_URL:-postgres://uspuser:usppass@db:5432/uspdb}"
   REDIS_URL: "${REDIS_URL:-redis://redis:${REDIS_PORT:-6379}/0}"
   WEB_PORT: "${WEB_PORT:-8000}"

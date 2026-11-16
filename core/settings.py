@@ -45,6 +45,34 @@ DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
 
+# Origens confiáveis para o CSRF (obrigatório quando o Django está atrás de um
+# proxy HTTPS e enxerga o request interno como HTTP). Ex.:
+# CSRF_TRUSTED_ORIGINS=https://cea.sistemas.ime.usp.br
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in env('CSRF_TRUSTED_ORIGINS', default='').split(',')
+    if origin.strip()
+]
+
+# Quando o proxy reverso envia X-Forwarded-Proto, informe:
+# SECURE_PROXY_SSL_HEADER=HTTP_X_FORWARDED_PROTO,https
+_secure_proxy_ssl_header = env('SECURE_PROXY_SSL_HEADER', default='').strip()
+if _secure_proxy_ssl_header:
+    try:
+        _proxy_header, _proxy_value = [
+            part.strip()
+            for part in _secure_proxy_ssl_header.split(',', 1)
+        ]
+    except ValueError as exc:
+        raise ImproperlyConfigured(
+            'SECURE_PROXY_SSL_HEADER deve estar no formato "HEADER,valor".'
+        ) from exc
+    if not _proxy_header or not _proxy_value:
+        raise ImproperlyConfigured(
+            'SECURE_PROXY_SSL_HEADER deve estar no formato "HEADER,valor".'
+        )
+    SECURE_PROXY_SSL_HEADER = (_proxy_header, _proxy_value)
+
 
 # Application definition
 
