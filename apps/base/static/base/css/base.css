@@ -46,7 +46,7 @@
 
     /* Spacing & Heights */
     --header-faixa-height: 8px;
-    --content-width: 1280px;
+    --content-width: 1600px;
 }
 
 @media (prefers-color-scheme: dark) {
