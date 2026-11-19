@@ -84,7 +84,7 @@ def cancel_external_charge(instrument: PaymentInstrument) -> None:
     atualizado para ``CANCELED`` mantendo a consistência interna. Pix é ignorado
     aqui pois expira por validade no gateway.
     """
-    from bank_slips.gateways import BankSlipGateway
+    from bank_slips.gateways import get_bank_slip_gateway
     from bank_slips.models import BankSlipPaymentInstrument
 
     if instrument.method != PaymentInstrument.Method.BANK_SLIP:
@@ -100,7 +100,7 @@ def cancel_external_charge(instrument: PaymentInstrument) -> None:
     ):
         return
     with contextlib.suppress(Exception):  # noqa: BLE001 - cancelamento best-effort
-        BankSlipGateway().cancelar_boleto(slip.bank_slip_reference)
+        get_bank_slip_gateway().cancelar_boleto(slip.bank_slip_reference)
     if instrument.state != PaymentInstrument.State.CANCELED:
         instrument.state = PaymentInstrument.State.CANCELED
         instrument.active_unique_fee_token = None

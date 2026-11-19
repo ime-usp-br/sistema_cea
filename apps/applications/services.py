@@ -281,6 +281,18 @@ class ApplicationSubmissionService:
         from payments.services import FeeCalculationService
 
         FeeCalculationService().create_application_fee(application)
+        ApplicationEvent.objects.create(
+            application=application,
+            event_code="application.created",
+            actor=owner,
+            description=(
+                f"Inscrição criada ({application.get_modality_display()})."
+            ),
+            metadata={
+                "modality": application.modality,
+                "term_id": application.term_id,
+            },
+        )
 
         # Gatilho do legado ``NotifyInscribedAboutApplication``/``NotifyCEAAboutApplication``
         # (D6): confirma a submissão para o candidato e avisa a equipe CEA.

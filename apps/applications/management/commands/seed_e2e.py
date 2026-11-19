@@ -21,6 +21,8 @@ class Command(BaseCommand):
     E2E_TEACHER_EMAIL = "e2e_teacher@example.com"
     E2E_SECRETARIAT_USERNAME = "e2e_secretariat"
     E2E_SECRETARIAT_EMAIL = "e2e_secretariat@example.com"
+    E2E_ADMIN_USERNAME = "e2e_admin"
+    E2E_ADMIN_EMAIL = "e2e_admin@example.com"
 
     def handle(self, *args: Any, **options: Any) -> None:
         from applications.models import CatalogOption
@@ -59,6 +61,14 @@ class Command(BaseCommand):
             full_name="Secretaria E2E",
             role=User.Role.SECRETARIAT,
         )
+        admin, admin_created = self._ensure_user(
+            username=self.E2E_ADMIN_USERNAME,
+            email=self.E2E_ADMIN_EMAIL,
+            full_name="Administrador E2E",
+            role=User.Role.ADMINISTRATOR,
+            is_superuser=True,
+            is_staff=True,
+        )
         # Secretaria precisa de is_staff/permissões restritas de admin.
         ensure_secretariat_admin_permissions()
 
@@ -76,6 +86,7 @@ class Command(BaseCommand):
                 f"candidato '{candidate.username}' ({'criado' if candidate_created else 'existente'}), "
                 f"docente '{teacher.username}' ({'criado' if teacher_created else 'existente'}), "
                 f"secretaria '{secretariat.username}' ({'criado' if secretariat_created else 'existente'}), "
+                f"admin '{admin.username}' ({'criado' if admin_created else 'existente'}), "
                 f"{catalog_count} opções de catálogo disponíveis."
             )
         )
@@ -87,14 +98,27 @@ class Command(BaseCommand):
                         "id": term.pk,
                         "year": term.year,
                         "period": term.period,
-                    }
+                    },
+                    "users": {
+                        "candidate": candidate.username,
+                        "teacher": teacher.username,
+                        "secretariat": secretariat.username,
+                        "admin": admin.username,
+                    },
                 },
                 ensure_ascii=False,
             )
         )
 
     def _ensure_user(
-        self, *, username: str, email: str, full_name: str, role: str
+        self,
+        *,
+        username: str,
+        email: str,
+        full_name: str,
+        role: str,
+        is_superuser: bool = False,
+        is_staff: bool = False,
     ) -> tuple[Any, bool]:
         from users.models import User
 
@@ -125,6 +149,12 @@ class Command(BaseCommand):
             changed = True
         if not user.is_email_verified:
             user.is_email_verified = True
+            changed = True
+        if user.is_superuser != is_superuser:
+            user.is_superuser = is_superuser
+            changed = True
+        if user.is_staff != is_staff and is_staff:
+            user.is_staff = True
             changed = True
         user.set_password(self.E2E_PASSWORD)
         changed = True

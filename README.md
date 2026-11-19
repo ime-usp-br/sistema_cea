@@ -144,23 +144,26 @@ poetry run ruff check .
 poetry run mypy .
 ```
 
-**Testes E2E de navegador (Playwright em container):**
+**Testes E2E de navegador (Playwright em stack isolada):**
 
-Sobe um container dedicado (com Chromium) que roda a suíte `e2e/` contra a
-aplicação já em execução. O script semeia os usuários/período via
-`seed_e2e` e depois roda o pytest no container.
+`docker-compose.e2e.yml` sobe uma stack descartável (banco próprio, app Django
+e container Playwright). A suíte não depende da stack de DEV nem de rede
+externa:
+
+- Pix e Boleto usam **gateways simulados em memória** (`PAYMENT_GATEWAY_FAKE=True`);
+- o webhook Pix é exercitado por POST na própria aplicação;
+- Celery roda em modo eager e os e-mails vão para uma **caixa em arquivo**, lida
+  pelos testes (cadastro/confirmação e recuperação de senha);
+- ao final, a stack e o banco são removidos (`down -v`).
 
 ```bash
-# A aplicação deve estar de pé (docker compose up -d)
+# Sobe a stack isolada, roda toda a suíte e derruba tudo ao final
 ./scripts/run_e2e.sh
 
-# Rodar apenas um teste/arquivo:
-./scripts/run_e2e.sh test_journeys_e2e.py -k pagar_taxa
+# Rodar apenas um arquivo/teste:
+./scripts/run_e2e.sh -q e2e/test_full_journeys_e2e.py
+./scripts/run_e2e.sh -k reembolso
 
-# Apontar para outra URL:
-E2E_BASE_URL=http://cea.local ./scripts/run_e2e.sh
+# Manter a stack de pé para depuração (logs, Playwright trace etc.)
+E2E_KEEP_STACK=1 ./scripts/run_e2e.sh
 ```
-
-O alvo padrão é `http://cea.dev.ime` (configurável por `E2E_BASE_URL`). O
-container e2e resolve os domínios de desenvolvimento pelo host
-(`extra_hosts: host-gateway` em `docker-compose.e2e.yml`).

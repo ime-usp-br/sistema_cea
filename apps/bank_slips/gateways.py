@@ -239,3 +239,61 @@ class BankSlipGateway:
         if isinstance(result, dict):
             return str(result.get("mensagem", ""))
         return str(getattr(result, "mensagem", "") or "")
+
+
+class FakeBankSlipGateway:
+    """Gateway WS-Boleto em memória para E2E/dev (sem SOAP/rede).
+
+    Os boletos nascem como emitidos (``E``). A confirmação de pagamento no E2E
+    acontece pela rota local de simulação, não pelo gateway.
+    """
+
+    def __init__(self, wsdl_url: str | None = None) -> None:
+        self.wsdl_url = wsdl_url or "fake://boleto"
+
+    def gerar_boleto(self, payload: dict[str, Any]) -> dict[str, Any]:
+        import uuid
+
+        return {
+            "codigoIDBoleto": f"fake-boleto-{uuid.uuid4().hex}",
+            "valorDesconto": None,
+        }
+
+    def obter_situacao(self, codigo_id_boleto: str) -> str:
+        return "E"
+
+    def obter_boleto_pdf(self, codigo_id_boleto: str) -> str:
+        # PDF mínimo (uma página em branco) em Base64.
+        import base64
+
+        return base64.b64encode(
+            b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+            b"2 0 obj<</Type/Pages/Count 1/Kids[3 0 R]>>endobj\n"
+            b"3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 300 150]>>endobj\n"
+            b"trailer<</Size 4/Root 1 0 R>>\n%%EOF\n"
+        ).decode("ascii")
+
+    def cancelar_boleto(self, codigo_id_boleto: str) -> bool:
+        return True
+
+    def obter_detalhe(self, codigo_id_boleto: str) -> dict[str, Any]:
+        # Chaves principais documentadas em docs/BOLETO.md (obterDetalhe).
+        return {
+            "lnhdgv": "00000.00000 00000.000000 00000.000000 0 00000000000000",
+            "vlrcob": "140.00",
+            "nomsac": "Pagador E2E",
+            "dtavenbto": "01/01/2099",
+            "codunddsp": "1",
+            "nssnumcoo": "00000000000",
+        }
+
+    def registrar_boleto(self, codigo_id_boleto: str) -> str:
+        # docs/BOLETO.md: registrarBoleto devolve "OK" em caso de sucesso.
+        return "OK"
+
+
+def get_bank_slip_gateway() -> BankSlipGateway | FakeBankSlipGateway:
+    """Seleciona o gateway conforme o modo simulado da stack E2E."""
+    if settings.PAYMENT_GATEWAY_FAKE:
+        return FakeBankSlipGateway()
+    return BankSlipGateway()

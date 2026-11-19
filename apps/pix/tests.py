@@ -153,7 +153,8 @@ class PixScenarioTests(TestCase):
         pix = self.generate_pix(application)
         with patch(
             "pix.gateways.PixGateway.check_pix_status",
-            return_value={"status": "Pago", "valor": "140,00"},
+            # docs/PIX.md usa "Concluído" na consulta (webhook usa "Pago").
+            return_value={"status": "Concluído", "valor": "140,00"},
         ):
             self.service.check_pix_status(pix)
         pix.payment_instrument.refresh_from_db()
@@ -627,3 +628,49 @@ class PixGatewayContractTests(TestCase):
         second_method, second_path, _body, _ = self.calls[1]
         self.assertEqual(second_method, "DELETE")
         self.assertEqual(second_path, "pix/webhookConfig")
+
+
+@override_settings(PAYMENT_GATEWAY_FAKE=True)
+class FakePixGatewayTests(TestCase):
+    """Gateway simulado da stack E2E (sem rede)."""
+
+    def test_fake_gateway_cobre_geracao_consulta_listagem_e_arquivos(self) -> None:
+        from pix.gateways import FakePixGateway, get_pix_gateway
+
+        gateway = get_pix_gateway()
+        self.assertIsInstance(gateway, FakePixGateway)
+        result = gateway.generate_pix({"valor": "80,00"})
+        reference = result["idfpix"]
+        self.assertTrue(reference.startswith("fp-"))
+        self.assertLessEqual(len(reference), 35)
+        self.assertEqual(set(result), {"idfpix", "qrCode", "qrCodeImgBase64"})
+        self.assertTrue(result["qrCode"])
+
+        status = gateway.check_pix_status(reference, verify=True)
+        self.assertEqual(status["status"], "Concluído")
+        self.assertEqual(status["valor"], "80,00")
+        for field in (
+            "dataGeracao",
+            "dataExpiracao",
+            "dataPag",
+            "tipoPessoa",
+            "nomePesOrg",
+            "docPesOrg",
+            "nomePesOrgPag",
+            "docPesOrgPag",
+        ):
+            self.assertIn(field, status)
+
+        completed = gateway.list_completed_pix("01/01/2026 00:00:00", "02/01/2026 00:00:00")
+        self.assertEqual(completed[0]["idfpix"], reference)
+        self.assertTrue(gateway.generate_pdf(reference).startswith(b"%PDF"))
+        self.assertTrue(gateway.generate_qrcode(reference).startswith(b"\x89PNG"))
+        self.assertEqual(gateway.simulate_payment(reference)["status"], "Pago")
+        self.assertTrue(gateway.configure_webhook("http://x", "token")["configured"])
+        self.assertTrue(gateway.remove_webhook()["removed"])
+
+    def test_gateway_real_e_padrao_sem_modo_simulado(self) -> None:
+        from pix.gateways import PixGateway, get_pix_gateway
+
+        with override_settings(PAYMENT_GATEWAY_FAKE=False):
+            self.assertIsInstance(get_pix_gateway(), PixGateway)

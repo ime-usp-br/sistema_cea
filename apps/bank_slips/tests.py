@@ -809,3 +809,28 @@ class BankSlipGatewayContractTests(TestCase):
             parsed = self.gateway.obter_detalhe("ref-001")
         self.assertEqual(parsed["lnhdgv"], "123456 78901 001")
         self.assertEqual(parsed["vlrcob"], "140.00")
+
+
+@override_settings(PAYMENT_GATEWAY_FAKE=True)
+class FakeBankSlipGatewayTests(TestCase):
+    """Gateway SOAP simulado da stack E2E (sem rede)."""
+
+    def test_fake_gateway_cobre_emissao_status_pdf_cancelamento_e_detalhe(self) -> None:
+        from bank_slips.gateways import FakeBankSlipGateway, get_bank_slip_gateway
+
+        gateway = get_bank_slip_gateway()
+        self.assertIsInstance(gateway, FakeBankSlipGateway)
+        result = gateway.gerar_boleto({"valorDocumento": "140.00"})
+        reference = result["codigoIDBoleto"]
+        self.assertTrue(reference.startswith("fake-boleto-"))
+        self.assertEqual(gateway.obter_situacao(reference), "E")
+        self.assertTrue(gateway.obter_boleto_pdf(reference))
+        self.assertTrue(gateway.cancelar_boleto(reference))
+        self.assertIn("lnhdgv", gateway.obter_detalhe(reference))
+        self.assertEqual(gateway.registrar_boleto(reference), "OK")
+
+    def test_gateway_real_e_padrao_sem_modo_simulado(self) -> None:
+        from bank_slips.gateways import BankSlipGateway, get_bank_slip_gateway
+
+        with override_settings(PAYMENT_GATEWAY_FAKE=False):
+            self.assertIsInstance(get_bank_slip_gateway(), BankSlipGateway)

@@ -229,6 +229,12 @@ CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+# Executa as tarefas no processo do servidor. Usado pela stack E2E para que os
+# e-mails de notificação sejam gravados no backend de arquivo sem um worker.
+CELERY_TASK_ALWAYS_EAGER = env.bool('CELERY_TASK_ALWAYS_EAGER', default=False)
+CELERY_TASK_EAGER_PROPAGATES = env.bool(
+    'CELERY_TASK_EAGER_PROPAGATES', default=True
+)
 CELERY_BEAT_SCHEDULE = {
     # Paridade com o cron do legado (Console/Kernel.php, a cada 15 min): varre
     # os boletos emitidos e consulta a situação no gateway, desbloqueando o
@@ -254,14 +260,15 @@ CELERY_BEAT_SCHEDULE = {
 _mail_driver = env('MAIL_DRIVER', default='smtp').strip().lower()
 _mail_encryption = env('MAIL_ENCRYPTION', default='tls').strip().lower()
 
-EMAIL_BACKEND = env(
-    'EMAIL_BACKEND',
-    default=(
-        'django.core.mail.backends.console.EmailBackend'
-        if _mail_driver in {'log', 'console'}
-        else 'django.core.mail.backends.smtp.EmailBackend'
-    ),
+_configured_email_backend = env('EMAIL_BACKEND', default='').strip()
+EMAIL_BACKEND = _configured_email_backend or (
+    'django.core.mail.backends.console.EmailBackend'
+    if _mail_driver in {'log', 'console'}
+    else 'django.core.mail.backends.smtp.EmailBackend'
 )
+# Diretório usado pelo ``filebased.EmailBackend`` (stack E2E), que grava cada
+# mensagem em disco e permite ao teste ler o link de confirmação sem SMTP.
+EMAIL_FILE_PATH = env('EMAIL_FILE_PATH', default='')
 EMAIL_HOST = env('EMAIL_HOST', default=env('MAIL_HOST', default='localhost'))
 EMAIL_PORT = env.int('EMAIL_PORT', default=env.int('MAIL_PORT', default=25))
 EMAIL_HOST_USER = env('EMAIL_HOST_USER', default=env('MAIL_USERNAME', default=''))
@@ -337,3 +344,12 @@ BANK_SLIP_SACADO_INFO = env(
     'BANK_SLIP_SACADO_INFO',
     default='Dúvidas: cea@ime.usp.br',
 )
+
+# ---- Gateways simulados (E2E) ----
+# Quando ligado, Pix e Boleto usam clientes em memória (sem rede). A stack E2E
+# define PAYMENT_GATEWAY_FAKE=True; em produção é proibido ligar.
+PAYMENT_GATEWAY_FAKE = env.bool('PAYMENT_GATEWAY_FAKE', default=False)
+if PAYMENT_GATEWAY_FAKE and env('DJANGO_ENV', default='development') == 'production':
+    raise ImproperlyConfigured(
+        'PAYMENT_GATEWAY_FAKE não pode ser habilitado em produção.'
+    )

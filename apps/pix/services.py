@@ -18,7 +18,7 @@ from payments.services import (
     refresh_payment_state,
 )
 
-from .gateways import PixGateway
+from .gateways import FakePixGateway, PixGateway, get_pix_gateway
 from .models import PixPaymentInstrument, PixWebhookEvent
 
 logger = logging.getLogger(__name__)
@@ -74,10 +74,10 @@ class PixPaymentService:
 
     def __init__(
         self,
-        gateway: PixGateway | None = None,
+        gateway: PixGateway | FakePixGateway | None = None,
         orchestration: PaymentOrchestrationService | None = None,
     ) -> None:
-        self.gateway = gateway or PixGateway()
+        self.gateway = gateway or get_pix_gateway()
         self.orchestration = orchestration or PaymentOrchestrationService()
 
     def _payer_data(self, application: ServiceApplication) -> tuple[str, str, str]:
@@ -318,8 +318,12 @@ class PixPaymentService:
     ) -> None:
         """Consulta o status no gateway e atualiza o estado local (TS-PIX-003)."""
         data = self.gateway.check_pix_status(pix.pix_reference, verify=verify)
-        status = str(data.get("status", "")).lower()
-        if status == "pago" and pix.payment_instrument.state != PaymentInstrument.State.PAID:
+        status = str(data.get("status", "")).strip().lower()
+        # docs/PIX.md: consultar devolve "Concluído"; o webhook usa "Pago".
+        # Aceitamos as duas grafias para não depender da variação do gateway.
+        if status in {"pago", "concluído", "concluido"} and (
+            pix.payment_instrument.state != PaymentInstrument.State.PAID
+        ):
             amount = parse_ptbr_amount(data.get("valor"))
             event = PixWebhookEvent.objects.create(
                 pix_reference=pix.pix_reference,

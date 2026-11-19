@@ -19,7 +19,7 @@ from payments.services import (
     refresh_payment_state,
 )
 
-from .gateways import BankSlipGateway
+from .gateways import BankSlipGateway, FakeBankSlipGateway, get_bank_slip_gateway
 from .models import BankSlipPaymentInstrument
 
 
@@ -32,10 +32,10 @@ class BankSlipPaymentService:
 
     def __init__(
         self,
-        gateway: BankSlipGateway | None = None,
+        gateway: BankSlipGateway | FakeBankSlipGateway | None = None,
         orchestration: PaymentOrchestrationService | None = None,
     ) -> None:
-        self.gateway = gateway or BankSlipGateway()
+        self.gateway = gateway or get_bank_slip_gateway()
         self.orchestration = orchestration or PaymentOrchestrationService()
 
     def _payer_data(self, application) -> tuple[str, str, str]:

@@ -62,6 +62,8 @@ ignore_missing_imports = true
 no_implicit_optional = true
 check_untyped_defs = true
 cache_dir = "/tmp/.mypy_cache"
+# Scripts descartáveis de diagnóstico em tmp/ não fazem parte do código do app.
+exclude = ["^tmp/"]
 
 [[tool.mypy.overrides]]
 module = "senhaunica_socialite.*"

@@ -1,48 +1,101 @@
-# Stack dedicada aos testes E2E de navegador (Playwright).
-# Uso recomendado (semeia os dados e roda a suíte):
-#   ./scripts/run_e2e.sh
-# Ou diretamente (o caminho absoluto do host é obrigatório):
-#   docker compose -f docker-compose.e2e.yml run --rm --build -e E2E_HOST_ROOT="$PWD" e2e
+# Stack descartável dos testes E2E de navegador (Playwright).
 #
-# A aplicação deve estar de pé em E2E_BASE_URL (padrão: http://cea.dev.ime).
-# Ao rodar o serviço ``e2e`` diretamente, informe o caminho absoluto do host:
-#   docker compose -f docker-compose.e2e.yml run --rm -e E2E_HOST_ROOT="$PWD" e2e
+# Diferença em relação ao stack de desenvolvimento: aqui o app roda em um
+# container próprio, com banco próprio e com Pix/Boleto simulados em memória,
+# Celery em modo eager e e-mail gravado em arquivo. Nenhum teste depende de
+# SMTP, webhook externo, SOAP ou do gateway Pix da USP.
+#
+# Uso recomendado:
+#   ./scripts/run_e2e.sh
+#
+# Ou manualmente:
+#   COMPOSE_PROJECT_NAME=sistema_cea_e2e \
+#     docker compose -p sistema_cea_e2e -f docker-compose.e2e.yml up -d --build --wait
+#   COMPOSE_PROJECT_NAME=sistema_cea_e2e \
+#     docker compose -p sistema_cea_e2e -f docker-compose.e2e.yml run --rm e2e
+#   docker compose -p sistema_cea_e2e -f docker-compose.e2e.yml down -v
+
+x-e2e-app-environment: &e2e-app-environment
+  DJANGO_ENV: development
+  DEBUG: "True"
+  SECRET_KEY: e2e-secret-key-not-for-production
+  ALLOWED_HOSTS: "*"
+  DATABASE_URL: postgres://e2e:e2e@db:5432/e2e
+  REDIS_URL: redis://redis:6379/0
+  ENABLE_LOCAL_LOGIN: "True"
+  # Gateways em memória: nenhuma chamada de rede.
+  PAYMENT_GATEWAY_FAKE: "True"
+  # Tarefas de notificação executam no processo (sem worker Celery).
+  CELERY_TASK_ALWAYS_EAGER: "True"
+  CELERY_TASK_EAGER_PROPAGATES: "True"
+  # E-mail "desviado" para arquivos locais: os testes leem o link de
+  # confirmação/reset pelo comando manage.py e2e_mailbox.
+  EMAIL_BACKEND: django.core.mail.backends.filebased.EmailBackend
+  EMAIL_FILE_PATH: /tmp/cea-e2e-mail
+  MEDIA_ROOT: /tmp/cea-e2e-media
+  DEFAULT_FROM_EMAIL: noreply@cea.e2e
+  NOTIFICATION_CENTER_EMAIL: cea-e2e@example.com
+  PIX_WEBHOOK_TOKEN: dev-webhook-token
+  PIX_BASE_URL: fake://pix
+  PIX_USERNAME: e2e
+  PIX_PASSWORD: e2e
+  BANK_SLIP_WSDL_URL: fake://boleto
+  BANK_SLIP_USERNAME: e2e
+  BANK_SLIP_PASSWORD: e2e
+
 services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment: *e2e-app-environment
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          python -c "import urllib.request;
+          urllib.request.urlopen('http://127.0.0.1:8000/auth/login/', timeout=2)"
+      interval: 3s
+      timeout: 5s
+      retries: 40
+      start_period: 20s
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: e2e
+      POSTGRES_USER: e2e
+      POSTGRES_PASSWORD: e2e
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U e2e -d e2e"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+
   e2e:
     build:
       context: ./e2e
     working_dir: /workspace
+    depends_on:
+      web:
+        condition: service_healthy
     environment:
-      E2E_BASE_URL: "${E2E_BASE_URL:-http://cea.dev.ime}"
-      # Caminho absoluto do repositório no HOST. Necessário porque o serviço
-      # ``web`` é criado a partir de dentro deste container; bind mounts
-      # relativos seriam resolvidos pelo daemon contra o host.
+      # A aplicação sob teste é o serviço ``web`` desta mesma stack.
+      E2E_BASE_URL: http://web:8000
+      # Caminho absoluto do repositório no HOST: necessário porque os testes
+      # executam comandos de management via socket do Docker.
       E2E_HOST_ROOT: "${E2E_HOST_ROOT:-.}"
-      # Mantém o mesmo projeto Compose usado pelos containers da aplicação,
-      # para que o serviço ``web`` abaixo compartilhe a rede/banco.
-      COMPOSE_PROJECT_NAME: "${COMPOSE_PROJECT_NAME:-sistema_cea}"
+      COMPOSE_PROJECT_NAME: "${COMPOSE_PROJECT_NAME:-sistema_cea_e2e}"
+      E2E_APP_SERVICE: web
+      E2E_COMPOSE_FILE: docker-compose.e2e.yml
     volumes:
-      # Código-fonte completo: os fixtures executam o serviço ``web`` daqui.
       - .:/workspace
-      # Acesso ao daemon do host (dev/teste).
       - /var/run/docker.sock:/var/run/docker.sock
-    extra_hosts:
-      - "cea.dev.ime:host-gateway"
-      - "cea.local:host-gateway"
-
-  # Serviço de management usado pelos fixtures (seed/simulate_journey/cleanup).
-  # Reutiliza a imagem já construída pela aplicação e a mesma rede/banco.
-  web:
-    image: "${COMPOSE_PROJECT_NAME:-sistema_cea}-web"
-    working_dir: /app
-    environment:
-      DJANGO_ENV: "${DJANGO_ENV:-development}"
-      DEBUG: "${DEBUG:-True}"
-      SECRET_KEY: "${SECRET_KEY:-django-insecure-change-me}"
-      ALLOWED_HOSTS: "${ALLOWED_HOSTS:-*}"
-      DATABASE_URL: "${DATABASE_URL:-postgres://uspuser:usppass@db:5432/uspdb}"
-      REDIS_URL: "${REDIS_URL:-redis://redis:6379/0}"
-      ENABLE_LOCAL_LOGIN: "${ENABLE_LOCAL_LOGIN:-True}"
-      NOTIFICATION_CENTER_EMAIL: "${NOTIFICATION_CENTER_EMAIL:-cea@ime.usp.br}"
-    volumes:
-      - "${E2E_HOST_ROOT:-.}:/app"

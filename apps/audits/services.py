@@ -13,6 +13,7 @@ from files.services import create_file_asset
 from payments.services import (
     APPLICATION_FEE_CONSULTATION,
     FeeCalculationService,
+    record_application_event,
 )
 from terms.models import AcademicTerm
 
@@ -142,6 +143,12 @@ class DatasetAuditService:
                     note=note,
                     state=DatasetAuditSubmission.State.SUBMITTED,
                 )
+                self._record_submission_event(
+                    application=application,
+                    submission=submission,
+                    actor=submitted_by,
+                    channel=channel_enum.value,
+                )
                 self._move_to_review(application)
         elif channel_enum == DatasetAuditSubmission.Channel.EXTERNAL_LINK:
             if external_link_declaration is not True:
@@ -163,6 +170,12 @@ class DatasetAuditService:
                     external_link_declaration=True,
                     note=note,
                     state=DatasetAuditSubmission.State.SUBMITTED,
+                )
+                self._record_submission_event(
+                    application=application,
+                    submission=submission,
+                    actor=submitted_by,
+                    channel=channel_enum.value,
                 )
                 self._move_to_review(application)
         else:  # pragma: no cover - protegido pela enum
@@ -194,6 +207,16 @@ class DatasetAuditService:
                 reviewed_at=now,
             )
             self._apply_review_outcome(submission, application, outcome_enum, note)
+            record_application_event(
+                application=application,
+                event_code="audit.reviewed",
+                actor=reviewer,
+                description=f"Auditoria revisada: {outcome_enum.value}.",
+                metadata={
+                    "submission_id": submission.pk,
+                    "outcome": outcome_enum.value,
+                },
+            )
         return review
 
     def resolve_rejection(
@@ -229,7 +252,34 @@ class DatasetAuditService:
                 decided_at=now,
             )
             self._apply_resolution(application, resolution_enum, target_term)
+            record_application_event(
+                application=application,
+                event_code="audit.resolved",
+                actor=decided_by,
+                description=f"Rejeição de auditoria resolvida: {resolution_enum.value}.",
+                metadata={
+                    "submission_id": submission.pk,
+                    "resolution": resolution_enum.value,
+                    "target_term": target_term.pk if target_term else None,
+                },
+            )
         return resolution_record
+
+    @staticmethod
+    def _record_submission_event(
+        *,
+        application: ServiceApplication,
+        submission: DatasetAuditSubmission,
+        actor: Any,
+        channel: str,
+    ) -> None:
+        record_application_event(
+            application=application,
+            event_code="audit.submitted",
+            actor=actor,
+            description=f"Dados enviados para auditoria ({channel}).",
+            metadata={"submission_id": submission.pk, "channel": channel},
+        )
 
     def enable_audit(self, *, application: ServiceApplication) -> None:
         """Habilita manualmente a auditoria (TS-AUD-016)."""

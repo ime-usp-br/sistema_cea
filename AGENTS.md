@@ -57,8 +57,11 @@ O sistema possui comandos de gestão para popular e simular o fluxo completo de 
 |---|---|
 | `manage.py simulate_journey` | **Simula a jornada ponta a ponta** (inscrição → pagamento → auditoria → triagem/reunião → estado final) passo a passo via flags, usando a camada de serviço real e mockando apenas os gateways externos de Pix/Boleto. |
 | `manage.py seed_demo [--users N] [--count N] [--modality project\|consultation]` | Popula o banco de DEV com candidatos e inscrições válidas (não avança o fluxo). |
-| `manage.py seed_e2e` | Cria período letivo e um candidato E2E com credenciais conhecidas (usado pelo Playwright). |
-| `manage.py e2e_cleanup --protocol <protocolo>` | Marca como excluídas (soft delete) as inscrições criadas pela suíte E2E. |
+| `manage.py seed_e2e` | Cria período letivo, candidato/docente/secretaria e admin E2E com credenciais conhecidas (usado pelo Playwright). |
+| `manage.py e2e_cleanup --protocol <protocolo> [--term-id N] [--deactivate-email X]` | Marca inscrições como excluídas, remove períodos E2E vazios e desativa usuários criados pela suíte. |
+| `manage.py inspect_application --protocol <p>` | Emite JSON com lifecycle, taxas, instrumentos, auditoria, agendamentos e eventos (asserções E2E). |
+| `manage.py e2e_mailbox [--to X] [--latest] --json` | Lê a caixa de e-mail em arquivo da stack E2E (confirmação/reset). |
+| `manage.py e2e_create_term`, `e2e_backdate_bank_slip`, `e2e_create_imported_application` | Fixtures de setup dos testes E2E (somente `DEBUG=True`). |
 | `manage.py import_legacy_data` | Importa dados legados a partir de JSON (resgate/migração). |
 | `manage.py import_legacy_sql --dump <arquivo.sql> [--storage-root <pasta>] [--update] [--limit N]` | Importa o dump SQL do MariaDB (aplicações, catálogo, períodos, pagamentos/boletos, triagens, reuniões, eventos, anexos e comprovantes). Use `--update` para reimportar sem duplicar; sem `--storage-root`, os arquivos são ignorados com aviso. Guia completo em `docs/IMPORTACAO_DADOS_LEGADOS.md`. |
 

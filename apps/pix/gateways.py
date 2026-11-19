@@ -1,11 +1,30 @@
 from __future__ import annotations
 
+import base64
+import uuid
 from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
 
 if TYPE_CHECKING:
     import httpx
+
+# PDF mínimo válido (uma página em branco) usado pelo gateway simulado.
+_FAKE_PDF = base64.b64decode(
+    "JVBERi0xLjQKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PmVuZG9iagoy"
+    "IDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMS9LaWRzWzMgMCBSXT4+ZW5kYm9iagoz"
+    "IDAgb2JqCjw8L1R5cGUvUGFnZS9QYXJlbnQgMiAwIFIvTWVkaWFCb3hbMCAwIDMwMCAx"
+    "NTBdPj5lbmRvYmoKeHJlZgowIDQKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5"
+    "IDAwMDAwIG4gCjAwMDAwMDAwNTIgMDAwMDAgbiAKMDAwMDAwMDEwMSAwMDAwMCBuIAp0"
+    "cmFpbGVyCjw8L1NpemUgNC9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjE2NQolJUVPRgo="
+)
+
+# PNG 1x1 transparente usado como QR Code simulado.
+_FAKE_PNG = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk"
+    "+A8AAQUBAScY42YAAAAASUVORK5CYII="
+)
+_FAKE_PNG_B64 = base64.b64encode(_FAKE_PNG).decode("ascii")
 
 
 class PixGatewayError(RuntimeError):
@@ -139,3 +158,101 @@ class PixGateway:
         """DELETE /pix/webhookConfig — remove o webhook cadastrado."""
         response = self._request("DELETE", "pix/webhookConfig")
         return response.json()
+
+
+class FakePixGateway:
+    """Gateway Pix em memória para E2E/dev (sem qualquer chamada de rede).
+
+    O contrato segue docs/PIX.md: ``gerar`` devolve ``idfpix``/``qrCode``/
+    ``qrCodeImgBase64``; ``consultar`` devolve os campos documentados e usa o
+    status ``Concluído`` para Pix pago (o webhook usa ``Pago``).
+    """
+
+    _records: dict[str, dict[str, Any]] = {}
+
+    def __init__(self, base_url: str | None = None) -> None:
+        self.base_url = base_url or "fake://pix"
+
+    @staticmethod
+    def _now() -> str:
+        from django.utils import timezone
+
+        return timezone.localtime().strftime("%d/%m/%Y %H:%M:%S")
+
+    def generate_pix(self, payload: dict[str, Any]) -> dict[str, Any]:
+        reference = f"fp-{uuid.uuid4().hex[:28]}"
+        self._records[reference] = {
+            "valor": str(payload.get("valor", "0,00")),
+            "tipoPessoa": payload.get("tipoPessoa", "PF"),
+            "nomePesOrg": payload.get("nomePesOrg", "Pagador E2E"),
+            "docPesOrg": payload.get("docPesOrg", "00000000000"),
+            "dataGeracao": self._now(),
+            "dataExpiracao": self._now(),
+        }
+        return {
+            "idfpix": reference,
+            "qrCode": f"00020126580014br.gov.bcb.pix0136{reference}",
+            "qrCodeImgBase64": _FAKE_PNG_B64,
+        }
+
+    def check_pix_status(self, idfpix: str, *, verify: bool = False) -> dict[str, Any]:
+        record = self._records.get(
+            idfpix,
+            {
+                "valor": "0,00",
+                "tipoPessoa": "PF",
+                "nomePesOrg": "Pagador E2E",
+                "docPesOrg": "00000000000",
+                "dataGeracao": self._now(),
+                "dataExpiracao": self._now(),
+            },
+        )
+        return {
+            "idfpix": idfpix,
+            "qrCode": f"00020126580014br.gov.bcb.pix0136{idfpix}",
+            "qrCodeImgBase64": _FAKE_PNG_B64,
+            **record,
+            "dataPag": self._now(),
+            "nomePesOrgPag": record["nomePesOrg"],
+            "docPesOrgPag": record["docPesOrg"],
+            "status": "Concluído",
+        }
+
+    def list_completed_pix(self, dtaini: str, dtafim: str) -> list[dict[str, Any]]:
+        return [
+            {
+                "idfpix": reference,
+                "tipoPessoa": record["tipoPessoa"],
+                "docPesOrg": record["docPesOrg"],
+                "nomePesOrg": record["nomePesOrg"],
+                "valor": record["valor"],
+                "dataGeracao": record["dataGeracao"],
+                "dataExpiracao": record["dataExpiracao"],
+                "dataPag": self._now(),
+                "nomePesOrgPag": record["nomePesOrg"],
+                "docPesOrgPag": record["docPesOrg"],
+            }
+            for reference, record in self._records.items()
+        ]
+
+    def generate_pdf(self, idfpix: str) -> bytes:
+        return _FAKE_PDF
+
+    def generate_qrcode(self, idfpix: str) -> bytes:
+        return _FAKE_PNG
+
+    def simulate_payment(self, idfpix: str) -> dict[str, Any]:
+        return {"idfpix": idfpix, "status": "Pago"}
+
+    def configure_webhook(self, url: str, token: str) -> dict[str, Any]:
+        return {"url": url, "token": token, "configured": True}
+
+    def remove_webhook(self) -> dict[str, Any]:
+        return {"removed": True}
+
+
+def get_pix_gateway() -> PixGateway | FakePixGateway:
+    """Seleciona o gateway conforme o modo simulado da stack E2E."""
+    if settings.PAYMENT_GATEWAY_FAKE:
+        return FakePixGateway()
+    return PixGateway()
