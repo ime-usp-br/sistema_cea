@@ -1,9 +1,9 @@
-import os
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
-from django.test import TestCase
+from django.test import TestCase, override_settings
+from django.urls import reverse
 
 from users.models import IdentityProviderLink
 
@@ -95,27 +95,24 @@ class CustomSenhaUnicaBackendTests(TestCase):
         )()
         return request
 
-    def _env(self):
-        return patch.dict(
-            os.environ,
-            {
-                "SENHAUNICA_KEY": "key",
-                "SENHAUNICA_SECRET": "secret",
-                "SENHAUNICA_CALLBACK_ID": "cb",
-            },
+    def _settings(self):
+        return override_settings(
+            SENHAUNICA_KEY="key",
+            SENHAUNICA_SECRET="secret",
+            SENHAUNICA_CALLBACK_ID="cb",
         )
 
     def test_login_cadastra_codpes_full_name_e_marca_email_verificado(self) -> None:
         from users.backends import CustomSenhaUnicaBackend
 
         with (
-            self._env(),
+            self._settings(),
             patch(
-                "users.backends.SenhaUnicaClient.get_user_info",
+                "users.senhaunica.SenhaUnicaClient.get_user_info",
                 return_value=self.user_info,
             ),
             patch(
-                "users.backends.SenhaUnicaClient.fetch_access_token",
+                "users.senhaunica.SenhaUnicaClient.fetch_access_token",
                 return_value={"oauth_token": "t", "oauth_token_secret": "s"},
             ),
         ):
@@ -155,13 +152,13 @@ class CustomSenhaUnicaBackendTests(TestCase):
         )
 
         with (
-            self._env(),
+            self._settings(),
             patch(
-                "users.backends.SenhaUnicaClient.get_user_info",
+                "users.senhaunica.SenhaUnicaClient.get_user_info",
                 return_value=self.user_info,
             ),
             patch(
-                "users.backends.SenhaUnicaClient.fetch_access_token",
+                "users.senhaunica.SenhaUnicaClient.fetch_access_token",
                 return_value={"oauth_token": "t", "oauth_token_secret": "s"},
             ),
         ):
@@ -219,3 +216,79 @@ class RoleGroupSyncTests(TestCase):
         user.save()
         user.refresh_from_db()
         self.assertEqual(user.groups.count(), 0)
+
+
+@override_settings(
+    SENHAUNICA_KEY="key",
+    SENHAUNICA_SECRET="secret",
+    SENHAUNICA_CALLBACK_ID="1",
+    SENHAUNICA_ENV="dev",
+    SENHAUNICA_OAUTH_BASE_URL="http://senhaunica-faker:3141/wsusuario/oauth",
+)
+class SenhaUnicaFakerIntegrationTests(TestCase):
+    """Login OAuth1 apontando para o uspdev/senhaunica-faker (stack E2E)."""
+
+    def test_login_init_usa_endpoints_do_faker(self) -> None:
+        with patch(
+            "users.senhaunica.SenhaUnicaClient.fetch_request_token",
+            return_value={
+                "oauth_token": "request-token",
+                "oauth_token_secret": "request-secret",
+            },
+        ):
+            response = self.client.get(reverse("users:senhaunica_login"))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(
+            "http://senhaunica-faker:3141/wsusuario/oauth/authorize", response.url
+        )
+        self.assertIn("oauth_token=request-token", response.url)
+        self.assertEqual(
+            self.client.session["senhaunica_token_secret"], "request-secret"
+        )
+
+    def test_callback_autentica_usuario_do_faker(self) -> None:
+        session = self.client.session
+        session["senhaunica_token_secret"] = "request-secret"
+        session.save()
+        with (
+            patch(
+                "users.senhaunica.SenhaUnicaClient.fetch_access_token",
+                return_value={
+                    "oauth_token": "1600001",
+                    "oauth_token_secret": "access-secret",
+                },
+            ),
+            patch(
+                "users.senhaunica.SenhaUnicaClient.get_user_info",
+                return_value={
+                    "loginUsuario": "1600001",
+                    "nomeUsuario": "Aluno Faker",
+                    "emailPrincipalUsuario": "aluno.faker@usp.br",
+                },
+            ),
+        ):
+            response = self.client.get(
+                reverse("users:senhaunica_callback"),
+                {"oauth_token": "request-token", "oauth_verifier": "1600001"},
+            )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, "/")
+        self.assertIn("_auth_user_id", self.client.session)
+        user = User.objects.get(username="1600001")
+        self.assertEqual(user.codpes, 1600001)
+        self.assertEqual(user.full_name, "Aluno Faker")
+        self.assertTrue(user.is_email_verified)
+
+    def test_callback_sem_sessao_retorna_400(self) -> None:
+        response = self.client.get(
+            reverse("users:senhaunica_callback"),
+            {"oauth_token": "request-token", "oauth_verifier": "1600001"},
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_login_init_sem_credenciais_retorna_500(self) -> None:
+        with override_settings(SENHAUNICA_KEY="", SENHAUNICA_SECRET=""):
+            response = self.client.get(reverse("users:senhaunica_login"))
+        self.assertEqual(response.status_code, 500)

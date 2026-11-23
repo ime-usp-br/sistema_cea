@@ -114,3 +114,22 @@ def test_E2E_AUTH_006_recuperacao_de_senha_por_email(
 
     _login(page, email, "outra-senha-456")
     expect(page.locator("h1.page-title")).to_be_visible()
+
+
+def test_E2E_AUTH_004_login_senha_unica_com_faker(page: Page) -> None:
+    """Login OAuth1 completo contra o uspdev/senhaunica-faker da stack E2E."""
+    page.goto(f"{BASE_URL}/auth/login/")
+    page.click("a:has-text('Entrar com Senha Única USP')")
+
+    expect(page).to_have_url(
+        re.compile(r"http://senhaunica-faker:3141/wsusuario/oauth/authorize")
+    )
+    expect(page.locator("#loginUsuario")).to_be_visible()
+    # O faker tenta inferir o callback do Referer; fixamos a URL real da aplicação.
+    page.fill("#callback", f"{BASE_URL}/callback/")
+    page.fill("#loginUsuario", "1600001")
+    page.click("button:has-text('Login')")
+
+    expect(page).to_have_url(re.compile(r".*/painel/?$"))
+    expect(page.locator("h1.page-title")).to_be_visible()
+    expect(page.locator("body")).to_contain_text("Painel")

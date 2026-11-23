@@ -1,5 +1,6 @@
 from django.urls import path
 
+from .senhaunica import senhaunica_callback, senhaunica_login
 from .views import (
     CandidateSignupView,
     ResendVerificationView,
@@ -10,6 +11,8 @@ from .views import (
 app_name = "users"
 
 urlpatterns = [
+    path("login/usp/", senhaunica_login, name="senhaunica_login"),
+    path("callback/", senhaunica_callback, name="senhaunica_callback"),
     path("cadastro/", CandidateSignupView.as_view(), name="signup"),
     path("cadastro/enviado/", SignupDoneView.as_view(), name="signup_done"),
     path(

@@ -156,6 +156,16 @@ AUTH_USER_MODEL = 'users.User'
 # autenticação local é removido e apenas a Senha Única USP é aceita.
 ENABLE_LOCAL_LOGIN = env('ENABLE_LOCAL_LOGIN', default=True)
 
+# ---- Senha Única USP (OAuth 1.0a) ----
+SENHAUNICA_KEY = env('SENHAUNICA_KEY', default='')
+SENHAUNICA_SECRET = env('SENHAUNICA_SECRET', default='')
+SENHAUNICA_CALLBACK_ID = env('SENHAUNICA_CALLBACK_ID', default='')
+SENHAUNICA_ENV = env('SENHAUNICA_ENV', default='prod')
+# Override opcional dos endpoints OAuth (ex.: http://senhaunica-faker:3141/wsusuario/oauth
+# na stack E2E). Vazio usa a URL oficial de SENHAUNICA_ENV.
+SENHAUNICA_OAUTH_BASE_URL = env('SENHAUNICA_OAUTH_BASE_URL', default='')
+SENHAUNICA_LOGIN_REDIRECT_URL = env('SENHAUNICA_LOGIN_REDIRECT_URL', default='/')
+
 AUTHENTICATION_BACKENDS = [
     'users.backends.CustomSenhaUnicaBackend',
 ]

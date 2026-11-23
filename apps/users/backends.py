@@ -1,12 +1,9 @@
-import os
-
 from django.contrib.auth.backends import ModelBackend
-from django.urls import reverse
 from django.utils import timezone
 from senhaunica_socialite.backends import SenhaUnicaBackend
-from senhaunica_socialite.client import SenhaUnicaClient
 
 from users.models import IdentityProviderLink, User
+from users.senhaunica import get_senhaunica_client
 
 
 class EmailVerifiedModelBackend(ModelBackend):
@@ -65,19 +62,9 @@ class CustomSenhaUnicaBackend(SenhaUnicaBackend):
         if not oauth_token or not oauth_verifier or not oauth_token_secret:
             return None
 
-        key = os.getenv("SENHAUNICA_KEY")
-        secret = os.getenv("SENHAUNICA_SECRET")
-        if not key or not secret:
+        client = get_senhaunica_client(request)
+        if client is None:
             return None
-
-        try:
-            callback = request.build_absolute_uri(reverse("senhaunica_callback"))
-        except Exception:
-            callback = "http://localhost:8000/callback"
-        callback_id = os.getenv("SENHAUNICA_CALLBACK_ID")
-        env = os.getenv("SENHAUNICA_ENV", "prod")
-
-        client = SenhaUnicaClient(key, secret, callback, callback_id=callback_id, env=env)
 
         try:
             token_resp = client.fetch_access_token(

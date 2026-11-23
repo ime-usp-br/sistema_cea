@@ -85,6 +85,7 @@ Abaixo estão as variáveis críticas presentes no seu arquivo `.env` que conect
 | | `SENHAUNICA_SECRET` | *Consumer Secret* fornecida pela STI. |
 | | `SENHAUNICA_CALLBACK_ID` | ID de callback registrado junto à STI. Obrigatório. A URL de callback é montada automaticamente a partir da rota `/callback/`. |
 | | `SENHAUNICA_ENV` | Endpoints da USP: `prod` (padrão) ou `dev` (homologação). |
+| | `SENHAUNICA_OAUTH_BASE_URL` | Opcional: sobrescreve a base OAuth (ex.: `http://senhaunica-faker:3141/wsusuario/oauth`). Vazio usa a URL oficial. |
 | **Replicado** | `REPLICADO_HOST` | Host/IP do servidor da réplica local. |
 | | `REPLICADO_PORT` | Porta do servidor: `1433` (MSSQL, padrão) ou `5000` (Sybase legado). |
 | | `REPLICADO_DATABASE` | Nome do banco (ex: `replicado`). |
@@ -152,6 +153,7 @@ externa:
 
 - Pix e Boleto usam **gateways simulados em memória** (`PAYMENT_GATEWAY_FAKE=True`);
 - o webhook Pix é exercitado por POST na própria aplicação;
+- a Senha Única usa o **`uspdev/senhaunica-faker`** (OAuth1 fake, sem USP real);
 - Celery roda em modo eager e os e-mails vão para uma **caixa em arquivo**, lida
   pelos testes (cadastro/confirmação e recuperação de senha);
 - ao final, a stack e o banco são removidos (`down -v`).

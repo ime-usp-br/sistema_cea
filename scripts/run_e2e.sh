@@ -29,7 +29,7 @@ trap cleanup EXIT
 
 echo "==> Subindo a stack E2E isolada (${PROJECT_NAME})"
 "${COMPOSE[@]}" down -v --remove-orphans >/dev/null 2>&1 || true
-"${COMPOSE[@]}" up -d --build --wait web db redis
+"${COMPOSE[@]}" up -d --build --wait web db redis senhaunica-faker
 
 echo "==> Executando a suíte E2E (Playwright + Chromium)"
 set +e

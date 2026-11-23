@@ -83,5 +83,4 @@ urlpatterns = [
     path('', include('reports.urls')),
     path('', include('imports.urls')),
     path('logout/', logout_view, name='logout'),
-    path('', include('senhaunica_socialite.urls')),
 ]
