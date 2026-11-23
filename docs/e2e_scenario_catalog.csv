@@ -142,13 +142,13 @@ TS-MEET-013,Reagendamento limpa campos do modo anterior,P1,E2E-UI,-,Lacuna,Reage
 TS-MEET-014,Consulta aprovada como Projeto gera taxa,P1,E2E-UI,test_E2E_MEET_014,Coberto,Consulta aprovada como Projeto gera taxa.
 TS-MEET-015,Alias da fila de agendamentos,P2,E2E-UI,-,Lacuna,Alias /agendamentos/ não é exercitado.
 TS-NOT-001,Inscrição submetida,P1,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.
-TS-NOT-002,Correção solicitada,P0,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.
-TS-NOT-003,Auditoria aprovada,P0,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.
-TS-NOT-004,Auditoria rejeitada,P0,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.
+TS-NOT-002,Correção solicitada,P0,E2E-UI,test_E2E_NOT_002_003_correcao_e_aprovacao_notificam_candidato,Coberto,Correção solicitada ao candidato pela UI.
+TS-NOT-003,Auditoria aprovada,P0,E2E-UI,test_E2E_NOT_002_003_correcao_e_aprovacao_notificam_candidato,Coberto,Aprovação notifica próximo passo.
+TS-NOT-004,Auditoria rejeitada,P0,E2E-UI,test_E2E_NOT_004_rejeicao_notifica_candidato_e_secretaria,Coberto,Rejeição notifica candidato e secretaria.
 TS-NOT-005,Cobrança criada,P1,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.
-TS-NOT-006,Pagamento confirmado por Pix,P0,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.
-TS-NOT-007,Pagamento confirmado por boleto,P0,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.
-TS-NOT-008,Pagamento manual não notifica candidato,P0,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.
+TS-NOT-006,Pagamento confirmado por Pix,P0,E2E-UI,test_E2E_NOT_006_007_pagamento_confirmado_notifica_candidato,Coberto,Pagamento Pix confirmado notifica candidato.
+TS-NOT-007,Pagamento confirmado por boleto,P0,E2E-UI,test_E2E_NOT_006_007_pagamento_confirmado_notifica_candidato,Coberto,Pagamento por boleto confirmado notifica candidato.
+TS-NOT-008,Pagamento manual não notifica candidato,P0,E2E-UI,test_E2E_NOT_008_pagamento_manual_nao_notifica_candidato,Coberto,Confirmação manual não envia e-mail ao candidato.
 TS-NOT-009,Template inativo,P1,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.
 TS-NOT-010,Falha de envio,P1,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.
 TS-NOT-011,Mudança de modalidade notifica candidato,P1,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.

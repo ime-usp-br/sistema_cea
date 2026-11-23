@@ -244,6 +244,27 @@ def latest_email() -> Callable[..., dict[str, Any]]:
 
 
 @pytest.fixture
+def mailbox() -> Callable[..., list[dict[str, Any]]]:
+    """Lista mensagens da caixa E2E, permitindo afirmar ausência de envio."""
+
+    def _messages(
+        to: str | None = None, subject_contains: str | None = None
+    ) -> list[dict[str, Any]]:
+        args = ["e2e_mailbox", "--json"]
+        if to:
+            args.extend(["--to", to])
+        if subject_contains:
+            args.extend(["--subject-contains", subject_contains])
+        output = run_manage(*args)
+        messages = _last_json_line(output)
+        if isinstance(messages, dict):
+            return [messages]
+        return messages or []
+
+    return _messages
+
+
+@pytest.fixture
 def application_state() -> Callable[[str], dict[str, Any]]:
     """Inspeciona o estado persistido de uma inscrição (JSON)."""
 

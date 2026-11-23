@@ -89,7 +89,11 @@ def fill_valid_consultation(page: Page) -> None:
 
 
 def create_project_via_ui(
-    page: Page, login, track_protocol, term_id: int | str
+    page: Page,
+    login,
+    track_protocol,
+    term_id: int | str,
+    contact_email: str | None = None,
 ) -> str:
     """Cria uma inscrição de Projeto pela UI e devolve o protocolo."""
     login()
@@ -97,6 +101,9 @@ def create_project_via_ui(
     expect(page.locator("#form-inscricao")).to_be_visible()
     set_application_term(page, term_id)
     fill_valid_project(page)
+    if contact_email:
+        page.fill('input[name="contact_email"]', contact_email)
+        page.fill('input[name="contact_email_confirmation"]', contact_email)
     page.once("dialog", lambda dialog: dialog.accept())
     page.click("button[type='submit']")
     expect(page).to_have_url(_re.compile(r".*/inscricoes/\d{9}/$"))
@@ -106,7 +113,11 @@ def create_project_via_ui(
 
 
 def create_consultation_via_ui(
-    page: Page, login, track_protocol, term_id: int | str
+    page: Page,
+    login,
+    track_protocol,
+    term_id: int | str,
+    contact_email: str | None = None,
 ) -> str:
     """Cria uma inscrição de Consulta pela UI e devolve o protocolo."""
     login()
@@ -114,6 +125,9 @@ def create_consultation_via_ui(
     expect(page.locator("#form-inscricao")).to_be_visible()
     set_application_term(page, term_id)
     fill_valid_consultation(page)
+    if contact_email:
+        page.fill('input[name="contact_email"]', contact_email)
+        page.fill('input[name="contact_email_confirmation"]', contact_email)
     page.once("dialog", lambda dialog: dialog.accept())
     page.click("button[type='submit']")
     expect(page).to_have_url(_re.compile(r".*/inscricoes/\d{9}/$"))

@@ -132,6 +132,17 @@ class Command(BaseCommand):
             }
             for refund in application.refund_requests.all()
         ]
+        notifications = [
+            {
+                "template": dispatch.template.code,
+                "recipient": dispatch.recipient_email,
+                "status": dispatch.status,
+                "error": dispatch.error_message,
+            }
+            for dispatch in application.notification_dispatches.select_related(
+                "template"
+            ).order_by("created_at")
+        ]
 
         self.stdout.write(
             json.dumps(
@@ -177,6 +188,7 @@ class Command(BaseCommand):
                     ),
                     "refunds": refunds,
                     "attachments": attachments,
+                    "notifications": notifications,
                     "events": events,
                 },
                 ensure_ascii=False,

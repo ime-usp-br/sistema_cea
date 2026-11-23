@@ -443,9 +443,8 @@ class ManualPaymentService:
                     "confirmed_at": now.isoformat(),
                 },
             )
-        from notifications.services import NotificationService
-
-        NotificationService().notify_payment_confirmed(application, instrument)
+        # TS-NOT-008/TS-MAN-003: confirmação manual é operação interna e não
+        # dispara e-mail ao candidato.
         return confirmation
 
 

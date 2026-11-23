@@ -24,6 +24,8 @@ from payments.services import (
     ModalityChangeService,
     PaymentOrchestrationService,
 )
+from pix.gateways import FakePixGateway
+from pix.services import PixPaymentService
 from terms.models import AcademicTerm
 from users.models import User
 
@@ -203,9 +205,11 @@ class NotificationTriggerTests(TestCase):
         fee = application.fee_requirements.get(
             fee_type=FeeRequirement.FeeType.APPLICATION_FEE
         )
-        instrument = PaymentOrchestrationService().create_payment_instrument(
-            fee_requirement=fee, method="pix", created_by=self.candidate
+        pix = PixPaymentService(gateway=FakePixGateway()).generate_pix_for_fee(
+            fee_requirement=fee, created_by=self.candidate
         )
+        self.addCleanup(FakePixGateway._records.clear)
+        instrument = pix.payment_instrument
         created_dispatch = self._dispatch(application, "payment_created")
         self.assertEqual(created_dispatch.recipient_email, self.candidate.email)
         self.assertEqual(created_dispatch.status, NotificationDispatch.Status.SENT)
@@ -217,8 +221,13 @@ class NotificationTriggerTests(TestCase):
         self.assertIn(application.researcher_name, created_email.body)
         self.assertIn(str(instrument.amount), created_email.body)
 
-        ManualPaymentService().confirm_manual_payment(
-            instrument=instrument, confirmed_by=self.secretariat
+        PixPaymentService().process_webhook_payload(
+            raw_payload={
+                "idfpix": instrument.pix_instrument.pix_reference,
+                "status": "Pago",
+                "valor": "140,00",
+            },
+            token=settings.PIX_WEBHOOK_TOKEN,
         )
         confirmed_dispatch = self._dispatch(application, "payment_confirmed")
         self.assertEqual(confirmed_dispatch.recipient_email, self.candidate.email)

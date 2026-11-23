@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import os
 from email import message_from_binary_file
+from email.header import decode_header, make_header
 from email.message import Message
 from email.utils import parseaddr
 from pathlib import Path
@@ -85,9 +86,11 @@ class Command(BaseCommand):
         ):
             with path.open("rb") as handle:
                 message = message_from_binary_file(handle)
-            to_header = str(message.get("To", ""))
+            to_header = str(make_header(decode_header(str(message.get("To", "")))))
             recipient = parseaddr(to_header)[1].strip().lower()
-            subject = str(message.get("Subject", ""))
+            subject = str(
+                make_header(decode_header(str(message.get("Subject", ""))))
+            )
             if wanted_to and wanted_to not in (recipient, to_header.lower()):
                 continue
             if wanted_subject and wanted_subject not in subject.lower():
@@ -98,6 +101,15 @@ class Command(BaseCommand):
                     "to": recipient,
                     "to_header": to_header,
                     "from": str(message.get("From", "")),
+                    "bcc": [
+                        item.strip().lower()
+                        for item in str(
+                            make_header(
+                                decode_header(str(message.get("Bcc", "")))
+                            )
+                        ).split(",")
+                        if item.strip()
+                    ],
                     "subject": subject,
                     "body": _message_body(message),
                     "mtime": path.stat().st_mtime,
