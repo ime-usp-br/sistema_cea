@@ -11,10 +11,9 @@ from datetime import date, timedelta
 
 import pytest
 from helpers import (
-    BASE_URL,
     assert_status_page,
-    fill_valid_consultation,
-    fill_valid_project,
+    create_consultation_via_ui,
+    create_project_via_ui,
     open_first_consultation_decision,
     open_first_screening_decision,
     open_teacher_feedback,
@@ -24,42 +23,9 @@ from helpers import (
     review_submission_by_protocol,
     schedule_consultation_for,
     schedule_screening_for,
-    set_application_term,
     submit_dataset_external_link,
 )
 from playwright.sync_api import Page, expect
-
-
-def _create_project_via_ui(
-    page: Page, login, track_protocol, term_id: int
-) -> str:
-    login()
-    page.goto(f"{BASE_URL}/inscricoes/nova/")
-    expect(page.locator("#form-inscricao")).to_be_visible()
-    set_application_term(page, term_id)
-    fill_valid_project(page)
-    page.once("dialog", lambda dialog: dialog.accept())
-    page.click("button[type='submit']")
-    expect(page).to_have_url(__import__("re").compile(r".*/inscricoes/\d{9}/$"))
-    protocol = page.url.rstrip("/").split("/")[-1]
-    track_protocol(protocol)
-    return protocol
-
-
-def _create_consultation_via_ui(
-    page: Page, login, track_protocol, term_id: int
-) -> str:
-    login()
-    page.goto(f"{BASE_URL}/inscricoes/nova/")
-    expect(page.locator("#form-inscricao")).to_be_visible()
-    set_application_term(page, term_id)
-    fill_valid_consultation(page)
-    page.once("dialog", lambda dialog: dialog.accept())
-    page.click("button[type='submit']")
-    expect(page).to_have_url(__import__("re").compile(r".*/inscricoes/\d{9}/$"))
-    protocol = page.url.rstrip("/").split("/")[-1]
-    track_protocol(protocol)
-    return protocol
 
 
 # Cobre: TS-APP-002, TS-AUD-001, TS-AUD-011, TS-EVT-002, TS-FEE-001, TS-MEET-001, TS-MEET-009, TS-MEET-012, TS-PAY-008
@@ -72,7 +38,7 @@ def test_E2E_PROJECT_001_jornada_completa_ate_aprovado_como_projeto(
     application_state,
     e2e_term,
 ) -> None:
-    protocol = _create_project_via_ui(page, login, track_protocol, e2e_term["id"])
+    protocol = create_project_via_ui(page, login, track_protocol, e2e_term["id"])
     assert_status_page(page, protocol, "Aguardando pagamento")
 
     # 1. Taxa de inscrição via Pix (gateway simulado) + confirmação local.
@@ -142,7 +108,7 @@ def test_E2E_CONSULTATION_001_jornada_completa_com_boleto(
     application_state,
     e2e_term,
 ) -> None:
-    protocol = _create_consultation_via_ui(page, login, track_protocol, e2e_term["id"])
+    protocol = create_consultation_via_ui(page, login, track_protocol, e2e_term["id"])
     assert_status_page(page, protocol, "Aguardando pagamento")
 
     # 1. Taxa de inscrição via boleto (SOAP simulado) + confirmação local.

@@ -13,6 +13,9 @@ import pytest
 from helpers import (
     BASE_URL,
     api_post_json,
+    create_consultation_via_ui,
+    create_project_via_ui,
+    pay_fee,
     simulate_payment,
     start_payment,
     wait_for_page,
@@ -38,10 +41,9 @@ def _pix_reference(state: dict) -> str:
 # Cobre: TS-PIX-004, TS-PIX-006
 @pytest.mark.p0
 def test_E2E_PIX_004_webhook_valido_e_idempotente(
-    page: Page, login, create_application, application_state
+    page: Page, login, track_protocol, e2e_term, application_state
 ) -> None:
-    protocol = create_application("consultation")
-    login()
+    protocol = create_consultation_via_ui(page, login, track_protocol, e2e_term["id"])
     start_payment(page, protocol, "pix")
     state = application_state(protocol)
     reference = _pix_reference(state)
@@ -72,10 +74,9 @@ def test_E2E_PIX_004_webhook_valido_e_idempotente(
 
 # Cobre: TS-PIX-005, TS-SEC-002
 def test_E2E_PIX_005_webhook_com_token_invalido_nao_confirma(
-    page: Page, login, create_application, application_state
+    page: Page, login, track_protocol, e2e_term, application_state
 ) -> None:
-    protocol = create_application("consultation")
-    login()
+    protocol = create_consultation_via_ui(page, login, track_protocol, e2e_term["id"])
     start_payment(page, protocol, "pix")
     state = application_state(protocol)
     reference = _pix_reference(state)
@@ -97,10 +98,9 @@ def test_E2E_PIX_005_webhook_com_token_invalido_nao_confirma(
 
 # Cobre: TS-PAY-013, TS-PIX-003, TS-PIX-010
 def test_E2E_PIX_003_consulta_de_status_confirma_pagamento(
-    page: Page, login, create_application, application_state
+    page: Page, login, track_protocol, e2e_term, application_state
 ) -> None:
-    protocol = create_application("consultation")
-    login()
+    protocol = create_consultation_via_ui(page, login, track_protocol, e2e_term["id"])
     start_payment(page, protocol, "pix")
     page.click("button:has-text('Já paguei / verificar pagamento')")
     wait_for_page(page)
@@ -112,10 +112,9 @@ def test_E2E_PIX_003_consulta_de_status_confirma_pagamento(
 # Cobre: TS-BSL-001, TS-BSL-006, TS-BSL-010, TS-PAY-002, TS-PAY-013
 @pytest.mark.p0
 def test_E2E_BSL_001_boleto_pela_ui_pdf_e_confirmacao(
-    page: Page, login, create_application, application_state
+    page: Page, login, track_protocol, e2e_term, application_state
 ) -> None:
-    protocol = create_application("project")
-    login()
+    protocol = create_project_via_ui(page, login, track_protocol, e2e_term["id"])
     start_payment(page, protocol, "boleto")
     state = application_state(protocol)
     slip = next(
@@ -150,12 +149,12 @@ def test_E2E_MAN_001_secretaria_confirma_pagamento_manual_de_boleto_vencido(
     page: Page,
     login,
     login_as,
-    create_application,
+    track_protocol,
+    e2e_term,
     application_state,
     manage,
 ) -> None:
-    protocol = create_application("consultation")
-    login()
+    protocol = create_consultation_via_ui(page, login, track_protocol, e2e_term["id"])
     start_payment(page, protocol, "boleto")
     manage("e2e_backdate_bank_slip", "--protocol", protocol)
 
@@ -180,12 +179,12 @@ def test_E2E_PAY_014_cobranca_em_massa_de_boleto_vencido(
     page: Page,
     login,
     login_as,
-    create_application,
+    track_protocol,
+    e2e_term,
     application_state,
     manage,
 ) -> None:
-    protocol = create_application("consultation")
-    login()
+    protocol = create_consultation_via_ui(page, login, track_protocol, e2e_term["id"])
     start_payment(page, protocol, "boleto")
     manage("e2e_backdate_bank_slip", "--protocol", protocol)
 
@@ -207,10 +206,10 @@ def test_E2E_PAY_014_cobranca_em_massa_de_boleto_vencido(
 
 # Cobre: TS-EVT-003, TS-REF-001, TS-REF-002, TS-REF-003
 def test_E2E_REF_001_002_003_reembolso_completo_pela_ui(
-    page: Page, login, login_as, create_application, application_state
+    page: Page, login, login_as, track_protocol, e2e_term, application_state
 ) -> None:
-    protocol = create_application("consultation", "--pay")
-    login()
+    protocol = create_consultation_via_ui(page, login, track_protocol, e2e_term["id"])
+    pay_fee(page, protocol, "pix")
     page.goto(f"{BASE_URL}/reembolsos/inscricao/{protocol}/solicitar/")
     wait_for_page(page)
     page.fill('input[name="amount"]', "100.00")

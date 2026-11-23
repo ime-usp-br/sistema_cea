@@ -88,6 +88,40 @@ def fill_valid_consultation(page: Page) -> None:
     select_catalog_option(page, "cnpq")
 
 
+def create_project_via_ui(
+    page: Page, login, track_protocol, term_id: int | str
+) -> str:
+    """Cria uma inscrição de Projeto pela UI e devolve o protocolo."""
+    login()
+    page.goto(f"{BASE_URL}/inscricoes/nova/")
+    expect(page.locator("#form-inscricao")).to_be_visible()
+    set_application_term(page, term_id)
+    fill_valid_project(page)
+    page.once("dialog", lambda dialog: dialog.accept())
+    page.click("button[type='submit']")
+    expect(page).to_have_url(_re.compile(r".*/inscricoes/\d{9}/$"))
+    protocol = page.url.rstrip("/").split("/")[-1]
+    track_protocol(protocol)
+    return protocol
+
+
+def create_consultation_via_ui(
+    page: Page, login, track_protocol, term_id: int | str
+) -> str:
+    """Cria uma inscrição de Consulta pela UI e devolve o protocolo."""
+    login()
+    page.goto(f"{BASE_URL}/inscricoes/nova/")
+    expect(page.locator("#form-inscricao")).to_be_visible()
+    set_application_term(page, term_id)
+    fill_valid_consultation(page)
+    page.once("dialog", lambda dialog: dialog.accept())
+    page.click("button[type='submit']")
+    expect(page).to_have_url(_re.compile(r".*/inscricoes/\d{9}/$"))
+    protocol = page.url.rstrip("/").split("/")[-1]
+    track_protocol(protocol)
+    return protocol
+
+
 # ---------------------------------------------------------------------------
 # Helpers de jornada (pagamento, auditoria, agendamento e decisão)
 # ---------------------------------------------------------------------------
