@@ -55,10 +55,16 @@ class Command(BaseCommand):
             default="",
             help="Diretório raiz onde ficam os arquivos legados referenciados em attachments.",
         )
+        parser.add_argument(
+            "--update",
+            action="store_true",
+            help="Atualiza protocolos já existentes em vez de reportar duplicidade.",
+        )
 
     def handle(self, *args: Any, **options: Any) -> None:
         importer = LegacyImporter(
-            attachments_root=options.get("attachments_root") or None
+            attachments_root=options.get("attachments_root") or None,
+            update_existing=bool(options.get("update")),
         )
         data_path = options.get("data") or ""
         records = (
@@ -74,5 +80,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR(f"Erro: {error}"))
         for missing in report.missing_files:
             self.stdout.write(self.style.WARNING(f"Arquivo ausente: {missing}"))
+        for warning in report.warnings:
+            self.stdout.write(self.style.WARNING(f"Aviso: {warning}"))
         if report.errors:
             self.stdout.write(self.style.WARNING("Importação concluída com ressalvas."))

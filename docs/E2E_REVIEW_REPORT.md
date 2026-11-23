@@ -36,6 +36,7 @@ O problema não é a qualidade do happy path, e sim a **cobertura e a repetibili
 | 7 | reutilizado, jornadas/pagamentos UI-only | 55 passed | 558,77 s |
 | 8 | reutilizado, suíte 100% UI-only | 55 passed | 489,61 s |
 | 9 | reutilizado, com rate limiting | 56 passed | 618,25 s |
+| 10 | reutilizado, com importação E2E-CLI | 57 passed | 630,18 s |
 
 Fase 1 aplicada:
 
@@ -147,7 +148,7 @@ As duas inscrições ativas eram as importadas das rodadas 1 e 2, ambas com dono
 4. ~~Comentários `# Cobre: TS-*` e gerador de rastreabilidade~~ — concluído.
 5. ~~Reescrita das jornadas para UI-only (D-05)~~ — concluído. Todos os 55 testes criam e avançam pela UI; `simulate_journey` não é mais usado no E2E.
 6. ~~Rate limiting (D-03/RL-01/RL-02)~~ — concluído: perfis por rota, Redis, 429 com `Retry-After` e teste E2E de login.
-7. E2E-CLI de importação (D-04/IMP-01).
+7. ~~E2E-CLI de importação (D-04/IMP-01)~~ — concluído com fixture JSON, anexo, arquivo ausente, duplicidade, dono nulo, auditoria desligada e transferência.
 8. ~~Atualização de `TEST_SCENARIOS.md` para `TS-AUTH-001`~~ — concluído.
 
 ### 6.3 Decisões de implementação aprovadas

@@ -176,14 +176,14 @@ Atualize-a com `python scripts/gen_test_traceability.py` (ou manualmente) ao mov
 | TS-CLAIM-006 | Nenhuma vinculação automática silenciosa | `apps/imports/tests.py::test_TS_CLAIM_006_sem_vinculacao_automatica_silenciosa` | Coberto |
 | TS-CLAIM-007 | Aprovação manual | `apps/imports/tests.py::test_TS_CLAIM_007_aprovacao_manual_pela_secretaria` | Coberto |
 | TS-CLAIM-008 | Inscrição resgatada pode entrar em auditoria | `apps/imports/tests.py::test_TS_CLAIM_008_inscricao_resgatada_pode_entrar_em_auditoria` | Coberto |
-| TS-IMP-001 | Inscrições importadas sem dono | `apps/imports/tests.py::test_TS_IMP_001_inscricao_importada_sem_dono_preserva_contatos` | Coberto |
-| TS-IMP-002 | Inscrições importadas não aparecem para candidatos | `apps/imports/tests.py::test_TS_IMP_002_importada_nao_aparece_no_painel_do_candidato` | Coberto |
-| TS-IMP-003 | Anexos importados | `apps/imports/tests.py::test_TS_IMP_003_anexos_importados_criam_file_asset` | Coberto |
-| TS-IMP-004 | Pagamentos preservados | `apps/imports/tests.py::test_TS_IMP_004_pagamentos_preservados` | Coberto |
-| TS-IMP-005 | Projetos importados não entram em auditoria automaticamente | `apps/imports/tests.py::test_TS_IMP_005_projeto_importado_sem_auditoria_automatica` | Coberto |
-| TS-IMP-006 | Transferência de inscrição importada | `apps/imports/tests.py::test_TS_IMP_006_transferencia_preserva_ausencia_de_dono` | Coberto |
-| TS-IMP-007 | Protocolos únicos na importação | `apps/imports/tests.py::test_TS_IMP_007_protocolos_duplicados_detectados` | Coberto |
-| TS-IMP-008 | Arquivos ausentes | `apps/imports/tests.py::test_TS_IMP_008_arquivos_ausentes_relatados` | Coberto |
+| TS-IMP-001 | Inscrições importadas sem dono | `apps/imports/tests.py::test_TS_IMP_001_inscricao_importada_sem_dono_preserva_contatos`<br>`e2e/test_imports_e2e.py::test_E2E_IMP_001_importa_json_preserva_estado_e_detecta_duplicidade` | Coberto |
+| TS-IMP-002 | Inscrições importadas não aparecem para candidatos | `apps/imports/tests.py::test_TS_IMP_002_importada_nao_aparece_no_painel_do_candidato`<br>`e2e/test_imports_e2e.py::test_E2E_IMP_001_importa_json_preserva_estado_e_detecta_duplicidade` | Coberto |
+| TS-IMP-003 | Anexos importados | `apps/imports/tests.py::test_TS_IMP_003_anexos_importados_criam_file_asset`<br>`e2e/test_imports_e2e.py::test_E2E_IMP_001_importa_json_preserva_estado_e_detecta_duplicidade` | Coberto |
+| TS-IMP-004 | Pagamentos preservados | `apps/imports/tests.py::test_TS_IMP_004_pagamentos_preservados`<br>`e2e/test_imports_e2e.py::test_E2E_IMP_001_importa_json_preserva_estado_e_detecta_duplicidade` | Coberto |
+| TS-IMP-005 | Projetos importados não entram em auditoria automaticamente | `apps/imports/tests.py::test_TS_IMP_005_projeto_importado_sem_auditoria_automatica`<br>`e2e/test_imports_e2e.py::test_E2E_IMP_001_importa_json_preserva_estado_e_detecta_duplicidade` | Coberto |
+| TS-IMP-006 | Transferência de inscrição importada | `apps/imports/tests.py::test_TS_IMP_006_transferencia_preserva_ausencia_de_dono`<br>`e2e/test_imports_e2e.py::test_E2E_IMP_001_importa_json_preserva_estado_e_detecta_duplicidade` | Coberto |
+| TS-IMP-007 | Protocolos únicos na importação | `apps/imports/tests.py::test_TS_IMP_007_protocolos_duplicados_detectados`<br>`e2e/test_imports_e2e.py::test_E2E_IMP_001_importa_json_preserva_estado_e_detecta_duplicidade` | Coberto |
+| TS-IMP-008 | Arquivos ausentes | `apps/imports/tests.py::test_TS_IMP_008_arquivos_ausentes_relatados`<br>`e2e/test_imports_e2e.py::test_E2E_IMP_001_importa_json_preserva_estado_e_detecta_duplicidade` | Coberto |
 | TS-REP-001 | Relatório financeiro | `apps/reports/tests.py::test_TS_REP_001_relatorio_financeiro_reune_taxas_e_metodos`<br>`e2e/test_backoffice_e2e.py::test_E2E_REP_001_004_005_relatorio_financeiro_e_exportacoes`<br>`e2e/test_journeys_e2e.py::test_E2E_N9_03_backoffice_lista_e_relatorio` | Coberto |
 | TS-REP-002 | Sincronização Pix | `apps/reports/test_financial_sync.py::test_TS_REP_002_sincroniza_boleto_pago`<br>`apps/reports/test_financial_sync.py::test_TS_REP_002_candidato_nao_sincroniza`<br>`apps/reports/tests.py::test_TS_REP_002_sincronizacao_pix_estados`<br>`e2e/test_remaining_processes_e2e.py::test_E2E_REP_002_sincronizacao_do_relatorio_usa_gateway_simulado` | Coberto |
 | TS-REP-003 | Sincronização boleto | `apps/reports/tests.py::test_TS_REP_003_sincronizacao_boleto_estados` | Coberto |

@@ -1,0 +1,60 @@
+{
+  "records": [
+    {
+      "protocol": "990000001",
+      "modality": "project",
+      "researcher_name": "Pessoa Importada A",
+      "contact_email": "importada.a@example.com",
+      "contact_phone": "11999990001",
+      "tax_id": "11111111111",
+      "legacy_contact_email": "importada.a@example.com",
+      "legacy_contact_tax_id": "11111111111",
+      "project_title": "Projeto legado importado",
+      "lifecycle_status": "submitted",
+      "term": {"year": 9000, "period": "first"},
+      "payments": [
+        {
+          "method": "bank_slip",
+          "state": "paid",
+          "amount": "80.00",
+          "reason": "Taxa de inscrição importada"
+        }
+      ],
+      "attachments": [
+        {
+          "legacy_path": "990000001/arquivo-legado.pdf",
+          "original_filename": "arquivo-legado.pdf",
+          "content_type": "application/pdf"
+        }
+      ]
+    },
+    {
+      "protocol": "990000002",
+      "modality": "consultation",
+      "researcher_name": "Pessoa Importada B",
+      "contact_email": "importada.b@example.com",
+      "tax_id": "22222222222",
+      "legacy_contact_email": "importada.b@example.com",
+      "legacy_contact_tax_id": "22222222222",
+      "lifecycle_status": "submitted",
+      "term": {"year": 9000, "period": "first"}
+    },
+    {
+      "protocol": "990000003",
+      "modality": "consultation",
+      "researcher_name": "Pessoa Importada C",
+      "contact_email": "importada.c@example.com",
+      "tax_id": "33333333333",
+      "legacy_contact_email": "importada.c@example.com",
+      "legacy_contact_tax_id": "33333333333",
+      "lifecycle_status": "submitted",
+      "term": {"year": 9000, "period": "first"},
+      "attachments": [
+        {
+          "legacy_path": "990000003/inexistente.pdf",
+          "original_filename": "inexistente.pdf"
+        }
+      ]
+    }
+  ]
+}

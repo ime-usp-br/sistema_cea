@@ -74,6 +74,18 @@ class Command(BaseCommand):
                 }
             )
 
+        attachments = [
+            {
+                "id": attachment.pk,
+                "filename": attachment.file_asset.original_filename,
+                "content_type": attachment.file_asset.content_type,
+                "size": attachment.file_asset.size_bytes,
+                "checksum": attachment.file_asset.sha256_checksum,
+                "purpose": attachment.file_asset.purpose,
+            }
+            for attachment in application.attachments.select_related("file_asset")
+        ]
+
         submissions = []
         for submission in application.audit_submissions.all().order_by("submitted_at"):
             submissions.append(
@@ -128,6 +140,10 @@ class Command(BaseCommand):
                     "lifecycle_status": application.lifecycle_status,
                     "payment_state": application.payment_state,
                     "modality": application.modality,
+                    "origin": application.origin,
+                    "dataset_audit_required": application.dataset_audit_required,
+                    "legacy_contact_email": application.legacy_contact_email,
+                    "legacy_contact_tax_id": application.legacy_contact_tax_id,
                     "term": {
                         "id": application.term_id,
                         "year": application.term.year,
@@ -160,6 +176,7 @@ class Command(BaseCommand):
                         else None
                     ),
                     "refunds": refunds,
+                    "attachments": attachments,
                     "events": events,
                 },
                 ensure_ascii=False,

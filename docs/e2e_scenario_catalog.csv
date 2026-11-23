@@ -169,14 +169,14 @@ TS-CLAIM-005,Código expirado,P1,E2E-UI,-,Lacuna,Código expirado não é exerci
 TS-CLAIM-006,Nenhuma vinculação automática silenciosa,P0,E2E-UI,-,Lacuna,Ausência de vinculação silenciosa não é assertada.
 TS-CLAIM-007,Aprovação manual,P1,E2E-UI,-,Lacuna,Aprovação manual na fila de resgates.
 TS-CLAIM-008,Inscrição resgatada pode entrar em auditoria,P1,E2E-UI,-,Lacuna,Auditoria após resgate não é exercitada.
-TS-IMP-001,Inscrições importadas sem dono,P0,E2E-CLI,fixture e2e_create_imported_application (indireto),Lacuna,Importação não é exercitada pelo fluxo real; usada apenas como fixture de resgate.
-TS-IMP-002,Inscrições importadas não aparecem para candidatos,P0,E2E-CLI,fixture e2e_create_imported_application (indireto),Lacuna,Importação não é exercitada pelo fluxo real; usada apenas como fixture de resgate.
-TS-IMP-003,Anexos importados,P0,E2E-CLI,fixture e2e_create_imported_application (indireto),Lacuna,Importação não é exercitada pelo fluxo real; usada apenas como fixture de resgate.
-TS-IMP-004,Pagamentos preservados,P0,E2E-CLI,fixture e2e_create_imported_application (indireto),Lacuna,Importação não é exercitada pelo fluxo real; usada apenas como fixture de resgate.
-TS-IMP-005,Projetos importados não entram em auditoria automaticamente,P0,E2E-CLI,fixture e2e_create_imported_application (indireto),Lacuna,Importação não é exercitada pelo fluxo real; usada apenas como fixture de resgate.
-TS-IMP-006,Transferência de inscrição importada,P1,E2E-CLI,fixture e2e_create_imported_application (indireto),Lacuna,Importação não é exercitada pelo fluxo real; usada apenas como fixture de resgate.
-TS-IMP-007,Protocolos únicos na importação,P0,E2E-CLI,fixture e2e_create_imported_application (indireto),Lacuna,Importação não é exercitada pelo fluxo real; usada apenas como fixture de resgate.
-TS-IMP-008,Arquivos ausentes,P1,E2E-CLI,fixture e2e_create_imported_application (indireto),Lacuna,Importação não é exercitada pelo fluxo real; usada apenas como fixture de resgate.
+TS-IMP-001,Inscrições importadas sem dono,P0,E2E-CLI,test_E2E_IMP_001_importa_json_preserva_estado_e_detecta_duplicidade,Coberto,"Importação real via import_legacy_data com fixture JSON, pagamento, anexo, ausente, dono nulo, auditoria desligada, duplicidade e transferência."
+TS-IMP-002,Inscrições importadas não aparecem para candidatos,P0,E2E-CLI,test_E2E_IMP_001_importa_json_preserva_estado_e_detecta_duplicidade,Coberto,"Importação real via import_legacy_data com fixture JSON, pagamento, anexo, ausente, dono nulo, auditoria desligada, duplicidade e transferência."
+TS-IMP-003,Anexos importados,P0,E2E-CLI,test_E2E_IMP_001_importa_json_preserva_estado_e_detecta_duplicidade,Coberto,"Importação real via import_legacy_data com fixture JSON, pagamento, anexo, ausente, dono nulo, auditoria desligada, duplicidade e transferência."
+TS-IMP-004,Pagamentos preservados,P0,E2E-CLI,test_E2E_IMP_001_importa_json_preserva_estado_e_detecta_duplicidade,Coberto,"Importação real via import_legacy_data com fixture JSON, pagamento, anexo, ausente, dono nulo, auditoria desligada, duplicidade e transferência."
+TS-IMP-005,Projetos importados não entram em auditoria automaticamente,P0,E2E-CLI,test_E2E_IMP_001_importa_json_preserva_estado_e_detecta_duplicidade,Coberto,"Importação real via import_legacy_data com fixture JSON, pagamento, anexo, ausente, dono nulo, auditoria desligada, duplicidade e transferência."
+TS-IMP-006,Transferência de inscrição importada,P1,E2E-CLI,test_E2E_IMP_001_importa_json_preserva_estado_e_detecta_duplicidade,Coberto,"Importação real via import_legacy_data com fixture JSON, pagamento, anexo, ausente, dono nulo, auditoria desligada, duplicidade e transferência."
+TS-IMP-007,Protocolos únicos na importação,P0,E2E-CLI,test_E2E_IMP_001_importa_json_preserva_estado_e_detecta_duplicidade,Coberto,"Importação real via import_legacy_data com fixture JSON, pagamento, anexo, ausente, dono nulo, auditoria desligada, duplicidade e transferência."
+TS-IMP-008,Arquivos ausentes,P1,E2E-CLI,test_E2E_IMP_001_importa_json_preserva_estado_e_detecta_duplicidade,Coberto,"Importação real via import_legacy_data com fixture JSON, pagamento, anexo, ausente, dono nulo, auditoria desligada, duplicidade e transferência."
 TS-REP-001,Relatório financeiro,P0,E2E-UI,test_E2E_REP_001_004_005; test_E2E_N9_03,Coberto,Relatório financeiro.
 TS-REP-002,Sincronização Pix,P0,E2E-UI,test_E2E_REP_002,Coberto,Sincronização via gateway simulado.
 TS-REP-003,Sincronização boleto,P0,E2E-UI,-,Lacuna,Sincronização específica de boleto não é isolada.
