@@ -91,3 +91,19 @@ def test_E2E_SEC_003_secretaria_ve_financeiro_e_cpf(
     wait_for_page(page)
     expect(page.locator("body")).to_contain_text("Financeiro")
     expect(page.locator("body")).to_contain_text("CPF/CNPJ")
+
+
+# Cobre: TS-SEC-006
+def test_E2E_SEC_006_login_rate_limit(page: Page) -> None:
+    username = f"e2e.rate.{uuid.uuid4().hex[:8]}@example.com"
+    page.goto(f"{BASE_URL}/auth/login/")
+    for _ in range(5):
+        page.fill("#id_username", username)
+        page.fill("#id_password", "senha-errada")
+        page.click("button[type='submit']")
+        expect(page.locator("#id_username")).to_be_visible()
+
+    page.fill("#id_username", username)
+    page.fill("#id_password", "senha-errada")
+    page.click("button[type='submit']")
+    expect(page.locator("body")).to_contain_text("Muitas tentativas")

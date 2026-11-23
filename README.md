@@ -173,6 +173,25 @@ externa:
 E2E_KEEP_STACK=1 ./scripts/run_e2e.sh
 ```
 
+**Rate limiting**
+
+O app limita requisições por rota (janela de 60s por padrão, configurável por
+env):
+
+| Perfil | Limite padrão |
+|---|---|
+| Login local | 5/min por IP + username |
+| Webhook Pix | 60/min por IP |
+| Downloads/PDF | 30/min por usuário |
+| Demais POSTs | 20/min por usuário |
+
+Os contadores ficam no Redis (`CACHE_URL`, DB 1 por padrão) e a resposta de
+bloqueio é `429` com `Retry-After` e headers `X-RateLimit-*`. As variáveis são
+`RATE_LIMIT_ENABLED`, `RATE_LIMIT_WINDOW`, `RATE_LIMIT_LOGIN`,
+`RATE_LIMIT_WEBHOOK`, `RATE_LIMIT_DOWNLOAD` e `RATE_LIMIT_POST`. Atrás de um
+proxy confiável, defina `RATE_LIMIT_TRUST_X_FORWARDED_FOR=True` para usar o
+primeiro IP de `X-Forwarded-For`; sem proxy, mantenha o padrão `False`.
+
 **Isolamento dos testes**
 
 Cada teste cria seu próprio candidato e seu próprio período no namespace

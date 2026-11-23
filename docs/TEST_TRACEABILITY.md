@@ -206,7 +206,7 @@ Atualize-a com `python scripts/gen_test_traceability.py` (ou manualmente) ao mov
 | TS-SEC-003 | Acesso direto por URL | `e2e/test_security_e2e.py::test_E2E_SEC_001_candidato_nao_acessa_inscricao_de_terceiro` | Coberto |
 | TS-SEC-004 | Dados sensíveis | `e2e/test_security_e2e.py::test_E2E_SEC_002_docente_nao_ve_cpf_nem_financeiro`<br>`e2e/test_security_e2e.py::test_E2E_SEC_003_secretaria_ve_financeiro_e_cpf` | Coberto |
 | TS-SEC-005 | Links externos seguros | — | Sem teste |
-| TS-SEC-006 | Rate limiting | — | Sem teste |
+| TS-SEC-006 | Rate limiting | `e2e/test_security_e2e.py::test_E2E_SEC_006_login_rate_limit` | Coberto |
 | TS-SEC-007 | Upload malicioso | — | Sem teste |
 | TS-SEC-008 | Permissões de admin da Secretaria e Administrador | `apps/users/test_admin_permissions.py::test_TS_SEC_008_secretaria_acessa_semestres_e_emails`<br>`apps/users/test_admin_permissions.py::test_TS_SEC_008_secretaria_nao_acessa_usuarios`<br>`apps/users/test_admin_permissions.py::test_TS_SEC_008_admin_acessa_tudo` | Coberto |
 | TS-NFR-001 | Acessibilidade básica | — | Sem teste |

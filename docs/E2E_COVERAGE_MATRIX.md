@@ -52,6 +52,7 @@ docker compose -p sistema_cea_e2e -f docker-compose.e2e.yml run --rm \
 | 6 | reutilizado, após correções | 55 passed | 601,29 s | Purga do namespace sem erro de teardown; namespace final = 0. |
 | 7 | reutilizado, jornadas/pagamentos UI-only | 55 passed | 558,77 s | Migração parcial de D-05 validada. |
 | 8 | reutilizado, suíte 100% UI-only | 55 passed | 489,61 s | `simulate_journey` removido do E2E. |
+| 9 | reutilizado, com rate limiting | 56 passed | 618,25 s | TS-SEC-006 coberto; limites não afetaram os fluxos normais. |
 
 Falha original (antes da Fase 1):
 
@@ -66,7 +67,7 @@ Falha original (antes da Fase 1):
 | Métrica | Valor |
 |---|---:|
 | Cenários em `TEST_SCENARIOS.md` | 216 |
-| Testes E2E | 55 |
+| Testes E2E | 56 |
 | Módulos com criação/pagamento UI-only | 10 de 10 |
 | Arquivos de teste E2E | 10 |
 | Rotas não-admin | 72 |
@@ -75,21 +76,22 @@ Falha original (antes da Fase 1):
 | Rotas não-admin alcançadas por link/botão | 28 |
 | Rotas não-admin sem cobertura | 9 |
 | Rotas admin exercitadas | 1 (`/admin/terms/academicterm/add/`) |
-| Testes com marcador `# Cobre: TS-*` | 54 de 55 |
+| Testes com marcador `# Cobre: TS-*` | 55 de 56 |
 | Testes marcados como P0 | 10 |
 | Execuções completas verdes consecutivas no mesmo banco | 3 (2 container + 1 host) |
 | Namespace E2E resetado ao final | Sim (`e2e_cleanup --purge-e2e-terms`) |
+| Perfis de rate limiting | login, webhook, download e POST (Redis DB 1) |
 
 ## 4. Cobertura por prioridade
 
 | Prioridade | Total | Coberto | Parcial | Lacuna | Divergente | Unidade |
 |---|---:|---:|---:|---:|---:|---:|
 | P0 | 101 | 38 | 14 | 48 | 0 | 1 |
-| P1 | 100 | 23 | 10 | 60 | 0 | 7 |
+| P1 | 100 | 24 | 10 | 59 | 0 | 7 |
 | P2 | 15 | 2 | 1 | 11 | 0 | 1 |
-| **Total** | **216** | **63** | **25** | **119** | **0** | **9** |
+| **Total** | **216** | **64** | **25** | **118** | **0** | **9** |
 
-Leitura: 63 cenários têm cobertura E2E direta (29,2%). Mesmo entre P0, 48 estão em lacuna e 14 são parciais. Isso mostra que a suíte atual é boa em happy paths, mas ainda distante de “100% dos cenários de uso”.
+Leitura: 64 cenários têm cobertura E2E direta (29,6%). Mesmo entre P0, 48 estão em lacuna e 14 são parciais. Isso mostra que a suíte atual é boa em happy paths, mas ainda distante de “100% dos cenários de uso”.
 
 ## 5. Cobertura por área
 
@@ -115,7 +117,7 @@ Leitura: 63 cenários têm cobertura E2E direta (29,2%). Mesmo entre P0, 48 est�
 | REP | 7 | 5 | 0 | 2 | 0 | 0 |
 | EVT | 4 | 0 | 4 | 0 | 0 | 0 |
 | INT | 6 | 0 | 0 | 0 | 0 | 6 |
-| SEC | 8 | 2 | 1 | 5 | 0 | 0 |
+| SEC | 8 | 3 | 1 | 4 | 0 | 0 |
 | NFR | 6 | 0 | 0 | 3 | 0 | 3 |
 | NAV | 7 | 0 | 0 | 7 | 0 | 0 |
 

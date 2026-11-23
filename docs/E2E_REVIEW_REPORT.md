@@ -35,6 +35,7 @@ O problema não é a qualidade do happy path, e sim a **cobertura e a repetibili
 | 6 | reutilizado, após correções da revisão | 55 passed | 601,29 s |
 | 7 | reutilizado, jornadas/pagamentos UI-only | 55 passed | 558,77 s |
 | 8 | reutilizado, suíte 100% UI-only | 55 passed | 489,61 s |
+| 9 | reutilizado, com rate limiting | 56 passed | 618,25 s |
 
 Fase 1 aplicada:
 
@@ -80,7 +81,7 @@ A falha original (antes da Fase 1) era sempre a mesma:
 Status após a Fase 1:
 
 - **Corrigidos**: F-01 (workflow `e2e.yml`), F-02 (comentários `# Cobre` + gerador), F-03/F-04/F-18/F-19/F-20 (isolamento por candidato/termo, namespace, rastreio da importada e purga do namespace) e F-09 (JUnit, trace e screenshot no CI).
-- **Parcialmente mitigados**: F-17 (CI em host, sem socket dentro do container; o modo local em container continua disponível) e F-05/F-06 (marcadores e P0 criados; a reescrita UI-only permanece).
+- **Parcialmente mitigados**: F-08 (rate limiting implementado e coberto; CSRF/IDOR/upload seguem pendentes), F-17 (CI em host, sem socket dentro do container; o modo local em container continua disponível) e F-05/F-06 (marcadores e P0 criados; a reescrita UI-only foi concluída).
 - **Pendentes**: F-07, F-08, F-10..F-16.
 
 Correções da revisão de código:
@@ -145,7 +146,7 @@ As duas inscrições ativas eram as importadas das rodadas 1 e 2, ambas com dono
 3. ~~Marcador P0 e gate de CI com pytest no host~~ — concluído.
 4. ~~Comentários `# Cobre: TS-*` e gerador de rastreabilidade~~ — concluído.
 5. ~~Reescrita das jornadas para UI-only (D-05)~~ — concluído. Todos os 55 testes criam e avançam pela UI; `simulate_journey` não é mais usado no E2E.
-6. Rate limiting (D-03/RL-01/RL-02) em alteração isolada de produto.
+6. ~~Rate limiting (D-03/RL-01/RL-02)~~ — concluído: perfis por rota, Redis, 429 com `Retry-After` e teste E2E de login.
 7. E2E-CLI de importação (D-04/IMP-01).
 8. ~~Atualização de `TEST_SCENARIOS.md` para `TS-AUTH-001`~~ — concluído.
 

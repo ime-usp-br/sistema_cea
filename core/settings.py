@@ -117,6 +117,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'core.middleware.RateLimitMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -231,10 +232,37 @@ if not DEBUG:
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
+# Cache / rate limiting
+# O Celery usa o DB 0 do Redis; o rate limiting usa o DB 1 para não misturar
+# contadores com mensagens de fila.
+REDIS_URL = env('REDIS_URL', default='redis://redis:6379/0')
+CACHE_URL = env(
+    'CACHE_URL',
+    default=f"{REDIS_URL.rsplit('/', 1)[0]}/1",
+)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': CACHE_URL,
+        'KEY_PREFIX': 'cea',
+        'TIMEOUT': 300,
+    }
+}
+
+RATE_LIMIT_ENABLED = env.bool('RATE_LIMIT_ENABLED', default=True)
+RATE_LIMIT_TRUST_X_FORWARDED_FOR = env.bool(
+    'RATE_LIMIT_TRUST_X_FORWARDED_FOR', default=False
+)
+RATE_LIMIT_WINDOW = env.int('RATE_LIMIT_WINDOW', default=60)
+RATE_LIMIT_LOGIN = env.int('RATE_LIMIT_LOGIN', default=5)
+RATE_LIMIT_WEBHOOK = env.int('RATE_LIMIT_WEBHOOK', default=60)
+RATE_LIMIT_DOWNLOAD = env.int('RATE_LIMIT_DOWNLOAD', default=30)
+RATE_LIMIT_POST = env.int('RATE_LIMIT_POST', default=20)
+
 # Celery
 # https://docs.celeryq.dev/en/stable/django/first-steps-with-django.html
-CELERY_BROKER_URL = env('REDIS_URL', default='redis://redis:6379/0')
-CELERY_RESULT_BACKEND = env('REDIS_URL', default='redis://redis:6379/0')
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'

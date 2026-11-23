@@ -151,6 +151,12 @@ def created_user_emails() -> list[str]:
     return []
 
 
+@pytest.fixture(autouse=True)
+def clear_rate_limit_counters() -> None:
+    """Zera os contadores de rate limit antes de cada teste."""
+    run_manage("e2e_clear_cache")
+
+
 @pytest.fixture(scope="session", autouse=True)
 def cleanup_e2e_data(
     seed_database: dict,

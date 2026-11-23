@@ -199,7 +199,7 @@ TS-SEC-002,Webhook Pix exige token,P0,E2E-UI,test_E2E_PIX_005,Coberto,Webhook Pi
 TS-SEC-003,Acesso direto por URL,P0,E2E-UI,test_E2E_SEC_001,Parcial,Acesso por URL de terceiro; matriz completa de rotas/perfis não.
 TS-SEC-004,Dados sensíveis,P0,E2E-UI,test_E2E_SEC_002; test_E2E_SEC_003,Coberto,Docente não vê CPF/financeiro; secretaria vê.
 TS-SEC-005,Links externos seguros,P1,E2E-UI,-,Lacuna,Links externos seguros não são exercitados.
-TS-SEC-006,Rate limiting,P1,E2E-UI,-,Lacuna,Rate limiting não existe no produto; candidato a waiver.
+TS-SEC-006,Rate limiting,P1,E2E-UI,test_E2E_SEC_006_login_rate_limit,Coberto,Login limitado a 5/min por IP+username com 429 e Retry-After.
 TS-SEC-007,Upload malicioso,P1,E2E-UI,-,Lacuna,Upload malicioso não é exercitado.
 TS-SEC-008,Permissões de admin da Secretaria e Administrador,P1,E2E-UI,-,Lacuna,Permissões de admin da secretaria não são exercitadas no E2E.
 TS-NFR-001,Acessibilidade básica,P2,E2E-UI,-,Lacuna,Acessibilidade não é verificada.
