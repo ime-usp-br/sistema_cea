@@ -64,15 +64,15 @@ TS-FEE-007,Valor final consistente,P0,E2E-UI,-,Lacuna,Valor final consistente n�
 TS-FEE-008,Isenção de taxa,P2,E2E-UI,-,Lacuna,Isenção de taxa não tem fluxo E2E.
 TS-PAY-001,Candidato escolhe Pix,P0,E2E-UI,test_E2E_N3_01,Coberto,Escolha de Pix e confirmação.
 TS-PAY-002,Candidato escolhe boleto,P0,E2E-UI,test_E2E_BSL_001; test_E2E_CONSULTATION_001,Coberto,Escolha de boleto e confirmação.
-TS-PAY-003,Troca de Pix para boleto,P0,E2E-UI,-,Lacuna,Troca de Pix para boleto não é exercitada.
-TS-PAY-004,Troca de boleto para Pix,P0,E2E-UI,-,Lacuna,Troca de boleto para Pix não é exercitada.
-TS-PAY-005,Um instrumento ativo por taxa,P0,E2E-UI,-,Lacuna,Um instrumento ativo por taxa só em unidade.
-TS-PAY-006,Instrumento pago não pode ser substituído,P0,E2E-UI,-,Lacuna,Instrumento pago imutável só em unidade.
-TS-PAY-007,Pix expirado permite nova geração,P0,E2E-UI,-,Lacuna,Pix expirado não é exercitado.
+TS-PAY-003,Troca de Pix para boleto,P0,E2E-UI,test_E2E_PAY_003_004_005_troca_de_instrumento_mantem_um_ativo,Coberto,Troca Pix→boleto e um único instrumento ativo pela UI.
+TS-PAY-004,Troca de boleto para Pix,P0,E2E-UI,test_E2E_PAY_003_004_005_troca_de_instrumento_mantem_um_ativo,Coberto,Troca boleto→Pix e cancelamento/supersessão.
+TS-PAY-005,Um instrumento ativo por taxa,P0,E2E-UI,test_E2E_PAY_003_004_005_troca_de_instrumento_mantem_um_ativo,Coberto,Exatamente um instrumento ativo por taxa.
+TS-PAY-006,Instrumento pago não pode ser substituído,P0,E2E-UI,test_E2E_PAY_006_taxa_paga_nao_aceita_novo_instrumento,Coberto,Taxa paga não abre novo instrumento.
+TS-PAY-007,Pix expirado permite nova geração,P0,E2E-UI,test_E2E_PAY_007_pix_expirado_permite_nova_geracao,Coberto,Pix expirado e nova geração pela UI.
 TS-PAY-008,Pagamento confirmado libera fluxo,P0,E2E-UI,test_E2E_PROJECT_001; test_E2E_N3_01,Coberto,Pagamento libera o fluxo.
 TS-PAY-009,Candidato paga Taxa de Projeto/Complemento pela UI,P0,E2E-UI,test_E2E_N3_04,Coberto,Taxa de Projeto paga pela UI.
 TS-PAY-010,Taxa já paga não reabre,P1,E2E-UI,-,Lacuna,Taxa já paga não reabre.
-TS-PAY-011,Taxa de outra inscrição,P0,E2E-UI,-,Lacuna,Taxa de outra inscrição não é exercitada.
+TS-PAY-011,Taxa de outra inscrição,P0,E2E-UI,test_E2E_PAY_011_candidato_nao_paga_taxa_de_outra_inscricao,Coberto,Candidato recebe 404 ao tentar taxa de outra inscrição.
 TS-PAY-012,Lifecycle com Taxa de Projeto pendente,P0,E2E-UI,test_E2E_N3_04,Parcial,Lifecycle com taxa de projeto pendente.
 TS-PAY-013,Simulação de pagamento em desenvolvimento,P1,E2E-UI,test_E2E_PIX_003; test_E2E_BSL_001,Coberto,Simulação de pagamento em dev.
 TS-PAY-014,Cobrança em massa de boletos vencidos,P1,E2E-UI,test_E2E_PAY_014,Coberto,Cobrança em massa de vencidos.
@@ -80,13 +80,13 @@ TS-PAY-019,Painel de boletos vencidos,P1,E2E-UI,test_E2E_PAY_014,Parcial,Painel 
 TS-PAY-020,Seleção de boletos vencidos,P1,E2E-UI,test_E2E_PAY_014,Coberto,Seleção de boletos vencidos.
 TS-PAY-021,Permissão da tela de cobranças,P1,E2E-UI,-,Lacuna,Permissão da tela de cobranças não é exercitada.
 TS-PAY-022,Pagamentos pendentes,P1,E2E-UI,test_E2E_PAY_022,Coberto,Pagamentos pendentes.
-TS-PIX-001,Geração com payload correto,P0,E2E-UI,-,Lacuna,Payload Pix só em unidade.
-TS-PIX-002,Armazenamento do Pix gerado,P0,E2E-UI,-,Lacuna,Armazenamento/expiração do Pix só em unidade.
+TS-PIX-001,Geração com payload correto,P0,Unidade,apps/pix/tests.py::test_TS_PIX_001_geracao_com_payload_correto,Unidade,Payload/headers do gateway cobertos por unidade.
+TS-PIX-002,Armazenamento do Pix gerado,P0,Unidade,apps/pix/tests.py::test_TS_PIX_002_armazenamento_do_pix,Unidade,"Referência, QR, FileAsset e expiração cobertos por unidade."
 TS-PIX-003,Consulta com parâmetro verificar,P1,E2E-UI,test_E2E_PIX_003,Coberto,Consulta de status confirma pagamento.
 TS-PIX-004,Webhook válido,P0,E2E-UI,test_E2E_PIX_004,Coberto,Webhook válido.
 TS-PIX-005,Webhook com token inválido,P0,E2E-UI,test_E2E_PIX_005,Coberto,Token inválido rejeitado.
 TS-PIX-006,Webhook duplicado,P0,E2E-UI,test_E2E_PIX_004,Coberto,Reentrega idempotente no mesmo teste.
-TS-PIX-007,Webhook com valor divergente,P0,E2E-UI,-,Lacuna,Valor divergente não é exercitado.
+TS-PIX-007,Webhook com valor divergente,P0,Unidade,apps/pix/tests.py::test_TS_PIX_007_valor_divergente_requer_revisao,Unidade,Webhook divergente e requires_review cobertos por unidade.
 TS-PIX-008,Webhook de Pix desconhecido,P1,E2E-UI,-,Lacuna,Pix desconhecido não é exercitado.
 TS-PIX-009,Reconciliação com listarConcluidos,P1,E2E-UI,-,Lacuna,Reconciliação/listarConcluidos não é exercitada.
 TS-PIX-010,Simulação de pagamento em desenvolvimento,P2,E2E-UI,test_E2E_PIX_003,Coberto,Simulação dev coberta pelo botão.

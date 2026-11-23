@@ -7,6 +7,8 @@ aplicação (POST interno).
 
 from __future__ import annotations
 
+import json
+import uuid
 from decimal import Decimal
 
 import pytest
@@ -235,3 +237,106 @@ def test_E2E_REF_001_002_003_reembolso_completo_pela_ui(
     assert state["refunds"][0]["status"] == "executed"
     assert state["payment_state"] == "refunded"
     assert "refund.requested" in {e["code"] for e in state["events"]}
+
+
+def _fee_instruments(state: dict, fee_type: str = "application_fee") -> list[dict]:
+    fee = next(item for item in state["fees"] if item["type"] == fee_type)
+    return list(fee["instruments"])
+
+
+# Cobre: TS-PAY-003, TS-PAY-004, TS-PAY-005
+def test_E2E_PAY_003_004_005_troca_de_instrumento_mantem_um_ativo(
+    page: Page, login, track_protocol, e2e_term, application_state
+) -> None:
+    protocol = create_project_via_ui(page, login, track_protocol, e2e_term["id"])
+    start_payment(page, protocol, "pix")
+    instruments = _fee_instruments(application_state(protocol))
+    assert [item["method"] for item in instruments if item["state"] == "active"] == [
+        "pix"
+    ]
+
+    start_payment(page, protocol, "boleto")
+    instruments = _fee_instruments(application_state(protocol))
+    assert [item["method"] for item in instruments if item["state"] == "active"] == [
+        "bank_slip"
+    ]
+    assert any(
+        item["method"] == "pix" and item["state"] == "superseded"
+        for item in instruments
+    )
+
+    start_payment(page, protocol, "pix")
+    instruments = _fee_instruments(application_state(protocol))
+    assert [item["method"] for item in instruments if item["state"] == "active"] == [
+        "pix"
+    ]
+    assert any(
+        item["method"] == "bank_slip" and item["state"] == "superseded"
+        for item in instruments
+    )
+
+
+# Cobre: TS-PAY-006
+def test_E2E_PAY_006_taxa_paga_nao_aceita_novo_instrumento(
+    page: Page, login, track_protocol, e2e_term, application_state
+) -> None:
+    protocol = create_project_via_ui(page, login, track_protocol, e2e_term["id"])
+    pay_fee(page, protocol, "pix")
+    before = _fee_instruments(application_state(protocol))
+    assert len([item for item in before if item["state"] == "paid"]) == 1
+
+    page.goto(f"{BASE_URL}/pagamento/inscricao/{protocol}/")
+    wait_for_page(page, "Pagamento")
+    assert page.locator('select[name="method"]').count() == 0
+    after = _fee_instruments(application_state(protocol))
+    assert len(after) == len(before)
+
+
+# Cobre: TS-PAY-007
+def test_E2E_PAY_007_pix_expirado_permite_nova_geracao(
+    page: Page, login, track_protocol, e2e_term, application_state, manage
+) -> None:
+    protocol = create_project_via_ui(page, login, track_protocol, e2e_term["id"])
+    start_payment(page, protocol, "pix")
+    assert manage("e2e_expire_pix", "--protocol", protocol).strip().endswith(
+        '"expired": 1}'
+    )
+    expired = _fee_instruments(application_state(protocol))
+    assert any(item["state"] == "expired" for item in expired)
+    assert not [item for item in expired if item["state"] == "active"]
+
+    start_payment(page, protocol, "pix")
+    refreshed = _fee_instruments(application_state(protocol))
+    assert len([item for item in refreshed if item["state"] == "active"]) == 1
+    assert any(item["state"] == "expired" for item in refreshed)
+
+
+# Cobre: TS-PAY-011
+def test_E2E_PAY_011_candidato_nao_paga_taxa_de_outra_inscricao(
+    page: Page,
+    login,
+    track_protocol,
+    e2e_term,
+    application_state,
+    manage,
+    created_user_emails,
+) -> None:
+    protocol = create_consultation_via_ui(page, login, track_protocol, e2e_term["id"])
+    fee_id = application_state(protocol)["fees"][0]["id"]
+
+    suffix = uuid.uuid4().hex[:8]
+    data = json.loads(
+        manage("e2e_create_user", "--suffix", suffix).strip().splitlines()[-1]
+    )
+    created_user_emails.append(data["email"])
+    page.context.clear_cookies()
+    page.goto(f"{BASE_URL}/auth/login/")
+    page.fill("#id_username", data["username"])
+    page.fill("#id_password", data["password"])
+    page.click("button[type='submit']")
+    wait_for_page(page)
+
+    response = page.goto(
+        f"{BASE_URL}/pagamento/inscricao/{protocol}/?fee={fee_id}"
+    )
+    assert response is not None and response.status == 404

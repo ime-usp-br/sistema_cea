@@ -37,6 +37,7 @@ O problema não é a qualidade do happy path, e sim a **cobertura e a repetibili
 | 8 | reutilizado, suíte 100% UI-only | 55 passed | 489,61 s |
 | 9 | reutilizado, com rate limiting | 56 passed | 618,25 s |
 | 10 | reutilizado, com importação E2E-CLI | 57 passed | 630,18 s |
+| 11 | reutilizado, com PAY/PIX P0 | 61 passed | 690,39 s |
 
 Fase 1 aplicada:
 
