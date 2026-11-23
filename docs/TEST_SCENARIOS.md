@@ -36,7 +36,7 @@ Ele cobre:
 
 Os testes devem considerar as seguintes regras operacionais:
 
-1. A página inicial exige login.
+1. A home é uma landing pública; a área autenticada e as rotas de inscrição exigem login.
 2. Candidatos acessam apenas inscrições próprias.
 3. Projetos criados por usuário autenticado pagam a taxa de inscrição antes de enviar os dados para auditoria (fluxo sequencial).
 4. Auditoria aceita arquivo de até 10 MB ou link externo.
@@ -143,16 +143,18 @@ Os testes devem considerar as seguintes regras operacionais:
 
 # 5. Cenários de autenticação e contas
 
-## TS-AUTH-001 — Página inicial exige login
+## TS-AUTH-001 — Landing pública e área autenticada protegida
 
 **Prioridade:** P0
 
 **Passos:**
-1. acessar `/` sem sessão autenticada.
+1. acessar `/` sem sessão autenticada;
+2. acessar `/painel/` sem sessão autenticada.
 
 **Resultado esperado:**
-- usuário é redirecionado para login;
-- nenhum formulário de inscrição é exibido.
+- a home exibe a landing pública com o link “Acessar o sistema”;
+- `/painel/` redireciona para o login;
+- nenhuma inscrição ou formulário de inscrição é acessível sem login.
 
 ---
 

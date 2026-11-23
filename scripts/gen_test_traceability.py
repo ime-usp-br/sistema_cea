@@ -11,6 +11,9 @@ OUT = ROOT / "docs" / "TEST_TRACEABILITY.md"
 
 HEADING_RE = re.compile(r"^## (TS-[A-Z]+-[0-9]{3}) — (.+)$")
 TEST_RE = re.compile(r"^\s*def (test_TS_[A-Z]+_[0-9]{3}[A-Za-z0-9_]*)\(")
+DEF_RE = re.compile(r"^\s*def (test_[A-Za-z0-9_]+)\(")
+COBRE_RE = re.compile(r"^\s*#\s*Cobre:\s*(.+)$")
+TS_ID_RE = re.compile(r"TS-[A-Z]+-[0-9]{3}")
 
 scenarios: list[tuple[str, str]] = []
 for line in DOC.read_text(encoding="utf-8").splitlines():
@@ -32,10 +35,29 @@ for path in sorted(ROOT.glob("apps/**/test*.py")):
         scenario_id = id_match.group(1).replace("_", "-")
         tests.setdefault(scenario_id, []).append(f"`{relative}::{test_name}`")
 
+for path in sorted(ROOT.glob("e2e/**/test*.py")):
+    relative = path.relative_to(ROOT)
+    pending: list[str] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        comment = COBRE_RE.match(line)
+        if comment:
+            pending = TS_ID_RE.findall(comment.group(1))
+            continue
+        definition = DEF_RE.match(line)
+        if definition and pending:
+            test_name = definition.group(1)
+            for scenario_id in dict.fromkeys(pending):
+                entry = f"`{relative}::{test_name}`"
+                tests.setdefault(scenario_id, [])
+                if entry not in tests[scenario_id]:
+                    tests[scenario_id].append(entry)
+            pending = []
+
 lines = [
     "# Matriz de rastreabilidade — cenários × testes",
     "",
-    "Gerada a partir de `docs/TEST_SCENARIOS.md` e dos arquivos `apps/**/test*.py`.",
+    "Gerada a partir de `docs/TEST_SCENARIOS.md`, dos arquivos `apps/**/test*.py` e",
+    "dos marcadores `# Cobre: TS-*` em `e2e/**/test*.py`.",
     "Atualize-a com `python scripts/gen_test_traceability.py` (ou manualmente) ao mover/renomear testes.",
     "",
     "| ID | Cenário | Arquivo::teste | Status |",

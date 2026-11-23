@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import uuid
 
+import pytest
 from helpers import BASE_URL, extract_link, wait_for_page
 from playwright.sync_api import Page, expect
 
@@ -26,6 +27,8 @@ def _create_second_candidate(page: Page, latest_email, created_user_emails: list
     return email
 
 
+# Cobre: TS-APP-001, TS-SEC-003
+@pytest.mark.p0
 def test_E2E_SEC_001_candidato_nao_acessa_inscricao_de_terceiro(
     page: Page, login_as, create_application, latest_email, created_user_emails
 ) -> None:
@@ -44,6 +47,7 @@ def test_E2E_SEC_001_candidato_nao_acessa_inscricao_de_terceiro(
     assert payment is not None and payment.status == 404
 
 
+# Cobre: TS-SEC-004
 def test_E2E_SEC_002_docente_nao_ve_cpf_nem_financeiro(
     page: Page, login_as, create_application
 ) -> None:
@@ -56,6 +60,7 @@ def test_E2E_SEC_002_docente_nao_ve_cpf_nem_financeiro(
     expect(body).not_to_contain_text("CPF/CNPJ")
 
 
+# Cobre: TS-SEC-004
 def test_E2E_SEC_003_secretaria_ve_financeiro_e_cpf(
     page: Page, login_as, create_application
 ) -> None:

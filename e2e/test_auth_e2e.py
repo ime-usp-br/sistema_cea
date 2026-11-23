@@ -37,6 +37,7 @@ def _login(page: Page, email: str, password: str = PASSWORD) -> None:
     page.click("button[type='submit']")
 
 
+# Cobre: TS-AUTH-001
 def test_E2E_AUTH_001_area_autenticada_exige_login(page: Page) -> None:
     # A home é uma landing page pública; as rotas de inscrição/painel exigem login.
     page.goto(f"{BASE_URL}/")
@@ -45,6 +46,7 @@ def test_E2E_AUTH_001_area_autenticada_exige_login(page: Page) -> None:
     expect(page).to_have_url(re.compile(r".*/auth/login/.*"))
 
 
+# Cobre: TS-AUTH-002, TS-AUTH-003
 def test_E2E_AUTH_003_cadastro_externo_confirma_email_e_loga(
     page: Page, latest_email, created_user_emails: list[str]
 ) -> None:
@@ -68,6 +70,7 @@ def test_E2E_AUTH_003_cadastro_externo_confirma_email_e_loga(
     expect(page.locator("body")).to_contain_text("Painel")
 
 
+# Cobre: TS-AUTH-002, TS-AUTH-003
 def test_E2E_AUTH_003b_reenvio_de_confirmacao_envia_novo_link(
     page: Page, latest_email, created_user_emails: list[str]
 ) -> None:
@@ -91,6 +94,7 @@ def test_E2E_AUTH_003b_reenvio_de_confirmacao_envia_novo_link(
     expect(page.locator("body")).to_contain_text("E-mail confirmado com sucesso")
 
 
+# Cobre: TS-AUTH-006
 def test_E2E_AUTH_006_recuperacao_de_senha_por_email(
     page: Page, latest_email, created_user_emails: list[str]
 ) -> None:
@@ -116,6 +120,7 @@ def test_E2E_AUTH_006_recuperacao_de_senha_por_email(
     expect(page.locator("h1.page-title")).to_be_visible()
 
 
+# Cobre: TS-AUTH-004
 def test_E2E_AUTH_004_login_senha_unica_com_faker(page: Page) -> None:
     """Login OAuth1 completo contra o uspdev/senhaunica-faker da stack E2E."""
     page.goto(f"{BASE_URL}/auth/login/")

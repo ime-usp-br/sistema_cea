@@ -3,6 +3,7 @@ rejeição e resolução administrativa."""
 
 from __future__ import annotations
 
+import pytest
 from helpers import (
     BASE_URL,
     pay_fee,
@@ -42,6 +43,8 @@ def _resolve_rejected(
     wait_for_page(page, "Auditorias rejeitadas")
 
 
+# Cobre: TS-AUD-003, TS-AUD-009, TS-AUD-010, TS-AUD-011
+@pytest.mark.p0
 def test_E2E_AUD_003_009_010_011_correcao_e_reenvio_ate_aprovacao(
     page: Page, login, login_as, create_application, application_state
 ) -> None:
@@ -75,6 +78,7 @@ def test_E2E_AUD_003_009_010_011_correcao_e_reenvio_ate_aprovacao(
     assert {"audit.submitted", "audit.reviewed"} <= codes
 
 
+# Cobre: TS-AUD-005
 def test_E2E_AUD_005_envio_por_link_externo_e_fila_docente(
     page: Page, login, login_as, create_application, application_state
 ) -> None:
@@ -101,6 +105,7 @@ def test_E2E_AUD_005_envio_por_link_externo_e_fila_docente(
     assert state["lifecycle_status"] == "awaiting_screening_scheduling"
 
 
+# Cobre: TS-AUD-012, TS-AUD-013
 def test_E2E_AUD_012_013_rejeicao_e_conversao_em_consulta(
     page: Page, login, login_as, create_application, application_state
 ) -> None:
@@ -125,6 +130,7 @@ def test_E2E_AUD_012_013_rejeicao_e_conversao_em_consulta(
     assert state["payment_state"] == "paid"
 
 
+# Cobre: TS-AUD-014
 def test_E2E_AUD_014_rejeicao_e_reprovacao(
     page: Page, login_as, create_application, application_state
 ) -> None:
@@ -137,6 +143,7 @@ def test_E2E_AUD_014_rejeicao_e_reprovacao(
     assert state["lifecycle_status"] == "not_approved"
 
 
+# Cobre: TS-AUD-015, TS-TRM-004
 def test_E2E_AUD_015_transferencia_de_periodo(
     page: Page, login_as, create_application, application_state, create_term
 ) -> None:

@@ -19,6 +19,7 @@ def _detail(page: Page) -> None:
     expect(page.locator("h1.page-title")).to_be_visible()
 
 
+# Cobre: TS-APP-002, TS-PAY-001, TS-PAY-008
 def test_E2E_N3_01_pagar_taxa_de_inscricao_por_pix(login, create_application, page: Page) -> None:
     protocol = create_application("project")
     login()
@@ -28,6 +29,7 @@ def test_E2E_N3_01_pagar_taxa_de_inscricao_por_pix(login, create_application, pa
     expect(page.locator("body")).to_contain_text("Aguardando envio de dados")
 
 
+# Cobre: TS-FEE-001, TS-PAY-009, TS-PAY-012
 def test_E2E_N3_04_projeto_paga_taxa_de_projeto_pela_ui(
     login, create_application, page: Page
 ) -> None:
@@ -55,6 +57,7 @@ def test_E2E_N3_04_projeto_paga_taxa_de_projeto_pela_ui(
     expect(page.locator("body")).to_contain_text("Aprovado como Projeto")
 
 
+# Cobre: TS-REF-001
 def test_E2E_N7_01_candidato_solicita_reembolso_sem_403(
     login, create_application, page: Page
 ) -> None:
@@ -70,21 +73,25 @@ def test_E2E_N7_01_candidato_solicita_reembolso_sem_403(
     expect(page.locator("body")).to_contain_text("Desistência E2E.")
 
 
+# Cobre: TS-TRM-001, TS-TRM-006
 def test_E2E_N9_02_transferir_semestre_nao_quebra(
-    login_as, create_application, page: Page
+    login_as, create_application, create_term, application_state, page: Page
 ) -> None:
     protocol = create_application("project")
+    next_term = create_term()
     login_as("secretariat")
     page.goto(f"{BASE_URL}/inscricoes/{protocol}/")
     _detail(page)
     page.once("dialog", lambda dialog: dialog.accept())
     page.click("button:has-text('Transferir semestre')")
     _detail(page)
-    # O seed garante um período posterior (dinâmico): a transferência conclui sem 500.
     expect(page).to_have_url(re.compile(rf".*/inscricoes/{protocol}/$"))
-    expect(page.locator("body")).to_contain_text("term.transferred")
+    state = application_state(protocol)
+    assert state["term"]["id"] == next_term["id"]
+    assert state["transfer_pending"] is False
 
 
+# Cobre: TS-APP-011, TS-REP-001
 def test_E2E_N9_03_backoffice_lista_e_relatorio(
     login_as, create_application, seed_term, page: Page
 ) -> None:
@@ -104,6 +111,7 @@ def test_E2E_N9_03_backoffice_lista_e_relatorio(
     expect(page.locator("body")).to_contain_text("R$ 140,00")
 
 
+# Cobre: TS-AUTH-002
 def test_E2E_N1_02_cadastro_bloqueia_login_ate_confirmar(page: Page) -> None:
     page.goto(f"{BASE_URL}/cadastro/")
     _detail(page)
@@ -124,6 +132,7 @@ def test_E2E_N1_02_cadastro_bloqueia_login_ate_confirmar(page: Page) -> None:
     expect(page.locator("body")).to_contain_text("Confirme seu e-mail")
 
 
+# Cobre: TS-AUTH-006
 def test_E2E_N1_03_recuperacao_de_senha_abre(page: Page) -> None:
     page.goto(f"{BASE_URL}/auth/password_reset/")
     _detail(page)

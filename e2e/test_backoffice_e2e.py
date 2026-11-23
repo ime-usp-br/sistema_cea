@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 from datetime import date
 
-from helpers import BASE_URL, fill_valid_project, wait_for_page
+from helpers import BASE_URL, fill_valid_project, set_application_term, wait_for_page
 from playwright.sync_api import Page, expect
 
 
@@ -23,13 +23,13 @@ def _admin_create_term(page: Page, year: int) -> None:
     expect(page).to_have_url(__import__("re").compile(r".*/admin/terms/academicterm/$"))
 
 
-def _application_in_term(page: Page, login, track_protocol, label: str) -> str:
+def _application_in_term(
+    page: Page, login, track_protocol, term: dict
+) -> str:
     login()
     page.goto(f"{BASE_URL}/inscricoes/nova/")
     expect(page.locator("#form-inscricao")).to_be_visible()
-    # O formulário usa o período corrente (campo oculto); o admin acabou de
-    # criar esse período, então o rótulo aparece no subtítulo da página.
-    expect(page.locator("body")).to_contain_text(label)
+    set_application_term(page, term["id"])
     fill_valid_project(page)
     page.once("dialog", lambda dialog: dialog.accept())
     page.click("button[type='submit']")
@@ -39,6 +39,7 @@ def _application_in_term(page: Page, login, track_protocol, label: str) -> str:
     return protocol
 
 
+# Cobre: TS-TRM-002, TS-TRM-003, TS-TRM-006
 def test_E2E_TRM_001_002_003_cadastro_de_semestre_e_transferencia_pendente(
     page: Page,
     login,
@@ -47,9 +48,9 @@ def test_E2E_TRM_001_002_003_cadastro_de_semestre_e_transferencia_pendente(
     application_state,
     created_terms: list[int],
     manage,
+    peek_term,
 ) -> None:
-    base_year = 2090
-    next_year = 2091
+    base_year = peek_term()
     login_as("admin")
     _admin_create_term(page, base_year)
     base_term = json.loads(
@@ -59,9 +60,7 @@ def test_E2E_TRM_001_002_003_cadastro_de_semestre_e_transferencia_pendente(
     )
     created_terms.append(int(base_term["id"]))
 
-    protocol = _application_in_term(
-        page, login, track_protocol, f"{base_year} - Primeiro Semestre"
-    )
+    protocol = _application_in_term(page, login, track_protocol, base_term)
 
     # Sem próximo período: a transferência fica pendente (não retorna 500).
     login_as("secretariat")
@@ -75,6 +74,7 @@ def test_E2E_TRM_001_002_003_cadastro_de_semestre_e_transferencia_pendente(
     expect(page.locator("body")).to_contain_text("transfer")
 
     # Criar o próximo semestre pelo admin conclui a migração automática.
+    next_year = peek_term()
     login_as("admin")
     _admin_create_term(page, next_year)
     next_term = json.loads(
@@ -96,6 +96,7 @@ def test_E2E_TRM_001_002_003_cadastro_de_semestre_e_transferencia_pendente(
     }
 
 
+# Cobre: TS-APP-010
 def test_E2E_APP_010_exclusao_logica_e_restauracao(
     page: Page, login_as, create_application, application_state
 ) -> None:
@@ -122,6 +123,7 @@ def test_E2E_APP_010_exclusao_logica_e_restauracao(
     assert state["soft_deleted"] is False
 
 
+# Cobre: TS-EVT-001
 def test_E2E_EVT_001_historico_lista_eventos_da_inscricao(
     page: Page, login_as, create_application
 ) -> None:
@@ -133,6 +135,7 @@ def test_E2E_EVT_001_historico_lista_eventos_da_inscricao(
     expect(page.locator("body")).to_contain_text("Inscrição criada")
 
 
+# Cobre: TS-FEE-002, TS-REP-001, TS-REP-004, TS-REP-005
 def test_E2E_REP_001_004_005_relatorio_financeiro_e_exportacoes(
     page: Page, login_as, create_application
 ) -> None:
@@ -156,6 +159,7 @@ def test_E2E_REP_001_004_005_relatorio_financeiro_e_exportacoes(
     assert "attachment" in xlsx.headers.get("content-disposition", "")
 
 
+# Cobre: TS-REP-006
 def test_E2E_REP_006_relatorio_de_auditoria(
     page: Page, login_as, create_application
 ) -> None:
@@ -166,6 +170,7 @@ def test_E2E_REP_006_relatorio_de_auditoria(
     expect(page.locator("body")).to_contain_text(protocol)
 
 
+# Cobre: TS-PAY-022
 def test_E2E_PAY_022_pagamentos_pendentes_lista_inscricao(
     page: Page, login_as, create_application
 ) -> None:
@@ -176,12 +181,14 @@ def test_E2E_PAY_022_pagamentos_pendentes_lista_inscricao(
     expect(page.locator("body")).to_contain_text(protocol)
 
 
+# Cobre: TS-APP-008, TS-AUD-018, TS-FILE-002
 def test_E2E_DOC_001_pdfs_e_anexos_baixam(
-    page: Page, login, login_as, track_protocol
+    page: Page, login, login_as, track_protocol, e2e_term
 ) -> None:
     login()
     page.goto(f"{BASE_URL}/inscricoes/nova/")
     expect(page.locator("#form-inscricao")).to_be_visible()
+    set_application_term(page, e2e_term["id"])
     fill_valid_project(page)
     page.set_input_files('input[name="attachments"]', {
         "name": "documento-e2e.pdf",

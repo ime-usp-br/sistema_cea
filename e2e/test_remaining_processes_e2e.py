@@ -8,6 +8,7 @@ import re
 import uuid
 from datetime import date, timedelta
 
+import pytest
 from helpers import (
     BASE_URL,
     pay_fee,
@@ -27,6 +28,7 @@ def test_E2E_ENV_001_stack_sem_gateways_externos(e2e_environment: dict) -> None:
     assert "filebased" in e2e_environment["email_backend"]
 
 
+# Cobre: TS-MOD-004, TS-MOD-005
 def test_E2E_MOD_004_005_mudanca_de_modalidade_pela_lista(
     page: Page, login_as, create_application, application_state
 ) -> None:
@@ -58,6 +60,7 @@ def test_E2E_MOD_004_005_mudanca_de_modalidade_pela_lista(
     assert consultation_fee["amount"] == "140.00"
 
 
+# Cobre: TS-BSL-001, TS-BSL-007
 def test_E2E_BSL_ADMIN_001_gerar_e_regenerar_boleto_pela_secretaria(
     page: Page, login_as, create_application, application_state
 ) -> None:
@@ -94,6 +97,7 @@ def test_E2E_BSL_ADMIN_001_gerar_e_regenerar_boleto_pela_secretaria(
     assert any(reference != first_reference for reference in references)
 
 
+# Cobre: TS-REP-002
 def test_E2E_REP_002_sincronizacao_do_relatorio_usa_gateway_simulado(
     page: Page, login, login_as, create_application
 ) -> None:
@@ -112,6 +116,7 @@ def test_E2E_REP_002_sincronizacao_do_relatorio_usa_gateway_simulado(
     assert "json" in (response.header_value("content-type") or "")
 
 
+# Cobre: TS-AUD-018, TS-FILE-002
 def test_E2E_DOC_002_recibo_de_pagamento_e_resumo_da_triagem(
     page: Page, login, login_as, create_application, application_state
 ) -> None:
@@ -143,26 +148,36 @@ def test_E2E_DOC_002_recibo_de_pagamento_e_resumo_da_triagem(
     assert summary.status == 200 and summary.body().startswith(b"%PDF")
 
 
+# Cobre: TS-CLAIM-001, TS-CLAIM-002, TS-CLAIM-003, TS-EVT-004
+@pytest.mark.p0
 def test_E2E_CLAIM_001_002_003_resgate_por_codigo_do_email(
-    page: Page, login, latest_email, application_state, manage
+    page: Page,
+    login,
+    latest_email,
+    application_state,
+    manage,
+    candidate_account,
+    track_protocol,
 ) -> None:
     protocol = f"{uuid.uuid4().int % 1_000_000_000:09d}"
+    contact_email = candidate_account["email"]
     manage(
         "e2e_create_imported_application",
         "--protocol",
         protocol,
         "--contact-email",
-        "e2e_candidate@example.com",
+        contact_email,
     )
+    track_protocol(protocol)
     login()
     page.goto(f"{BASE_URL}/vincular-inscricao/")
     wait_for_page(page)
     page.fill('input[name="protocol"]', protocol)
-    page.fill('input[name="contact_email_or_tax_id"]', "e2e_candidate@example.com")
+    page.fill('input[name="contact_email_or_tax_id"]', contact_email)
     page.click("button:has-text('Enviar código')")
     wait_for_page(page)
 
-    message = latest_email(to="e2e_candidate@example.com")
+    message = latest_email(to=contact_email)
     match = re.search(r"código de resgate é:\s*(\d{6})", message["body"])
     assert match is not None, message["body"]
     page.fill('input[name="code"]', match.group(1))
@@ -170,5 +185,5 @@ def test_E2E_CLAIM_001_002_003_resgate_por_codigo_do_email(
     wait_for_page(page)
 
     state = application_state(protocol)
-    assert state["owner"] == "e2e_candidate"
+    assert state["owner"] == candidate_account["username"]
     assert "claim.verified" in {event["code"] for event in state["events"]}

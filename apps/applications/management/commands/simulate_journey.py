@@ -180,6 +180,12 @@ class Command(BaseCommand):
             help="Protocolo da inscrição alvo (padrão: mais recente do usuário simulado).",
         )
         parser.add_argument(
+            "--term",
+            type=int,
+            default=None,
+            help="PK do período letivo usado no --submit (padrão: ano+1).",
+        )
+        parser.add_argument(
             "--owner",
             default=SIM_USERNAME,
             help="Username do candidato dono da inscrição (padrão: sim_candidate).",
@@ -362,12 +368,19 @@ class Command(BaseCommand):
 
         from terms.models import AcademicTerm
 
-        year = date.today().year + 1
-        term, created = AcademicTerm.objects.get_or_create(
-            year=year,
-            period=AcademicTerm.Period.FIRST,
-            defaults={"submission_start_date": date.today()},
-        )
+        term_pk = options.get("term")
+        if term_pk is not None:
+            term = AcademicTerm.objects.filter(pk=term_pk).first()
+            if term is None:
+                raise CommandError(f"Período letivo {term_pk} não encontrado.")
+            created = False
+        else:
+            year = date.today().year + 1
+            term, created = AcademicTerm.objects.get_or_create(
+                year=year,
+                period=AcademicTerm.Period.FIRST,
+                defaults={"submission_start_date": date.today()},
+            )
         if created:
             self.stdout.write(self.style.SUCCESS(f"Período letivo criado: {term}"))
         from applications.models import CatalogOption

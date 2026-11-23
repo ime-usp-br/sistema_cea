@@ -335,3 +335,10 @@ def start_payment(page: Page, protocol: str, method: str = "pix", fee_id: int | 
 def select_term(page: Page, label: str) -> None:
     """Seleciona o período letivo pelo rótulo no formulário de inscrição."""
     page.select_option('select[name="term"]', label=label)
+
+
+def set_application_term(page: Page, term_id: int | str) -> None:
+    """Fixa o período enviado pelo formulário (campo oculto ``term``)."""
+    field = page.locator('input[name="term"]')
+    field.wait_for(state="attached")
+    field.evaluate("(element, value) => { element.value = value; }", str(term_id))

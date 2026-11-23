@@ -36,6 +36,7 @@ def _awaiting_consultation(create_application) -> str:
     return create_application("consultation", "--pay")
 
 
+# Cobre: TS-MEET-007, TS-MEET-008
 def test_E2E_MEET_007_008_reagendar_e_cancelar_triagem(
     page: Page, login_as, create_application, application_state
 ) -> None:
@@ -66,6 +67,7 @@ def test_E2E_MEET_007_008_reagendar_e_cancelar_triagem(
     assert state["lifecycle_status"] == "awaiting_screening_scheduling"
 
 
+# Cobre: TS-MEET-012
 def test_E2E_MEET_012_feedback_bloqueado_antes_do_evento(
     page: Page, login_as, create_application
 ) -> None:
@@ -82,6 +84,7 @@ def test_E2E_MEET_012_feedback_bloqueado_antes_do_evento(
     )
 
 
+# Cobre: TS-FEE-005, TS-MEET-010
 def test_E2E_MEET_010_triagem_aprovada_como_consulta_gera_complemento(
     page: Page, login, login_as, create_application, application_state
 ) -> None:
@@ -111,6 +114,7 @@ def test_E2E_MEET_010_triagem_aprovada_como_consulta_gera_complemento(
     assert state["lifecycle_status"] == "approved_as_consultation"
 
 
+# Cobre: TS-MEET-011
 def test_E2E_MEET_011_triagem_nao_aprovada(
     page: Page, login_as, create_application, application_state
 ) -> None:
@@ -128,6 +132,7 @@ def test_E2E_MEET_011_triagem_nao_aprovada(
     assert state["screening"]["decision"] == "not_approved"
 
 
+# Cobre: TS-MEET-003, TS-MEET-007, TS-MEET-008
 def test_E2E_MEET_003_007_008_reuniao_reagendar_cancelar(
     page: Page, login_as, create_application, application_state
 ) -> None:
@@ -156,6 +161,7 @@ def test_E2E_MEET_003_007_008_reuniao_reagendar_cancelar(
     assert state["lifecycle_status"] == "awaiting_consultation_scheduling"
 
 
+# Cobre: TS-FEE-004, TS-MEET-014
 def test_E2E_MEET_014_consulta_aprovada_como_projeto_gera_taxa_com_credito(
     page: Page, login, login_as, create_application, application_state
 ) -> None:

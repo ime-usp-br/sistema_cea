@@ -61,6 +61,43 @@ class SeedAndInspectionCommandsTests(TestCase):
         self.assertFalse(second["created"])
         self.assertEqual(first["id"], second["id"])
 
+    def test_e2e_create_term_auto_e_peek_no_namespace(self) -> None:
+        peek = json.loads(_call("e2e_create_term", "--peek"))
+        created = json.loads(_call("e2e_create_term", "--auto"))
+        self.assertEqual(created["year"], peek["year"])
+        self.assertTrue(created["created"])
+        self.assertEqual(json.loads(_call("e2e_create_term", "--peek"))["year"], peek["year"] + 1)
+
+    def test_e2e_create_user_candidato_verificado_e_recusa_duplicado(self) -> None:
+        first = json.loads(
+            _call("e2e_create_user", "--suffix", "run-001")
+        )
+        self.assertTrue(first["created"])
+        user = User.objects.get(username=first["username"])
+        self.assertEqual(user.role, User.Role.CANDIDATE)
+        self.assertTrue(user.is_email_verified)
+        self.assertFalse(user.is_staff)
+        self.assertFalse(user.is_superuser)
+        self.assertTrue(user.check_password(first["password"]))
+        with self.assertRaises(CommandError):
+            _call("e2e_create_user", "--suffix", "run-001")
+
+    def test_simulate_journey_respeita_term_explicito(self) -> None:
+        term = json.loads(_call("e2e_create_term", "--year", "9101"))
+        output = _call(
+            "simulate_journey",
+            "--modality",
+            "project",
+            "--submit",
+            "--term",
+            str(term["id"]),
+            "--json",
+        )
+        application = ServiceApplication.objects.get(
+            protocol=json.loads(output.strip().splitlines()[-1])["protocol"]
+        )
+        self.assertEqual(application.term_id, term["id"])
+
     def test_inspect_application_emite_taxas_eventos_e_nao_encontrado(self) -> None:
         term = AcademicTerm.objects.create(year=2098, period="first")
         owner = User.objects.create_user(username="inspect", email="inspect@example.com")
@@ -125,6 +162,36 @@ class CleanupCommandTests(TestCase):
     def test_cleanup_sem_argumentos_nao_falha(self) -> None:
         output = _call("e2e_cleanup")
         self.assertIn("Nenhum item", output)
+
+    def test_cleanup_purga_apenas_namespace_e2e(self) -> None:
+        namespace_term = AcademicTerm.objects.create(year=9000, period="first")
+        seed_term = AcademicTerm.objects.create(year=2036, period="first")
+        owner = User.objects.create_user(
+            username="purge", email="purge@example.com"
+        )
+        ServiceApplication.objects.create(
+            protocol="000000555",
+            term=namespace_term,
+            owner=owner,
+            modality="consultation",
+            researcher_name="Purge Teste",
+            contact_email="purge@example.com",
+            lifecycle_status="awaiting_payment",
+        )
+        application = ServiceApplication.all_objects.get(protocol="000000555")
+        FeeRequirement.objects.create(
+            application=application,
+            fee_type="application_fee",
+            base_amount=Decimal("140.00"),
+            amount=Decimal("140.00"),
+            reason="Taxa de inscrição",
+        )
+        _call("e2e_cleanup", "--purge-e2e-terms")
+        self.assertFalse(AcademicTerm.objects.filter(pk=namespace_term.pk).exists())
+        self.assertFalse(
+            ServiceApplication.all_objects.filter(protocol="000000555").exists()
+        )
+        self.assertTrue(AcademicTerm.objects.filter(pk=seed_term.pk).exists())
 
 
 class MailboxCommandTests(TestCase):

@@ -166,6 +166,28 @@ externa:
 ./scripts/run_e2e.sh -q e2e/test_full_journeys_e2e.py
 ./scripts/run_e2e.sh -k reembolso
 
+# Rodar o subconjunto crítico (mesmo do PR):
+./scripts/run_e2e.sh -m p0
+
 # Manter a stack de pé para depuração (logs, Playwright trace etc.)
 E2E_KEEP_STACK=1 ./scripts/run_e2e.sh
 ```
+
+**Isolamento dos testes**
+
+Cada teste cria seu próprio candidato e seu próprio período no namespace
+`9000–9999`. O período é enviado explicitamente pelo campo oculto do formulário
+e pelo `simulate_journey --term`, então a suíte não depende de “período mais
+recente” nem da ordem dos testes. Ao final, inscrições são soft-deletadas,
+usuários criados são desativados e o namespace E2E é limpo com
+`e2e_cleanup --purge-e2e-terms` (exclusivo da stack descartável).
+
+**CI**
+
+- Pull request: job `P0`, com limite de 7 minutos para a execução do pytest.
+- Nightly/manual: suíte completa, com limite de 20 minutos.
+- Artefatos de falha: JUnit, trace e screenshot em `e2e-artifacts/` e
+  `test-results/`.
+- O workflow está em `.github/workflows/e2e.yml` e roda o pytest no host do
+  runner, usando `docker-compose.e2e.host.yml` apenas para publicar as portas
+  em loopback (sem socket Docker dentro do container E2E).

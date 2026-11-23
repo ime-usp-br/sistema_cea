@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+import pytest
 from helpers import (
     BASE_URL,
     api_post_json,
@@ -34,6 +35,8 @@ def _pix_reference(state: dict) -> str:
     raise AssertionError("Pix não encontrado no estado da inscrição.")
 
 
+# Cobre: TS-PIX-004, TS-PIX-006
+@pytest.mark.p0
 def test_E2E_PIX_004_webhook_valido_e_idempotente(
     page: Page, login, create_application, application_state
 ) -> None:
@@ -67,6 +70,7 @@ def test_E2E_PIX_004_webhook_valido_e_idempotente(
     assert sum(1 for e in state["events"] if e["code"] == "pix.confirmed") == 1
 
 
+# Cobre: TS-PIX-005, TS-SEC-002
 def test_E2E_PIX_005_webhook_com_token_invalido_nao_confirma(
     page: Page, login, create_application, application_state
 ) -> None:
@@ -91,6 +95,7 @@ def test_E2E_PIX_005_webhook_com_token_invalido_nao_confirma(
     )
 
 
+# Cobre: TS-PAY-013, TS-PIX-003, TS-PIX-010
 def test_E2E_PIX_003_consulta_de_status_confirma_pagamento(
     page: Page, login, create_application, application_state
 ) -> None:
@@ -104,6 +109,8 @@ def test_E2E_PIX_003_consulta_de_status_confirma_pagamento(
     assert state["lifecycle_status"] == "awaiting_consultation_scheduling"
 
 
+# Cobre: TS-BSL-001, TS-BSL-006, TS-BSL-010, TS-PAY-002, TS-PAY-013
+@pytest.mark.p0
 def test_E2E_BSL_001_boleto_pela_ui_pdf_e_confirmacao(
     page: Page, login, create_application, application_state
 ) -> None:
@@ -137,6 +144,8 @@ def test_E2E_BSL_001_boleto_pela_ui_pdf_e_confirmacao(
     assert paid["state"] == "paid"
 
 
+# Cobre: TS-MAN-001
+@pytest.mark.p0
 def test_E2E_MAN_001_secretaria_confirma_pagamento_manual_de_boleto_vencido(
     page: Page,
     login,
@@ -166,6 +175,7 @@ def test_E2E_MAN_001_secretaria_confirma_pagamento_manual_de_boleto_vencido(
     assert "payment.manual_confirmed" in {e["code"] for e in state["events"]}
 
 
+# Cobre: TS-PAY-014, TS-PAY-019, TS-PAY-020
 def test_E2E_PAY_014_cobranca_em_massa_de_boleto_vencido(
     page: Page,
     login,
@@ -195,6 +205,7 @@ def test_E2E_PAY_014_cobranca_em_massa_de_boleto_vencido(
     ) == 1
 
 
+# Cobre: TS-EVT-003, TS-REF-001, TS-REF-002, TS-REF-003
 def test_E2E_REF_001_002_003_reembolso_completo_pela_ui(
     page: Page, login, login_as, create_application, application_state
 ) -> None:

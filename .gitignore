@@ -41,3 +41,7 @@ staticfiles/
 tmp/
 .agent/*
 !.agent/rules/
+
+# E2E artifacts
+e2e-artifacts/
+test-results/

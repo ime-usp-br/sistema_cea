@@ -1,0 +1,73 @@
+rota,camada,status,evidencia
+auth/login/,E2E-UI,Coberto,test_E2E_AUTH_003/004 e fixtures login_as
+auth/password_reset/,E2E-UI,Coberto,test_E2E_AUTH_006
+auth/password_reset/done/,E2E-UI,Indireto,Redirecionamento após POST não é assertado
+auth/reset/<uidb64>/<token>/,E2E-UI,Coberto,test_E2E_AUTH_006 (link do e-mail)
+auth/reset/done/,E2E-UI,Indireto,test_E2E_AUTH_006 verifica a mensagem final
+auth/password_change/,E2E-UI,Lacuna,Troca de senha autenticada não é coberta
+auth/password_change/done/,E2E-UI,Lacuna,Troca de senha autenticada não é coberta
+,E2E-UI,Coberto,test_E2E_AUTH_001 (landing pública)
+login/usp/,E2E-UI,Indireto,test_E2E_AUTH_004 clica no botão da Senha Única
+callback/,E2E-UI,Indireto,test_E2E_AUTH_004 via senhaunica-faker
+cadastro/,E2E-UI,Coberto,test_E2E_AUTH_003/003b
+cadastro/enviado/,E2E-UI,Indireto,Mensagem de confirmação após o cadastro
+verificar-email/reenviar/,E2E-UI,Coberto,test_E2E_AUTH_003b
+verificar-email/<str:token>/,E2E-UI,Coberto,test_E2E_AUTH_003/003b/006
+painel/,E2E-UI,Coberto,test_E2E_AUTH_001; login_as
+inscricoes/nova/,E2E-UI,Coberto,test_E2E_001/002 e jornadas
+inscricoes/,E2E-UI,Coberto,test_E2E_N9_03/APP_010/MOD_004_005
+inscricoes/excluidas/,E2E-UI,Coberto,test_E2E_APP_010
+inscricoes/<str:protocol>/restaurar/,E2E-UI,Indireto,test_E2E_APP_010 (botão Restaurar)
+inscricoes/historico/,E2E-UI,Coberto,test_E2E_EVT_001
+inscricoes/<str:protocol>/modalidade/,E2E-UI,Indireto,test_E2E_MOD_004_005 (botão Mudar)
+inscricoes/<str:protocol>/excluir/,E2E-UI,Indireto,test_E2E_APP_010 (botão Excluir)
+inscricoes/<str:protocol>/transferir-semestre/,E2E-UI,Indireto,test_E2E_N9_02/TRM_... (botão Transferir)
+inscricoes/<str:protocol>/,E2E-UI,Coberto,Vários testes de detalhe
+auditoria/inscricao/<str:protocol>/enviar/,E2E-UI,Coberto,test_E2E_AUD_003/005
+auditoria/inscricao/<str:protocol>/habilitar/,E2E-UI,Lacuna,Habilitar auditoria após resgate não é coberto
+auditoria/fila/,E2E-UI,Coberto,test_E2E_AUD_003/005
+auditoria/submissao/<int:submission_id>/revisar/,E2E-UI,Indireto,Ação Analisar da fila
+auditoria/submissao/<int:submission_id>/arquivo/,E2E-API,Lacuna,Download da submissão e autorização não cobertos
+auditoria/rejeitadas/,E2E-UI,Coberto,test_E2E_AUD_012/014/015
+auditoria/submissao/<int:submission_id>/resolver/,E2E-UI,Indireto,Ação Decidir das rejeitadas
+pagamento/inscricao/<str:protocol>/,E2E-UI,Coberto,pay_fee/start_payment
+pagamento/instrumento/<int:instrument_id>/confirmar-manual/,E2E-UI,Indireto,test_E2E_MAN_001
+pagamento/instrumento/<int:instrument_id>/simular/,E2E-UI,Indireto,Botão Simular pagamento (dev)
+reembolsos/,E2E-UI,Coberto,test_E2E_REF_001_002_003
+reembolsos/inscricao/<str:protocol>/solicitar/,E2E-UI,Coberto,test_E2E_REF_001_002_003; N7_01
+reembolsos/<int:refund_id>/<str:action>/,E2E-UI,Indireto,Aprovar/Executar pela lista
+cobrancas/vencidos/,E2E-UI,Coberto,test_E2E_PAY_014
+cobrancas/vencidos/lembrete/,E2E-UI,Indireto,Envio em massa em test_E2E_PAY_014
+pagamentos/pendentes/,E2E-UI,Coberto,test_E2E_PAY_022
+webhooks/pix/,E2E-API,Coberto,test_E2E_PIX_004/005
+pagamento/inscricao/<str:protocol>/pix/gerar/,E2E-UI,Indireto,start_payment escolhe Pix
+pagamento/inscricao/<str:protocol>/pix/verificar/,E2E-UI,Indireto,test_E2E_PIX_003
+pagamento/inscricao/<str:protocol>/pix/,E2E-UI,Indireto,Tela de detalhe do Pix
+pix/<int:pix_id>/qrcode/,E2E-API,Lacuna,QR Code não é baixado/assertado
+pagamento/inscricao/<str:protocol>/boleto/gerar/,E2E-UI,Indireto,start_payment escolhe boleto
+aplicacao/<str:protocol>/boleto/gerar-admin/,E2E-UI,Indireto,test_E2E_BSL_ADMIN_001
+pagamento/inscricao/<str:protocol>/boleto/,E2E-UI,Indireto,test_E2E_BSL_001
+boleto/<int:slip_id>/pdf/,E2E-API,Indireto,test_E2E_BSL_001
+boleto/<int:slip_id>/regenerar/,E2E-UI,Indireto,test_E2E_BSL_ADMIN_001
+triagens/,E2E-UI,Coberto,open_first_screening_decision/open_teacher_feedback
+reunioes/,E2E-UI,Coberto,open_first_consultation_decision/open_teacher_feedback
+agendamentos/,E2E-UI,Lacuna,Alias da fila de agendamentos não é exercitado
+agendamentos/triagem/<str:protocol>/,E2E-UI,Coberto,schedule_screening_for
+agendamentos/reuniao/<str:protocol>/,E2E-UI,Coberto,schedule_consultation_for
+agendamentos/triagem/<int:screening_id>/decisao/,E2E-UI,Indireto,open_first_screening_decision
+agendamentos/reuniao/<int:meeting_id>/decisao/,E2E-UI,Indireto,open_first_consultation_decision
+inscricoes/<str:protocol>/pdf/ficha/,E2E-API,Coberto,test_E2E_DOC_001
+inscricoes/<str:protocol>/pdf/primeira-pagina/,E2E-API,Coberto,test_E2E_DOC_001
+inscricoes/anexo/<int:attachment_id>/,E2E-API,Coberto,test_E2E_DOC_001
+pagamento/instrumento/<int:instrument_id>/pdf/comprovante/,E2E-API,Indireto,test_E2E_DOC_002
+triagem/<int:screening_id>/pdf/resumo/,E2E-API,Indireto,test_E2E_DOC_002
+gestao/relatorios/financeiro/,E2E-UI,Coberto,test_E2E_REP_001_004_005/REP_002
+gestao/relatorios/financeiro/<str:protocol>/sincronizar/,E2E-UI,Coberto,test_E2E_REP_002
+gestao/relatorios/financeiro/csv/,E2E-API,Coberto,test_E2E_REP_001_004_005
+gestao/relatorios/financeiro/xlsx/,E2E-API,Coberto,test_E2E_REP_001_004_005
+gestao/relatorios/auditoria/,E2E-UI,Coberto,test_E2E_REP_006
+vincular-inscricao/,E2E-UI,Coberto,test_E2E_CLAIM_001_002_003
+vincular-inscricao/confirmar/,E2E-UI,Indireto,Envio do código em test_E2E_CLAIM_001_002_003
+gestao/resgates/,E2E-UI,Lacuna,Fila de aprovação manual de resgates
+gestao/resgates/<int:claim_id>/aprovar/,E2E-UI,Lacuna,Aprovação manual de resgate
+logout/,E2E-UI,Lacuna,Logout não é exercitado

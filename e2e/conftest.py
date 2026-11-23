@@ -16,6 +16,7 @@ import json
 import os
 import re
 import subprocess
+import uuid
 from collections.abc import Callable
 from typing import Any
 
@@ -23,14 +24,12 @@ import pytest
 from helpers import BASE_URL
 from playwright.sync_api import Page, expect
 
-E2E_USERNAME = "e2e_candidate"
 E2E_PASSWORD = "e2e-senha-123"
 E2E_TEACHER_USERNAME = "e2e_teacher"
 E2E_SECRETARIAT_USERNAME = "e2e_secretariat"
 E2E_ADMIN_USERNAME = "e2e_admin"
 
-E2E_USERS = {
-    "candidate": (E2E_USERNAME, E2E_PASSWORD),
+E2E_STAFF_USERS = {
     "teacher": (E2E_TEACHER_USERNAME, E2E_PASSWORD),
     "secretariat": (E2E_SECRETARIAT_USERNAME, E2E_PASSWORD),
     "admin": (E2E_ADMIN_USERNAME, E2E_PASSWORD),
@@ -93,6 +92,48 @@ def seed_term(seed_database: dict) -> dict:
 
 
 @pytest.fixture(scope="session")
+def e2e_run_id() -> str:
+    """Identificador curto da execução, usado para isolar username/e-mail."""
+    return uuid.uuid4().hex[:8]
+
+
+@pytest.fixture
+def candidate_account(
+    e2e_run_id: str,
+    created_user_emails: list[str],
+) -> dict[str, Any]:
+    """Cria um candidato exclusivo para o teste atual."""
+    suffix = f"{e2e_run_id}-{uuid.uuid4().hex[:6]}"
+    data = _last_json_line(
+        run_manage("e2e_create_user", "--suffix", suffix)
+    )
+    assert isinstance(data, dict)
+    created_user_emails.append(data["email"])
+    return data
+
+
+@pytest.fixture
+def e2e_term(created_terms: list[int]) -> dict[str, Any]:
+    """Cria um período exclusivo (namespace E2E) para o teste atual."""
+    data = _last_json_line(run_manage("e2e_create_term", "--auto"))
+    assert isinstance(data, dict)
+    created_terms.append(int(data["id"]))
+    return data
+
+
+@pytest.fixture
+def peek_term() -> Callable[[], int]:
+    """Informa o próximo ano livre do namespace E2E, sem criar."""
+
+    def _peek() -> int:
+        data = _last_json_line(run_manage("e2e_create_term", "--peek"))
+        assert isinstance(data, dict)
+        return int(data["year"])
+
+    return _peek
+
+
+@pytest.fixture(scope="session")
 def created_protocols() -> list[str]:
     """Protocolos de inscrições criadas durante a sessão (para cleanup)."""
     return []
@@ -127,15 +168,23 @@ def cleanup_e2e_data(
     for email in sorted(set(created_user_emails)):
         args.extend(["--deactivate-email", email])
     if len(args) > 1:
+        args.append("--purge-e2e-terms")
         run_manage(*args)
 
 
 @pytest.fixture
-def login_as(page: Page) -> Callable[..., None]:
+def login_as(
+    page: Page,
+    candidate_account: dict[str, Any],
+) -> Callable[..., None]:
     """Autentica um usuário E2E por papel (candidate/teacher/secretariat)."""
 
     def _login(role: str = "candidate") -> None:
-        username, password = E2E_USERS[role]
+        if role == "candidate":
+            username = candidate_account["username"]
+            password = candidate_account["password"]
+        else:
+            username, password = E2E_STAFF_USERS[role]
         # Troca de perfil no mesmo teste: limpa a sessão anterior antes do login.
         page.context.clear_cookies()
         page.goto(f"{BASE_URL}/auth/login/")
@@ -161,6 +210,8 @@ def login(login_as: Callable[..., None]) -> Callable[..., None]:
 @pytest.fixture
 def create_application(
     created_protocols: list[str],
+    candidate_account: dict[str, Any],
+    e2e_term: dict[str, Any],
 ) -> Callable[..., str]:
     """Cria uma inscrição real para o candidato E2E via ``simulate_journey``.
 
@@ -175,7 +226,9 @@ def create_application(
             "--modality",
             modality,
             "--owner",
-            E2E_USERNAME,
+            candidate_account["username"],
+            "--term",
+            str(e2e_term["id"]),
             *flags,
             "--json",
         )
@@ -231,10 +284,18 @@ def application_state() -> Callable[[str], dict[str, Any]]:
 def create_term(
     created_terms: list[int],
 ) -> Callable[..., dict[str, Any]]:
-    """Cria um período letivo via comando real (dispara o post_save)."""
+    """Cria um período letivo via comando real (dispara o post_save).
 
-    def _create(year: int, period: str = "first", **kwargs: str) -> dict[str, Any]:
-        args = ["e2e_create_term", "--year", str(year), "--period", period]
+    Sem ``year``, aloca automaticamente um ano livre no namespace E2E.
+    """
+
+    def _create(year: int | None = None, period: str = "first", **kwargs: str) -> dict[str, Any]:
+        args = ["e2e_create_term"]
+        if year is None:
+            args.append("--auto")
+        else:
+            args.extend(["--year", str(year)])
+        args.extend(["--period", period])
         for key, value in kwargs.items():
             args.extend([f"--{key.replace('_', '-')}", value])
         data = _last_json_line(run_manage(*args))

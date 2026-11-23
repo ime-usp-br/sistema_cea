@@ -1,0 +1,123 @@
+name: E2E
+
+on:
+  pull_request:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  COMPOSE_PROJECT_NAME: sistema_cea_e2e
+  E2E_COMPOSE_FILE: docker-compose.e2e.yml
+  E2E_WEB_PORT: "18000"
+  E2E_BASE_URL: http://127.0.0.1:18000
+
+jobs:
+  p0:
+    name: P0 (pull request)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependências E2E
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r e2e/requirements.txt
+
+      - name: Instalar Chromium
+        run: python -m playwright install --with-deps chromium
+
+      - name: Resolver Senha Única faker no host
+        run: echo "127.0.0.1 senhaunica-faker" | sudo tee -a /etc/hosts
+
+      - name: Subir stack E2E
+        run: docker compose -f docker-compose.e2e.yml -f docker-compose.e2e.host.yml up -d --build --wait web db redis senhaunica-faker
+
+      - name: Executar P0
+        timeout-minutes: 7
+        run: |
+          mkdir -p e2e-artifacts test-results
+          pytest -q -p no:cacheprovider e2e -c e2e/pytest.ini -m p0 \
+            --junitxml=e2e-artifacts/junit.xml \
+            --tracing=retain-on-failure \
+            --screenshot=only-on-failure
+
+      - name: Logs do app em caso de falha
+        if: failure()
+        run: docker compose -f docker-compose.e2e.yml -f docker-compose.e2e.host.yml logs --tail=200 web
+
+      - name: Publicar artefatos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-p0
+          path: |
+            e2e-artifacts
+            test-results
+          if-no-files-found: ignore
+
+      - name: Derrubar stack
+        if: always()
+        run: docker compose -f docker-compose.e2e.yml -f docker-compose.e2e.host.yml down -v --remove-orphans
+
+  nightly:
+    name: Suíte completa (nightly)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependências E2E
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r e2e/requirements.txt
+
+      - name: Instalar Chromium
+        run: python -m playwright install --with-deps chromium
+
+      - name: Resolver Senha Única faker no host
+        run: echo "127.0.0.1 senhaunica-faker" | sudo tee -a /etc/hosts
+
+      - name: Subir stack E2E
+        run: docker compose -f docker-compose.e2e.yml -f docker-compose.e2e.host.yml up -d --build --wait web db redis senhaunica-faker
+
+      - name: Executar suíte completa
+        timeout-minutes: 20
+        run: |
+          mkdir -p e2e-artifacts test-results
+          pytest -q -p no:cacheprovider e2e -c e2e/pytest.ini \
+            --junitxml=e2e-artifacts/junit.xml \
+            --tracing=retain-on-failure \
+            --screenshot=only-on-failure
+
+      - name: Logs do app em caso de falha
+        if: failure()
+        run: docker compose -f docker-compose.e2e.yml -f docker-compose.e2e.host.yml logs --tail=200 web
+
+      - name: Publicar artefatos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-nightly
+          path: |
+            e2e-artifacts
+            test-results
+          if-no-files-found: ignore
+
+      - name: Derrubar stack
+        if: always()
+        run: docker compose -f docker-compose.e2e.yml -f docker-compose.e2e.host.yml down -v --remove-orphans

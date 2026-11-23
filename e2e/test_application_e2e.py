@@ -13,12 +13,14 @@ from __future__ import annotations
 
 import re
 
+import pytest
 from helpers import (
     BASE_URL,
     fill_required_basic_fields,
     fill_valid_consultation,
     fill_valid_project,
     select_catalog_option,
+    set_application_term,
 )
 from playwright.sync_api import Page, expect
 
@@ -41,11 +43,14 @@ def _track_current_application(page: Page, track_protocol) -> None:
 # ---------------------------------------------------------------------------
 
 
+# Cobre: TS-APP-002, TS-VAL-008
+@pytest.mark.p0
 def test_E2E_001_submissao_valida_de_projeto_redireciona_ao_detalhe(
-    login, page: Page, track_protocol
+    login, page: Page, track_protocol, e2e_term
 ) -> None:
     login()
     _go_to_new_application(page)
+    set_application_term(page, e2e_term["id"])
 
     fill_valid_project(page)
     page.once("dialog", lambda dialog: dialog.accept())
@@ -57,11 +62,14 @@ def test_E2E_001_submissao_valida_de_projeto_redireciona_ao_detalhe(
     expect(page.locator("body")).to_contain_text("Aguardando pagamento")
 
 
+# Cobre: TS-APP-003, TS-APP-015
+@pytest.mark.p0
 def test_E2E_002_submissao_valida_de_consulta_aguarda_pagamento(
-    login, page: Page, track_protocol
+    login, page: Page, track_protocol, e2e_term
 ) -> None:
     login()
     _go_to_new_application(page)
+    set_application_term(page, e2e_term["id"])
 
     fill_valid_consultation(page)
     page.once("dialog", lambda dialog: dialog.accept())
@@ -78,6 +86,7 @@ def test_E2E_002_submissao_valida_de_consulta_aguarda_pagamento(
 # ---------------------------------------------------------------------------
 
 
+# Cobre: TS-APP-005
 def test_E2E_003_projeto_vazio_mostra_resumo_de_erro_e_nao_envia(
     login, page: Page
 ) -> None:
@@ -98,6 +107,7 @@ def test_E2E_003_projeto_vazio_mostra_resumo_de_erro_e_nao_envia(
     expect(submit).to_contain_text("Enviar inscrição")
 
 
+# Cobre: TS-APP-012
 def test_E2E_004_projeto_com_dados_nao_coletados_exibe_bloqueio(
     login, page: Page
 ) -> None:
@@ -117,6 +127,7 @@ def test_E2E_004_projeto_com_dados_nao_coletados_exibe_bloqueio(
 # ---------------------------------------------------------------------------
 
 
+# Cobre: TS-APP-007
 def test_E2E_005_catalogo_outro_exibe_campo_complementar_e_exige_preenchimento(
     login, page: Page
 ) -> None:
@@ -135,6 +146,7 @@ def test_E2E_005_catalogo_outro_exibe_campo_complementar_e_exige_preenchimento(
     expect(page.locator("body")).to_contain_text("Informe o texto complementar")
 
 
+# Cobre: TS-APP-014
 def test_E2E_006_iniciacao_cientifica_exige_orientador_e_declaracao(
     login, page: Page
 ) -> None:
@@ -149,6 +161,7 @@ def test_E2E_006_iniciacao_cientifica_exige_orientador_e_declaracao(
     )
 
 
+# Cobre: TS-APP-014
 def test_E2E_006b_mestrado_exige_orientador_e_declaracao(
     login, page: Page
 ) -> None:

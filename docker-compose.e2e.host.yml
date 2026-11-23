@@ -1,0 +1,13 @@
+# Override opcional para rodar o pytest no host (CI) ou depurar pelo navegador
+# local. O compose base mantém a stack sem portas publicadas.
+#
+# Uso:
+#   docker compose -f docker-compose.e2e.yml -f docker-compose.e2e.host.yml up -d --build --wait web db redis senhaunica-faker
+#   E2E_BASE_URL=http://127.0.0.1:18000 pytest ...
+services:
+  web:
+    ports:
+      - "127.0.0.1:${E2E_WEB_PORT:-18000}:8000"
+  senhaunica-faker:
+    ports:
+      - "127.0.0.1:${E2E_FAKER_PORT:-3141}:3141"
