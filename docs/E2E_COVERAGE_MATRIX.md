@@ -51,6 +51,7 @@ docker compose -p sistema_cea_e2e -f docker-compose.e2e.yml run --rm \
 | Host | reutilizado, `127.0.0.1:18000` (override host) | 55 passed | 601,03 s | Modo host do CI, incluindo Senha Única. |
 | 6 | reutilizado, após correções | 55 passed | 601,29 s | Purga do namespace sem erro de teardown; namespace final = 0. |
 | 7 | reutilizado, jornadas/pagamentos UI-only | 55 passed | 558,77 s | Migração parcial de D-05 validada. |
+| 8 | reutilizado, suíte 100% UI-only | 55 passed | 489,61 s | `simulate_journey` removido do E2E. |
 
 Falha original (antes da Fase 1):
 
@@ -66,7 +67,7 @@ Falha original (antes da Fase 1):
 |---|---:|
 | Cenários em `TEST_SCENARIOS.md` | 216 |
 | Testes E2E | 55 |
-| Módulos com criação/pagamento UI-only | 2 (`test_journeys`, `test_payments`) |
+| Módulos com criação/pagamento UI-only | 10 de 10 |
 | Arquivos de teste E2E | 10 |
 | Rotas não-admin | 72 |
 | Rotas admin declaradas | 155 |

@@ -11,9 +11,13 @@ from datetime import date, timedelta
 import pytest
 from helpers import (
     BASE_URL,
+    create_consultation_via_ui,
+    create_project_via_ui,
     pay_fee,
+    review_submission_by_protocol,
     schedule_screening_for,
     start_payment,
+    submit_dataset_file,
     wait_for_page,
 )
 from playwright.sync_api import Page
@@ -30,9 +34,9 @@ def test_E2E_ENV_001_stack_sem_gateways_externos(e2e_environment: dict) -> None:
 
 # Cobre: TS-MOD-004, TS-MOD-005
 def test_E2E_MOD_004_005_mudanca_de_modalidade_pela_lista(
-    page: Page, login_as, create_application, application_state
+    page: Page, login, login_as, track_protocol, e2e_term, application_state
 ) -> None:
-    protocol = create_application("consultation")
+    protocol = create_consultation_via_ui(page, login, track_protocol, e2e_term["id"])
     login_as("secretariat")
 
     page.goto(f"{BASE_URL}/inscricoes/?term=all")
@@ -62,9 +66,9 @@ def test_E2E_MOD_004_005_mudanca_de_modalidade_pela_lista(
 
 # Cobre: TS-BSL-001, TS-BSL-007
 def test_E2E_BSL_ADMIN_001_gerar_e_regenerar_boleto_pela_secretaria(
-    page: Page, login_as, create_application, application_state
+    page: Page, login, login_as, track_protocol, e2e_term, application_state
 ) -> None:
-    protocol = create_application("consultation")
+    protocol = create_consultation_via_ui(page, login, track_protocol, e2e_term["id"])
     login_as("secretariat")
     page.goto(f"{BASE_URL}/inscricoes/?term=all")
     wait_for_page(page)
@@ -99,10 +103,9 @@ def test_E2E_BSL_ADMIN_001_gerar_e_regenerar_boleto_pela_secretaria(
 
 # Cobre: TS-REP-002
 def test_E2E_REP_002_sincronizacao_do_relatorio_usa_gateway_simulado(
-    page: Page, login, login_as, create_application
+    page: Page, login, login_as, track_protocol, e2e_term
 ) -> None:
-    protocol = create_application("consultation")
-    login()
+    protocol = create_consultation_via_ui(page, login, track_protocol, e2e_term["id"])
     start_payment(page, protocol, "boleto")
     login_as("secretariat")
     page.goto(f"{BASE_URL}/gestao/relatorios/financeiro/?term=all")
@@ -118,11 +121,15 @@ def test_E2E_REP_002_sincronizacao_do_relatorio_usa_gateway_simulado(
 
 # Cobre: TS-AUD-018, TS-FILE-002
 def test_E2E_DOC_002_recibo_de_pagamento_e_resumo_da_triagem(
-    page: Page, login, login_as, create_application, application_state
+    page: Page,
+    login,
+    login_as,
+    track_protocol,
+    e2e_term,
+    application_state,
 ) -> None:
     # Recibo após pagamento.
-    protocol = create_application("consultation")
-    login()
+    protocol = create_consultation_via_ui(page, login, track_protocol, e2e_term["id"])
     pay_fee(page, protocol, "pix")
     page.goto(f"{BASE_URL}/inscricoes/{protocol}/")
     wait_for_page(page)
@@ -131,9 +138,11 @@ def test_E2E_DOC_002_recibo_de_pagamento_e_resumo_da_triagem(
     assert receipt.status == 200 and receipt.body().startswith(b"%PDF")
 
     # Resumo da triagem.
-    project = create_application(
-        "project", "--pay", "--submit-dataset", "--review", "approved"
-    )
+    project = create_project_via_ui(page, login, track_protocol, e2e_term["id"])
+    pay_fee(page, project, "pix")
+    submit_dataset_file(page, project)
+    login_as("teacher")
+    review_submission_by_protocol(page, project, "approved", "Dados adequados.")
     login_as("secretariat")
     schedule_screening_for(
         page, project, (date.today() - timedelta(days=1)).isoformat()

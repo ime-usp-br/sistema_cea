@@ -176,9 +176,10 @@ E2E_KEEP_STACK=1 ./scripts/run_e2e.sh
 **Isolamento dos testes**
 
 Cada teste cria seu próprio candidato e seu próprio período no namespace
-`9000–9999`. O período é enviado explicitamente pelo campo oculto do formulário
-e pelo `simulate_journey --term`, então a suíte não depende de “período mais
-recente” nem da ordem dos testes. Ao final, inscrições são soft-deletadas,
+`9000–9999`. O período é enviado explicitamente pelo campo oculto do formulário,
+então a suíte não depende de “período mais recente” nem da ordem dos testes.
+Todas as jornadas criam e avançam a inscrição pela UI; `simulate_journey` fica
+restrito aos testes de comando. Ao final, inscrições são soft-deletadas,
 usuários criados são desativados e o namespace E2E é limpo com
 `e2e_cleanup --purge-e2e-terms` (exclusivo da stack descartável).
 

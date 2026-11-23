@@ -34,6 +34,7 @@ O problema não é a qualidade do happy path, e sim a **cobertura e a repetibili
 | Host | reutilizado, `127.0.0.1:18000` | 55 passed | 601,03 s |
 | 6 | reutilizado, após correções da revisão | 55 passed | 601,29 s |
 | 7 | reutilizado, jornadas/pagamentos UI-only | 55 passed | 558,77 s |
+| 8 | reutilizado, suíte 100% UI-only | 55 passed | 489,61 s |
 
 Fase 1 aplicada:
 
@@ -143,7 +144,7 @@ As duas inscrições ativas eram as importadas das rodadas 1 e 2, ambas com dono
 2. ~~Correção do rastreamento da inscrição importada e do cleanup~~ — concluído; duas rodadas completas verdes.
 3. ~~Marcador P0 e gate de CI com pytest no host~~ — concluído.
 4. ~~Comentários `# Cobre: TS-*` e gerador de rastreabilidade~~ — concluído.
-5. Reescrita das jornadas para UI-only (D-05) — em andamento: `test_journeys_e2e.py` e `test_payments_e2e.py` migrados; faltam auditoria, agendamento, segurança e processos restantes.
+5. ~~Reescrita das jornadas para UI-only (D-05)~~ — concluído. Todos os 55 testes criam e avançam pela UI; `simulate_journey` não é mais usado no E2E.
 6. Rate limiting (D-03/RL-01/RL-02) em alteração isolada de produto.
 7. E2E-CLI de importação (D-04/IMP-01).
 8. ~~Atualização de `TEST_SCENARIOS.md` para `TS-AUTH-001`~~ — concluído.

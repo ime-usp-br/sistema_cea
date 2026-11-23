@@ -6,19 +6,38 @@ from __future__ import annotations
 import pytest
 from helpers import (
     BASE_URL,
+    create_consultation_via_ui,
+    create_project_via_ui,
     pay_fee,
     review_submission,
     review_submission_by_protocol,
+    submit_dataset_external_link,
+    submit_dataset_file,
     wait_for_page,
 )
 from playwright.sync_api import Page, expect
 
 
-def _awaiting_review(create_application, modality: str = "project", channel: str = "external_link") -> str:
-    flags = ["--pay", "--submit-dataset"]
-    if channel == "external_link":
-        flags.extend(["--channel", "external_link"])
-    return create_application(modality, *flags)
+def _awaiting_review(
+    page: Page,
+    login,
+    track_protocol,
+    e2e_term: dict,
+    modality: str = "project",
+    channel: str = "external_link",
+) -> str:
+    creator = (
+        create_project_via_ui
+        if modality == "project"
+        else create_consultation_via_ui
+    )
+    protocol = creator(page, login, track_protocol, e2e_term["id"])
+    pay_fee(page, protocol, "pix")
+    if channel == "file":
+        submit_dataset_file(page, protocol)
+    else:
+        submit_dataset_external_link(page, protocol)
+    return protocol
 
 
 def _resolve_rejected(
@@ -46,9 +65,11 @@ def _resolve_rejected(
 # Cobre: TS-AUD-003, TS-AUD-009, TS-AUD-010, TS-AUD-011
 @pytest.mark.p0
 def test_E2E_AUD_003_009_010_011_correcao_e_reenvio_ate_aprovacao(
-    page: Page, login, login_as, create_application, application_state
+    page: Page, login, login_as, track_protocol, e2e_term, application_state
 ) -> None:
-    protocol = _awaiting_review(create_application, channel="file")
+    protocol = _awaiting_review(
+        page, login, track_protocol, e2e_term, channel="file"
+    )
 
     login_as("teacher")
     review_submission_by_protocol(page, protocol, "needs_correction", "Corrigir planilha.")
@@ -80,10 +101,10 @@ def test_E2E_AUD_003_009_010_011_correcao_e_reenvio_ate_aprovacao(
 
 # Cobre: TS-AUD-005
 def test_E2E_AUD_005_envio_por_link_externo_e_fila_docente(
-    page: Page, login, login_as, create_application, application_state
+    page: Page, login, login_as, track_protocol, e2e_term, application_state
 ) -> None:
-    protocol = create_application("project", "--pay")
-    login()
+    protocol = create_project_via_ui(page, login, track_protocol, e2e_term["id"])
+    pay_fee(page, protocol, "pix")
     page.goto(f"{BASE_URL}/auditoria/inscricao/{protocol}/enviar/")
     wait_for_page(page)
     page.select_option('select[name="channel"]', "external_link")
@@ -107,9 +128,9 @@ def test_E2E_AUD_005_envio_por_link_externo_e_fila_docente(
 
 # Cobre: TS-AUD-012, TS-AUD-013
 def test_E2E_AUD_012_013_rejeicao_e_conversao_em_consulta(
-    page: Page, login, login_as, create_application, application_state
+    page: Page, login, login_as, track_protocol, e2e_term, application_state
 ) -> None:
-    protocol = _awaiting_review(create_application)
+    protocol = _awaiting_review(page, login, track_protocol, e2e_term)
 
     login_as("teacher")
     review_submission_by_protocol(page, protocol, "rejected", "Dados inadequados.")
@@ -132,9 +153,9 @@ def test_E2E_AUD_012_013_rejeicao_e_conversao_em_consulta(
 
 # Cobre: TS-AUD-014
 def test_E2E_AUD_014_rejeicao_e_reprovacao(
-    page: Page, login_as, create_application, application_state
+    page: Page, login, login_as, track_protocol, e2e_term, application_state
 ) -> None:
-    protocol = _awaiting_review(create_application)
+    protocol = _awaiting_review(page, login, track_protocol, e2e_term)
 
     login_as("teacher")
     review_submission_by_protocol(page, protocol, "rejected", "Dados inconsistentes.")
@@ -145,9 +166,15 @@ def test_E2E_AUD_014_rejeicao_e_reprovacao(
 
 # Cobre: TS-AUD-015, TS-TRM-004
 def test_E2E_AUD_015_transferencia_de_periodo(
-    page: Page, login_as, create_application, application_state, create_term
+    page: Page,
+    login,
+    login_as,
+    track_protocol,
+    e2e_term,
+    application_state,
+    create_term,
 ) -> None:
-    protocol = _awaiting_review(create_application)
+    protocol = _awaiting_review(page, login, track_protocol, e2e_term)
     target = create_term(2042, "first")
 
     login_as("teacher")

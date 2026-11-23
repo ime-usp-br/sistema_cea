@@ -7,14 +7,18 @@ from datetime import date, timedelta
 
 from helpers import (
     BASE_URL,
+    create_consultation_via_ui,
+    create_project_via_ui,
     open_first_consultation_decision,
     open_first_screening_decision,
     open_teacher_feedback,
     pay_fee,
     register_decision,
     register_feedback,
+    review_submission_by_protocol,
     schedule_consultation_for,
     schedule_screening_for,
+    submit_dataset_file,
     wait_for_page,
 )
 from playwright.sync_api import Page, expect
@@ -22,25 +26,32 @@ from playwright.sync_api import Page, expect
 YESTERDAY = (date.today() - timedelta(days=1)).isoformat()
 
 
-def _awaiting_screening(create_application) -> str:
-    return create_application(
-        "project",
-        "--pay",
-        "--submit-dataset",
-        "--review",
-        "approved",
-    )
+def _awaiting_screening(
+    page: Page, login, login_as, track_protocol, e2e_term: dict
+) -> str:
+    protocol = create_project_via_ui(page, login, track_protocol, e2e_term["id"])
+    pay_fee(page, protocol, "pix")
+    submit_dataset_file(page, protocol)
+    login_as("teacher")
+    review_submission_by_protocol(page, protocol, "approved", "Dados adequados.")
+    return protocol
 
 
-def _awaiting_consultation(create_application) -> str:
-    return create_application("consultation", "--pay")
+def _awaiting_consultation(
+    page: Page, login, track_protocol, e2e_term: dict
+) -> str:
+    protocol = create_consultation_via_ui(page, login, track_protocol, e2e_term["id"])
+    pay_fee(page, protocol, "pix")
+    return protocol
 
 
 # Cobre: TS-MEET-007, TS-MEET-008
 def test_E2E_MEET_007_008_reagendar_e_cancelar_triagem(
-    page: Page, login_as, create_application, application_state
+    page: Page, login, login_as, track_protocol, e2e_term, application_state
 ) -> None:
-    protocol = _awaiting_screening(create_application)
+    protocol = _awaiting_screening(
+        page, login, login_as, track_protocol, e2e_term
+    )
     login_as("secretariat")
     schedule_screening_for(page, protocol, YESTERDAY)
 
@@ -69,9 +80,11 @@ def test_E2E_MEET_007_008_reagendar_e_cancelar_triagem(
 
 # Cobre: TS-MEET-012
 def test_E2E_MEET_012_feedback_bloqueado_antes_do_evento(
-    page: Page, login_as, create_application
+    page: Page, login, login_as, track_protocol, e2e_term
 ) -> None:
-    protocol = _awaiting_screening(create_application)
+    protocol = _awaiting_screening(
+        page, login, login_as, track_protocol, e2e_term
+    )
     login_as("secretariat")
     schedule_screening_for(page, protocol, (date.today() + timedelta(days=2)).isoformat())
 
@@ -86,9 +99,11 @@ def test_E2E_MEET_012_feedback_bloqueado_antes_do_evento(
 
 # Cobre: TS-FEE-005, TS-MEET-010
 def test_E2E_MEET_010_triagem_aprovada_como_consulta_gera_complemento(
-    page: Page, login, login_as, create_application, application_state
+    page: Page, login, login_as, track_protocol, e2e_term, application_state
 ) -> None:
-    protocol = _awaiting_screening(create_application)
+    protocol = _awaiting_screening(
+        page, login, login_as, track_protocol, e2e_term
+    )
     login_as("secretariat")
     schedule_screening_for(page, protocol, YESTERDAY)
 
@@ -116,9 +131,11 @@ def test_E2E_MEET_010_triagem_aprovada_como_consulta_gera_complemento(
 
 # Cobre: TS-MEET-011
 def test_E2E_MEET_011_triagem_nao_aprovada(
-    page: Page, login_as, create_application, application_state
+    page: Page, login, login_as, track_protocol, e2e_term, application_state
 ) -> None:
-    protocol = _awaiting_screening(create_application)
+    protocol = _awaiting_screening(
+        page, login, login_as, track_protocol, e2e_term
+    )
     login_as("secretariat")
     schedule_screening_for(page, protocol, YESTERDAY)
     login_as("teacher")
@@ -134,9 +151,11 @@ def test_E2E_MEET_011_triagem_nao_aprovada(
 
 # Cobre: TS-MEET-003, TS-MEET-007, TS-MEET-008
 def test_E2E_MEET_003_007_008_reuniao_reagendar_cancelar(
-    page: Page, login_as, create_application, application_state
+    page: Page, login, login_as, track_protocol, e2e_term, application_state
 ) -> None:
-    protocol = _awaiting_consultation(create_application)
+    protocol = _awaiting_consultation(
+        page, login, track_protocol, e2e_term
+    )
     login_as("secretariat")
     schedule_consultation_for(page, protocol, YESTERDAY)
 
@@ -163,9 +182,11 @@ def test_E2E_MEET_003_007_008_reuniao_reagendar_cancelar(
 
 # Cobre: TS-FEE-004, TS-MEET-014
 def test_E2E_MEET_014_consulta_aprovada_como_projeto_gera_taxa_com_credito(
-    page: Page, login, login_as, create_application, application_state
+    page: Page, login, login_as, track_protocol, e2e_term, application_state
 ) -> None:
-    protocol = _awaiting_consultation(create_application)
+    protocol = _awaiting_consultation(
+        page, login, track_protocol, e2e_term
+    )
     login_as("secretariat")
     schedule_consultation_for(page, protocol, YESTERDAY)
 

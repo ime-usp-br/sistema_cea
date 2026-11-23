@@ -6,7 +6,16 @@ from __future__ import annotations
 import json
 from datetime import date
 
-from helpers import BASE_URL, fill_valid_project, set_application_term, wait_for_page
+from helpers import (
+    BASE_URL,
+    create_consultation_via_ui,
+    create_project_via_ui,
+    fill_valid_project,
+    pay_fee,
+    set_application_term,
+    submit_dataset_file,
+    wait_for_page,
+)
 from playwright.sync_api import Page, expect
 
 
@@ -98,9 +107,9 @@ def test_E2E_TRM_001_002_003_cadastro_de_semestre_e_transferencia_pendente(
 
 # Cobre: TS-APP-010
 def test_E2E_APP_010_exclusao_logica_e_restauracao(
-    page: Page, login_as, create_application, application_state
+    page: Page, login, login_as, track_protocol, e2e_term, application_state
 ) -> None:
-    protocol = create_application("consultation")
+    protocol = create_consultation_via_ui(page, login, track_protocol, e2e_term["id"])
     login_as("secretariat")
     page.goto(f"{BASE_URL}/inscricoes/?term=all")
     wait_for_page(page)
@@ -125,9 +134,9 @@ def test_E2E_APP_010_exclusao_logica_e_restauracao(
 
 # Cobre: TS-EVT-001
 def test_E2E_EVT_001_historico_lista_eventos_da_inscricao(
-    page: Page, login_as, create_application
+    page: Page, login, login_as, track_protocol, e2e_term
 ) -> None:
-    protocol = create_application("consultation")
+    protocol = create_consultation_via_ui(page, login, track_protocol, e2e_term["id"])
     login_as("secretariat")
     page.goto(f"{BASE_URL}/inscricoes/historico/?term=all")
     wait_for_page(page)
@@ -137,9 +146,10 @@ def test_E2E_EVT_001_historico_lista_eventos_da_inscricao(
 
 # Cobre: TS-FEE-002, TS-REP-001, TS-REP-004, TS-REP-005
 def test_E2E_REP_001_004_005_relatorio_financeiro_e_exportacoes(
-    page: Page, login_as, create_application
+    page: Page, login, login_as, track_protocol, e2e_term
 ) -> None:
-    protocol = create_application("consultation", "--pay")
+    protocol = create_consultation_via_ui(page, login, track_protocol, e2e_term["id"])
+    pay_fee(page, protocol, "pix")
     login_as("secretariat")
     page.goto(f"{BASE_URL}/gestao/relatorios/financeiro/?term=all")
     wait_for_page(page, "Relatório Financeiro")
@@ -161,9 +171,11 @@ def test_E2E_REP_001_004_005_relatorio_financeiro_e_exportacoes(
 
 # Cobre: TS-REP-006
 def test_E2E_REP_006_relatorio_de_auditoria(
-    page: Page, login_as, create_application
+    page: Page, login, login_as, track_protocol, e2e_term
 ) -> None:
-    protocol = create_application("project", "--pay", "--submit-dataset")
+    protocol = create_project_via_ui(page, login, track_protocol, e2e_term["id"])
+    pay_fee(page, protocol, "pix")
+    submit_dataset_file(page, protocol)
     login_as("secretariat")
     page.goto(f"{BASE_URL}/gestao/relatorios/auditoria/?term=all")
     wait_for_page(page)
@@ -172,9 +184,9 @@ def test_E2E_REP_006_relatorio_de_auditoria(
 
 # Cobre: TS-PAY-022
 def test_E2E_PAY_022_pagamentos_pendentes_lista_inscricao(
-    page: Page, login_as, create_application
+    page: Page, login, login_as, track_protocol, e2e_term
 ) -> None:
-    protocol = create_application("consultation")
+    protocol = create_consultation_via_ui(page, login, track_protocol, e2e_term["id"])
     login_as("secretariat")
     page.goto(f"{BASE_URL}/pagamentos/pendentes/")
     wait_for_page(page)

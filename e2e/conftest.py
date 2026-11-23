@@ -208,38 +208,6 @@ def login(login_as: Callable[..., None]) -> Callable[..., None]:
 
 
 @pytest.fixture
-def create_application(
-    created_protocols: list[str],
-    candidate_account: dict[str, Any],
-    e2e_term: dict[str, Any],
-) -> Callable[..., str]:
-    """Cria uma inscrição real para o candidato E2E via ``simulate_journey``.
-
-    Retorna o protocolo de 9 dígitos. Flags extras são repassadas ao comando
-    (ex.: ``--pay``, ``--submit-dataset --review approved``).
-    """
-
-    def _create(modality: str = "project", *flags: str) -> str:
-        output = run_manage(
-            "simulate_journey",
-            "--submit",
-            "--modality",
-            modality,
-            "--owner",
-            candidate_account["username"],
-            "--term",
-            str(e2e_term["id"]),
-            *flags,
-            "--json",
-        )
-        protocol = _last_json_line(output)["protocol"]
-        created_protocols.append(protocol)
-        return protocol
-
-    return _create
-
-
-@pytest.fixture
 def track_protocol(created_protocols: list[str]) -> Callable[[str], None]:
     """Registra um protocolo criado pela UI para o cleanup da sessão."""
 

@@ -6,7 +6,15 @@ from __future__ import annotations
 import uuid
 
 import pytest
-from helpers import BASE_URL, extract_link, wait_for_page
+from helpers import (
+    BASE_URL,
+    create_consultation_via_ui,
+    create_project_via_ui,
+    extract_link,
+    pay_fee,
+    submit_dataset_file,
+    wait_for_page,
+)
 from playwright.sync_api import Page, expect
 
 PASSWORD = "senha-forte-123"
@@ -15,6 +23,9 @@ PASSWORD = "senha-forte-123"
 def _create_second_candidate(page: Page, latest_email, created_user_emails: list[str]) -> str:
     email = f"e2e.outro.{uuid.uuid4().hex[:8]}@example.com"
     created_user_emails.append(email)
+    # O teste anterior autenticou o dono da inscrição; o cadastro/verificação
+    # do segundo candidato precisa começar sem sessão.
+    page.context.clear_cookies()
     page.goto(f"{BASE_URL}/cadastro/")
     page.fill('input[name="full_name"]', "Outro Candidato E2E")
     page.fill('input[name="email"]', email)
@@ -30,9 +41,15 @@ def _create_second_candidate(page: Page, latest_email, created_user_emails: list
 # Cobre: TS-APP-001, TS-SEC-003
 @pytest.mark.p0
 def test_E2E_SEC_001_candidato_nao_acessa_inscricao_de_terceiro(
-    page: Page, login_as, create_application, latest_email, created_user_emails
+    page: Page,
+    login,
+    login_as,
+    track_protocol,
+    e2e_term,
+    latest_email,
+    created_user_emails,
 ) -> None:
-    protocol = create_application("consultation")
+    protocol = create_consultation_via_ui(page, login, track_protocol, e2e_term["id"])
     email = _create_second_candidate(page, latest_email, created_user_emails)
 
     page.goto(f"{BASE_URL}/auth/login/")
@@ -49,9 +66,11 @@ def test_E2E_SEC_001_candidato_nao_acessa_inscricao_de_terceiro(
 
 # Cobre: TS-SEC-004
 def test_E2E_SEC_002_docente_nao_ve_cpf_nem_financeiro(
-    page: Page, login_as, create_application
+    page: Page, login, login_as, track_protocol, e2e_term
 ) -> None:
-    protocol = create_application("project", "--pay", "--submit-dataset")
+    protocol = create_project_via_ui(page, login, track_protocol, e2e_term["id"])
+    pay_fee(page, protocol, "pix")
+    submit_dataset_file(page, protocol)
     login_as("teacher")
     page.goto(f"{BASE_URL}/inscricoes/{protocol}/")
     wait_for_page(page)
@@ -62,9 +81,11 @@ def test_E2E_SEC_002_docente_nao_ve_cpf_nem_financeiro(
 
 # Cobre: TS-SEC-004
 def test_E2E_SEC_003_secretaria_ve_financeiro_e_cpf(
-    page: Page, login_as, create_application
+    page: Page, login, login_as, track_protocol, e2e_term
 ) -> None:
-    protocol = create_application("project", "--pay", "--submit-dataset")
+    protocol = create_project_via_ui(page, login, track_protocol, e2e_term["id"])
+    pay_fee(page, protocol, "pix")
+    submit_dataset_file(page, protocol)
     login_as("secretariat")
     page.goto(f"{BASE_URL}/inscricoes/{protocol}/")
     wait_for_page(page)
