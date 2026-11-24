@@ -101,7 +101,7 @@ Falha original (antes da Fase 1):
 | P2 | 15 | 5 | 0 | 0 | 0 | 10 |
 | **Total** | **216** | **141** | **0** | **0** | **0** | **75** |
 
-Leitura: 141 cenários têm cobertura automatizada (65,3%), sendo 93 com E2E direto e o restante com unidade/integração; não restam lacunas nem parciais.
+Leitura: 141 cenários têm cobertura automatizada (65,3%), por E2E direto ou E2E complementado por unidade; 75 são cobertos por unidade/integração. Não restam lacunas nem parciais. A suíte tem 93 testes E2E.
 
 ## 5. Cobertura por área
 
@@ -169,7 +169,7 @@ Admin: apenas a criação de período em `/admin/terms/academicterm/add/` é exe
 
 ## 9. Encerramento do plano
 
-- 216/216 cenários classificados: 141 com cobertura automatizada (93 E2E direto + unidade complementar) e 75 por unidade/integração.
+- 216/216 cenários classificados: 141 com cobertura automatizada (E2E direto ou combinado com unidade) e 75 por unidade/integração.
 - P0: 86 cobertos e 15 de unidade; **0 lacunas e 0 parciais**.
 - Suíte E2E: 93 testes, 1052,49 s; unidade: 508 testes.
 - Nightly dividido em shards `core` e `flows`; PR limitado ao P0.
