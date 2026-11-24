@@ -1,18 +1,29 @@
-"""E2E das notificações P0 (TS-NOT-002/003/004/006/007/008)."""
+"""E2E das notificações (TS-NOT-001..014)."""
 
 from __future__ import annotations
+
+from datetime import date, timedelta
 
 from helpers import (
     BASE_URL,
     create_consultation_via_ui,
     create_project_via_ui,
+    open_first_consultation_decision,
+    open_first_screening_decision,
+    open_teacher_feedback,
     pay_fee,
+    register_decision,
+    register_feedback,
     review_submission_by_protocol,
+    schedule_consultation_for,
+    schedule_screening_for,
     start_payment,
     submit_dataset_file,
     wait_for_page,
 )
 from playwright.sync_api import Page
+
+YESTERDAY = (date.today() - timedelta(days=1)).isoformat()
 
 
 def _dispatch(state: dict, template: str) -> dict:
@@ -323,3 +334,98 @@ def test_E2E_NOT_014_reemissao_de_boleto_tem_bcc_para_o_cea(
     assert dispatch["status"] == "sent"
     assert dispatch["recipient"] == candidate_account["email"]
     assert dispatch["bcc"] == ["cea-e2e@example.com"]
+
+
+# Cobre: TS-NOT-012
+def test_E2E_NOT_012_triagem_agendada_e_decidida_notifica_candidato(
+    page: Page,
+    login,
+    login_as,
+    track_protocol,
+    e2e_term,
+    application_state,
+    candidate_account,
+    latest_email,
+) -> None:
+    protocol = create_project_via_ui(
+        page,
+        login,
+        track_protocol,
+        e2e_term["id"],
+        contact_email=candidate_account["email"],
+    )
+    pay_fee(page, protocol, "pix")
+    submit_dataset_file(page, protocol)
+    login_as("teacher")
+    review_submission_by_protocol(page, protocol, "approved", "Dados adequados.")
+
+    login_as("secretariat")
+    schedule_screening_for(page, protocol, YESTERDAY)
+    scheduled = _dispatch(application_state(protocol), "screening_scheduled")
+    assert scheduled["status"] == "sent"
+    assert scheduled["recipient"] == candidate_account["email"]
+    latest_email(
+        to=candidate_account["email"],
+        subject_contains=f"Triagem agendada — inscrição {protocol}",
+    )
+
+    login_as("teacher")
+    open_teacher_feedback(page, "/triagens/", protocol)
+    register_feedback(page, "screening_completed")
+    login_as("secretariat")
+    open_first_screening_decision(page, protocol)
+    register_decision(page, "approved_as_project")
+
+    decided = _dispatch(application_state(protocol), "screening_decision")
+    assert decided["status"] == "sent"
+    assert decided["recipient"] == candidate_account["email"]
+    latest_email(
+        to=candidate_account["email"],
+        subject_contains=f"Resultado da triagem — inscrição {protocol}",
+    )
+
+
+# Cobre: TS-NOT-013
+def test_E2E_NOT_013_reuniao_agendada_e_decidida_notifica_candidato(
+    page: Page,
+    login,
+    login_as,
+    track_protocol,
+    e2e_term,
+    application_state,
+    candidate_account,
+    latest_email,
+) -> None:
+    protocol = create_consultation_via_ui(
+        page,
+        login,
+        track_protocol,
+        e2e_term["id"],
+        contact_email=candidate_account["email"],
+    )
+    pay_fee(page, protocol, "pix")
+
+    login_as("secretariat")
+    schedule_consultation_for(page, protocol, YESTERDAY)
+    scheduled = _dispatch(application_state(protocol), "consultation_scheduled")
+    assert scheduled["status"] == "sent"
+    assert scheduled["recipient"] == candidate_account["email"]
+    latest_email(
+        to=candidate_account["email"],
+        subject_contains=f"Reunião de consulta agendada — inscrição {protocol}",
+    )
+
+    login_as("teacher")
+    open_teacher_feedback(page, "/reunioes/", protocol)
+    register_feedback(page, "consultation_completed")
+    login_as("secretariat")
+    open_first_consultation_decision(page, protocol)
+    register_decision(page, "approved_as_consultation")
+
+    decided = _dispatch(application_state(protocol), "consultation_decision")
+    assert decided["status"] == "sent"
+    assert decided["recipient"] == candidate_account["email"]
+    latest_email(
+        to=candidate_account["email"],
+        subject_contains=f"Resultado da reunião de consulta — inscrição {protocol}",
+    )

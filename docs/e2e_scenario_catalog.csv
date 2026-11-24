@@ -152,8 +152,8 @@ TS-NOT-008,Pagamento manual não notifica candidato,P0,E2E-UI,test_E2E_NOT_008_p
 TS-NOT-009,Template inativo,P1,Unidade,apps/notifications/tests.py::test_TS_NOT_009_template_inativo_nao_envia,Unidade,Coberto por teste de unidade.
 TS-NOT-010,Falha de envio,P1,Unidade,apps/notifications/tests.py::test_TS_NOT_010_falha_de_envio_marca_failed,Unidade,Coberto por teste de unidade.
 TS-NOT-011,Mudança de modalidade notifica candidato,P1,E2E-UI,test_E2E_NOT_011_mudanca_de_modalidade_notifica_candidato,Coberto,Mudança pela secretaria notifica o candidato.
-TS-NOT-012,Anexos e notificações de agendamento,P1,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.
-TS-NOT-013,Reunião de consulta agendada e decidida,P1,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.
+TS-NOT-012,Anexos e notificações de agendamento,P1,E2E-UI,test_E2E_NOT_012_triagem_agendada_e_decidida_notifica_candidato,Coberto,Triagem agendada e decidida notificam o candidato.
+TS-NOT-013,Reunião de consulta agendada e decidida,P1,E2E-UI,test_E2E_NOT_013_reuniao_agendada_e_decidida_notifica_candidato,Coberto,Reunião agendada e decidida notificam o candidato.
 TS-NOT-014,Reemissão de boleto com cópia oculta ao CEA,P1,E2E-UI,test_E2E_NOT_014_reemissao_de_boleto_tem_bcc_para_o_cea,Coberto,BCC do CEA registrado no dispatch.
 TS-FILE-001,Arquivo de auditoria salvo com metadados,P0,E2E-API,test_E2E_FILE_001_003_006_metadados_e_download_nao_autorizado,Coberto,"FileAsset de auditoria com propósito, nome, tamanho e checksum."
 TS-FILE-002,Download autorizado,P0,E2E-API,test_E2E_DOC_001; test_E2E_DOC_002,Parcial,Downloads de PDF/anexo; matriz de autorização não.

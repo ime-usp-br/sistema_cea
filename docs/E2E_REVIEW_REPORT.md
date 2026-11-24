@@ -45,6 +45,7 @@ O problema não é a qualidade do happy path, e sim a **cobertura e a repetibili
 | 16 | reutilizado, com VAL | 84 passed | 952,69 s |
 | 17 | reutilizado, com AUTH-007 | 85 passed | 957,72 s |
 | 18 | reutilizado, com NOT restantes | 89 passed | 1020,54 s |
+| 19 | reutilizado, NOT completo | 91 passed | 1055,13 s |
 
 Fase 1 aplicada:
 

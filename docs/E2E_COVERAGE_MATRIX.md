@@ -62,6 +62,7 @@ docker compose -p sistema_cea_e2e -f docker-compose.e2e.yml run --rm \
 | 16 | reutilizado, com VAL | 84 passed | 952,69 s | Validações de formulário e mensagem de sucesso. |
 | 17 | reutilizado, com AUTH-007 | 85 passed | 957,72 s | Inativo bloqueado e nightly em shards. |
 | 18 | reutilizado, com NOT restantes | 89 passed | 1020,54 s | Submissão, cobrança, modalidade e BCC do CEA. |
+| 19 | reutilizado, NOT completo | 91 passed | 1055,13 s | Triagem e reunião agendadas/decididas. |
 
 Falha original (antes da Fase 1):
 
@@ -76,7 +77,7 @@ Falha original (antes da Fase 1):
 | Métrica | Valor |
 |---|---:|
 | Cenários em `TEST_SCENARIOS.md` | 216 |
-| Testes E2E | 89 |
+| Testes E2E | 91 |
 | Módulos com criação/pagamento UI-only | 10 de 10 |
 | Arquivos de teste E2E | 11 |
 | Rotas não-admin | 72 |
@@ -85,7 +86,7 @@ Falha original (antes da Fase 1):
 | Rotas não-admin alcançadas por link/botão | 28 |
 | Rotas não-admin sem cobertura | 9 |
 | Rotas admin exercitadas | 1 (`/admin/terms/academicterm/add/`) |
-| Testes com marcador `# Cobre: TS-*` | 88 de 89 |
+| Testes com marcador `# Cobre: TS-*` | 90 de 91 |
 | Testes marcados como P0 | 10 |
 | Execuções completas verdes consecutivas no mesmo banco | 3 (2 container + 1 host) |
 | Namespace E2E resetado ao final | Sim (`e2e_cleanup --purge-e2e-terms`) |
@@ -96,11 +97,11 @@ Falha original (antes da Fase 1):
 | Prioridade | Total | Coberto | Parcial | Lacuna | Divergente | Unidade |
 |---|---:|---:|---:|---:|---:|---:|
 | P0 | 101 | 72 | 14 | 0 | 0 | 15 |
-| P1 | 100 | 38 | 10 | 44 | 0 | 10 |
+| P1 | 100 | 40 | 10 | 42 | 0 | 10 |
 | P2 | 15 | 3 | 0 | 11 | 0 | 1 |
-| **Total** | **216** | **113** | **24** | **53** | **0** | **26** |
+| **Total** | **216** | **115** | **24** | **51** | **0** | **26** |
 
-Leitura: 113 cenários têm cobertura E2E direta (52,3%). Nenhum cenário P0 está em lacuna; 14 são parciais e 15 têm cobertura de unidade. As lacunas restantes estão em P1/P2.
+Leitura: 115 cenários têm cobertura E2E direta (53,2%). Nenhum cenário P0 está em lacuna; 14 são parciais e 15 têm cobertura de unidade. As lacunas restantes estão em P1/P2.
 
 ## 5. Cobertura por área
 
@@ -119,7 +120,7 @@ Leitura: 113 cenários têm cobertura E2E direta (52,3%). Nenhum cenário P0 est
 | MOD | 7 | 4 | 0 | 2 | 0 | 1 |
 | TRM | 7 | 4 | 2 | 1 | 0 | 0 |
 | MEET | 15 | 11 | 0 | 4 | 0 | 0 |
-| NOT | 14 | 10 | 0 | 2 | 0 | 2 |
+| NOT | 14 | 12 | 0 | 0 | 0 | 2 |
 | FILE | 6 | 3 | 1 | 2 | 0 | 0 |
 | CLAIM | 8 | 5 | 0 | 3 | 0 | 0 |
 | IMP | 8 | 8 | 0 | 0 | 0 | 0 |
