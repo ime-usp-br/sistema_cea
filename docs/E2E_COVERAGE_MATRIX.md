@@ -97,39 +97,39 @@ Falha original (antes da Fase 1):
 | Prioridade | Total | Coberto | Parcial | Lacuna | Divergente | Unidade |
 |---|---:|---:|---:|---:|---:|---:|
 | P0 | 101 | 72 | 14 | 0 | 0 | 15 |
-| P1 | 100 | 40 | 10 | 42 | 0 | 10 |
-| P2 | 15 | 3 | 0 | 11 | 0 | 1 |
-| **Total** | **216** | **115** | **24** | **51** | **0** | **26** |
+| P1 | 100 | 40 | 10 | 5 | 0 | 45 |
+| P2 | 15 | 3 | 0 | 3 | 0 | 9 |
+| **Total** | **216** | **115** | **24** | **8** | **0** | **69** |
 
-Leitura: 115 cenários têm cobertura E2E direta (53,2%). Nenhum cenário P0 está em lacuna; 14 são parciais e 15 têm cobertura de unidade. As lacunas restantes estão em P1/P2.
+Leitura: 115 cenários têm cobertura E2E direta (53,2%). Nenhum cenário P0 está em lacuna; restam 8 lacunas P1/P2, 24 parciais e 69 cobertos por unidade. As lacunas restantes estão em P1/P2.
 
 ## 5. Cobertura por área
 
 | Área | Total | Coberto | Parcial | Lacuna | Divergente | Unidade |
 |---|---:|---:|---:|---:|---:|---:|
 | AUTH | 7 | 3 | 3 | 0 | 0 | 1 |
-| APP | 22 | 6 | 5 | 10 | 0 | 1 |
-| VAL | 8 | 8 | 0 | 0 | 0 | 0 |
-| AUD | 18 | 12 | 2 | 4 | 0 | 0 |
-| FEE | 8 | 1 | 3 | 1 | 0 | 3 |
-| PAY | 18 | 14 | 2 | 2 | 0 | 0 |
-| PIX | 11 | 5 | 0 | 3 | 0 | 3 |
-| BSL | 12 | 4 | 1 | 4 | 0 | 3 |
-| MAN | 4 | 2 | 0 | 1 | 0 | 1 |
-| REF | 5 | 4 | 0 | 0 | 0 | 1 |
-| MOD | 7 | 4 | 0 | 2 | 0 | 1 |
-| TRM | 7 | 4 | 2 | 1 | 0 | 0 |
-| MEET | 15 | 11 | 0 | 4 | 0 | 0 |
-| NOT | 14 | 12 | 0 | 0 | 0 | 2 |
-| FILE | 6 | 3 | 1 | 2 | 0 | 0 |
-| CLAIM | 8 | 5 | 0 | 3 | 0 | 0 |
-| IMP | 8 | 8 | 0 | 0 | 0 | 0 |
-| REP | 7 | 5 | 0 | 1 | 0 | 1 |
+| APP | 22 | 6 | 5 | 0 | 0 | 11 |
+| AUD | 18 | 12 | 2 | 0 | 0 | 4 |
+| BSL | 12 | 4 | 1 | 0 | 0 | 7 |
+| CLAIM | 8 | 5 | 0 | 0 | 0 | 3 |
 | EVT | 4 | 0 | 4 | 0 | 0 | 0 |
+| FEE | 8 | 1 | 3 | 0 | 0 | 4 |
+| FILE | 6 | 3 | 1 | 2 | 0 | 0 |
+| IMP | 8 | 8 | 0 | 0 | 0 | 0 |
 | INT | 6 | 0 | 0 | 0 | 0 | 6 |
-| SEC | 8 | 4 | 1 | 3 | 0 | 0 |
+| MAN | 4 | 2 | 0 | 0 | 0 | 2 |
+| MEET | 15 | 11 | 0 | 0 | 0 | 4 |
+| MOD | 7 | 4 | 0 | 1 | 0 | 2 |
+| NAV | 7 | 0 | 0 | 0 | 0 | 7 |
 | NFR | 6 | 0 | 0 | 3 | 0 | 3 |
-| NAV | 7 | 0 | 0 | 7 | 0 | 0 |
+| NOT | 14 | 12 | 0 | 0 | 0 | 2 |
+| PAY | 18 | 14 | 2 | 0 | 0 | 2 |
+| PIX | 11 | 5 | 0 | 0 | 0 | 6 |
+| REF | 5 | 4 | 0 | 0 | 0 | 1 |
+| REP | 7 | 5 | 0 | 0 | 0 | 2 |
+| SEC | 8 | 4 | 1 | 2 | 0 | 1 |
+| TRM | 7 | 4 | 2 | 0 | 0 | 1 |
+| VAL | 8 | 8 | 0 | 0 | 0 | 0 |
 
 ## 6. P0 sem E2E direto
 
