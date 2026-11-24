@@ -1,9 +1,10 @@
 [tool.poetry]
-name = "python-usp-starter-kit"
+name = "sistema-cea"
 version = "0.1.0"
-description = "A base oficial para desenvolvimento web e ciência de dados na USP."
+description = "Sistema de Inscrições do CEA/IME-USP."
 authors = ["ayrtonnotrya <ayrtonnotrya@github.com>"]
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.14"
