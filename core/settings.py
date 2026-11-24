@@ -391,3 +391,23 @@ if PAYMENT_GATEWAY_FAKE and env('DJANGO_ENV', default='development') == 'product
     raise ImproperlyConfigured(
         'PAYMENT_GATEWAY_FAKE não pode ser habilitado em produção.'
     )
+
+# ---- Logs estruturados (TS-NFR-003) ----
+LOG_LEVEL = env('LOG_LEVEL', default='INFO')
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'json': {'()': 'core.logging.JsonFormatter'},
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'json',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': LOG_LEVEL,
+    },
+}

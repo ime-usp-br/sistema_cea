@@ -125,7 +125,7 @@ Atualize-a com `python scripts/gen_test_traceability.py` (ou manualmente) ao mov
 | TS-MOD-004 | Consulta não paga convertida em Projeto | `apps/payments/tests.py::test_TS_MOD_004_consulta_nao_paga_convertida_em_projeto`<br>`e2e/test_remaining_processes_e2e.py::test_E2E_MOD_004_005_mudanca_de_modalidade_pela_lista` | Coberto |
 | TS-MOD-005 | Consulta paga convertida em Projeto | `apps/payments/tests.py::test_TS_MOD_005_consulta_paga_convertida_em_projeto`<br>`e2e/test_remaining_processes_e2e.py::test_E2E_MOD_004_005_mudanca_de_modalidade_pela_lista` | Coberto |
 | TS-MOD-006 | Conversão de Consulta para Projeto exige auditoria quando há dono | `apps/payments/tests.py::test_TS_MOD_006_projeto_com_taxa_de_projeto_paga_convertido_para_consulta_gera_excesso` | Coberto |
-| TS-MOD-007 | Conversão de inscrição importada sem dono | — | Sem teste |
+| TS-MOD-007 | Conversão de inscrição importada sem dono | `apps/payments/tests.py::test_TS_MOD_007_conversao_de_importada_sem_dono_nao_habilita_auditoria` | Coberto |
 | TS-TRM-001 | Transferência manual com período futuro existente | `e2e/test_journeys_e2e.py::test_E2E_N9_02_transferir_semestre_nao_quebra` | Coberto |
 | TS-TRM-002 | Transferência pendente sem período futuro | `apps/applications/tests/test_term_transfer_pending.py::test_TS_TRM_002_sem_proximo_periodo_fica_pendente`<br>`e2e/test_backoffice_e2e.py::test_E2E_TRM_001_002_003_cadastro_de_semestre_e_transferencia_pendente` | Coberto |
 | TS-TRM-003 | Transferência automática ao criar período | `apps/applications/tests/test_term_transfer_pending.py::test_TS_TRM_003_criar_periodo_migra_e_reseta_status`<br>`e2e/test_backoffice_e2e.py::test_E2E_TRM_001_002_003_cadastro_de_semestre_e_transferencia_pendente` | Coberto |
@@ -165,8 +165,8 @@ Atualize-a com `python scripts/gen_test_traceability.py` (ou manualmente) ao mov
 | TS-FILE-001 | Arquivo de auditoria salvo com metadados | `e2e/test_remaining_processes_e2e.py::test_E2E_FILE_001_003_006_metadados_e_download_nao_autorizado` | Coberto |
 | TS-FILE-002 | Download autorizado | `e2e/test_backoffice_e2e.py::test_E2E_DOC_001_pdfs_e_anexos_baixam`<br>`e2e/test_remaining_processes_e2e.py::test_E2E_DOC_002_recibo_de_pagamento_e_resumo_da_triagem` | Coberto |
 | TS-FILE-003 | Download não autorizado | `e2e/test_remaining_processes_e2e.py::test_E2E_FILE_001_003_006_metadados_e_download_nao_autorizado` | Coberto |
-| TS-FILE-004 | Arquivo ausente | — | Sem teste |
-| TS-FILE-005 | Retenção por prazo indeterminado | — | Sem teste |
+| TS-FILE-004 | Arquivo ausente | `apps/audits/tests.py::test_TS_FILE_004_arquivo_ausente_retorna_404` | Coberto |
+| TS-FILE-005 | Retenção por prazo indeterminado | `apps/audits/tests.py::test_TS_FILE_005_soft_delete_preserva_arquivo_para_auditoria` | Coberto |
 | TS-FILE-006 | Link externo não é baixado | `e2e/test_remaining_processes_e2e.py::test_E2E_FILE_001_003_006_metadados_e_download_nao_autorizado` | Coberto |
 | TS-CLAIM-001 | Solicitação de resgate | `apps/imports/tests.py::test_TS_CLAIM_001_solicitacao_cria_claim`<br>`apps/imports/tests.py::test_TS_CLAIM_001b_protocolo_e_documento_com_mascara_funcionam`<br>`apps/imports/tests.py::test_TS_CLAIM_001c_email_do_cadastro_atual_tambem_localiza`<br>`apps/imports/tests.py::test_TS_CLAIM_001d_inscricao_do_portal_recebe_mensagem_clara`<br>`e2e/test_remaining_processes_e2e.py::test_E2E_CLAIM_001_002_003_resgate_por_codigo_do_email` | Coberto |
 | TS-CLAIM-002 | Código enviado para e-mail registrado | `apps/imports/tests.py::test_TS_CLAIM_002_codigo_enviado_como_hash_com_expiracao`<br>`e2e/test_remaining_processes_e2e.py::test_E2E_CLAIM_001_002_003_resgate_por_codigo_do_email` | Coberto |
@@ -205,13 +205,13 @@ Atualize-a com `python scripts/gen_test_traceability.py` (ou manualmente) ao mov
 | TS-SEC-002 | Webhook Pix exige token | `e2e/test_payments_e2e.py::test_E2E_PIX_005_webhook_com_token_invalido_nao_confirma` | Coberto |
 | TS-SEC-003 | Acesso direto por URL | `e2e/test_security_e2e.py::test_E2E_SEC_001_candidato_nao_acessa_inscricao_de_terceiro` | Coberto |
 | TS-SEC-004 | Dados sensíveis | `e2e/test_security_e2e.py::test_E2E_SEC_002_docente_nao_ve_cpf_nem_financeiro`<br>`e2e/test_security_e2e.py::test_E2E_SEC_003_secretaria_ve_financeiro_e_cpf` | Coberto |
-| TS-SEC-005 | Links externos seguros | — | Sem teste |
+| TS-SEC-005 | Links externos seguros | `apps/base/test_security_links.py::test_TS_SEC_005_todos_links_nova_aba_tem_noopener`<br>`apps/base/test_security_links.py::test_TS_SEC_005_rejeita_esquema_perigoso_no_link_de_auditoria` | Coberto |
 | TS-SEC-006 | Rate limiting | `e2e/test_security_e2e.py::test_E2E_SEC_006_login_rate_limit` | Coberto |
-| TS-SEC-007 | Upload malicioso | — | Sem teste |
+| TS-SEC-007 | Upload malicioso | `apps/applications/tests/test_application_form.py::test_TS_SEC_007_rejeita_html_e_conteudo_executavel` | Coberto |
 | TS-SEC-008 | Permissões de admin da Secretaria e Administrador | `apps/users/test_admin_permissions.py::test_TS_SEC_008_secretaria_acessa_semestres_e_emails`<br>`apps/users/test_admin_permissions.py::test_TS_SEC_008_secretaria_nao_acessa_usuarios`<br>`apps/users/test_admin_permissions.py::test_TS_SEC_008_admin_acessa_tudo` | Coberto |
-| TS-NFR-001 | Acessibilidade básica | — | Sem teste |
-| TS-NFR-002 | Responsividade | — | Sem teste |
-| TS-NFR-003 | Logs estruturados | — | Sem teste |
+| TS-NFR-001 | Acessibilidade básica | `e2e/test_nfr_e2e.py::test_E2E_NFR_001_login_tem_landmarks_rotulos_e_foco` | Coberto |
+| TS-NFR-002 | Responsividade | `e2e/test_nfr_e2e.py::test_E2E_NFR_002_login_utilizavel_em_viewport_movel` | Coberto |
+| TS-NFR-003 | Logs estruturados | `apps/base/test_logging.py::test_TS_NFR_003_formatter_emite_json_com_contexto`<br>`apps/base/test_logging.py::test_TS_NFR_003_logging_configurado_com_formatter_json` | Coberto |
 | TS-NFR-004 | Geração de PDF com textos longos | `apps/documents/tests.py::test_TS_NFR_004_textos_longos_quebram_linha` | Coberto |
 | TS-NFR-005 | PDF com caracteres especiais | `apps/documents/tests.py::test_TS_NFR_005_caracteres_especiais_escapados` | Coberto |
 | TS-NFR-006 | PDF com dados bancários e de reembolso | `apps/documents/tests.py::test_TS_NFR_006_pdf_contem_dados_bancarios_e_de_reembolso`<br>`apps/documents/tests.py::test_TS_NFR_006_sem_recibo_nao_imprime_dados_bancarios` | Coberto |

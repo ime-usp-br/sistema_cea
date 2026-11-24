@@ -390,3 +390,30 @@ class ApplicationFormFakerTest(TestCase):
         follow = self.client.get(response.url)
         self.assertContains(follow, "Inscrição enviada com sucesso")
         self.assertContains(follow, application.protocol)
+
+
+class ApplicationUploadSecurityTests(TestCase):
+    def setUp(self) -> None:
+        self.term = AcademicTerm.objects.create(year=2028, period="first")
+        self.user = User.objects.create_user(
+            username="upload-sec",
+            email="upload-sec@example.com",
+            password="pass",
+        )
+
+    def test_TS_SEC_007_rejeita_html_e_conteudo_executavel(self) -> None:
+        self.client.force_login(self.user)
+        for name, content, content_type in (
+            ("pagina.html", b"<script>alert(1)</script>", "text/html"),
+            ("script.js", b"alert(1)", "application/javascript"),
+            ("payload.exe", b"MZ\x90\x00", "application/octet-stream"),
+        ):
+            payload = build_valid_form_payload(
+                modality="consultation", term_pk=self.term.pk
+            )
+            payload["attachments"] = [
+                SimpleUploadedFile(name, content, content_type=content_type)
+            ]
+            response = self.client.post("/inscricoes/nova/", payload)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn("attachments", response.context["form"].errors)

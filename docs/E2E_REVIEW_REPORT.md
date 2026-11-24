@@ -46,6 +46,7 @@ O problema não é a qualidade do happy path, e sim a **cobertura e a repetibili
 | 17 | reutilizado, com AUTH-007 | 85 passed | 957,72 s |
 | 18 | reutilizado, com NOT restantes | 89 passed | 1020,54 s |
 | 19 | reutilizado, NOT completo | 91 passed | 1055,13 s |
+| 20 | reutilizado, plano completo | 93 passed | 1052,49 s |
 
 Fase 1 aplicada:
 
@@ -92,7 +93,7 @@ Status após a Fase 1:
 
 - **Corrigidos**: F-01 (workflow `e2e.yml`), F-02 (comentários `# Cobre` + gerador), F-03/F-04/F-18/F-19/F-20 (isolamento por candidato/termo, namespace, rastreio da importada e purga do namespace) e F-09 (JUnit, trace e screenshot no CI).
 - **Parcialmente mitigados**: F-08 (rate limiting implementado e coberto; CSRF/IDOR/upload seguem pendentes), F-17 (CI em host, sem socket dentro do container; o modo local em container continua disponível) e F-05/F-06 (marcadores e P0 criados; a reescrita UI-only foi concluída).
-- **Pendentes**: F-07, F-08, F-10..F-16.
+- **Pendentes**: F-10..F-16 (qualidade de suíte e NFR avançado); F-07 e F-08 foram concluídos.
 
 Correções da revisão de código:
 
@@ -240,4 +241,13 @@ Fase 1:
 - `TEST_TRACEABILITY.md` regenerado com a camada E2E.
 - Duas execuções completas verdes no mesmo banco e uma em modo host.
 
-Nenhuma regra de negócio foi alterada; as mudanças de aplicação são comandos de apoio ao E2E e o parâmetro `--term` do simulador.
+## 10. Encerramento
+
+O plano foi concluído:
+
+- 216/216 cenários classificados, sem lacunas ou parciais.
+- 93 testes E2E e 508 testes de unidade verdes.
+- Rate limiting, CSRF, notificações, BCC auditável, vinculação Senha Única, validações, NFR básicos, arquivos e importação cobertos.
+- Nightly em dois shards, P0 no PR e artefatos de falha no CI.
+
+Mudanças de produto realizadas ao longo do plano: rate limiting, rejeição de conta inativa, vinculação OAuth por e-mail, remoção de e-mail no pagamento manual, metadados de BCC/arquivos, tratamento de arquivo ausente, `rel=noopener` e logs JSON. Os demais cenários são cobertos por unidade/integração, conforme `TEST_TRACEABILITY.md`.

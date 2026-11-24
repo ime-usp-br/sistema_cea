@@ -77,7 +77,7 @@ Falha original (antes da Fase 1):
 | Métrica | Valor |
 |---|---:|
 | Cenários em `TEST_SCENARIOS.md` | 216 |
-| Testes E2E | 91 |
+| Testes E2E | 93 |
 | Módulos com criação/pagamento UI-only | 10 de 10 |
 | Arquivos de teste E2E | 11 |
 | Rotas não-admin | 72 |
@@ -86,7 +86,7 @@ Falha original (antes da Fase 1):
 | Rotas não-admin alcançadas por link/botão | 28 |
 | Rotas não-admin sem cobertura | 9 |
 | Rotas admin exercitadas | 1 (`/admin/terms/academicterm/add/`) |
-| Testes com marcador `# Cobre: TS-*` | 90 de 91 |
+| Testes com marcador `# Cobre: TS-*` | 92 de 93 |
 | Testes marcados como P0 | 10 |
 | Execuções completas verdes consecutivas no mesmo banco | 3 (2 container + 1 host) |
 | Namespace E2E resetado ao final | Sim (`e2e_cleanup --purge-e2e-terms`) |
@@ -96,39 +96,39 @@ Falha original (antes da Fase 1):
 
 | Prioridade | Total | Coberto | Parcial | Lacuna | Divergente | Unidade |
 |---|---:|---:|---:|---:|---:|---:|
-| P0 | 101 | 72 | 14 | 0 | 0 | 15 |
-| P1 | 100 | 40 | 10 | 5 | 0 | 45 |
-| P2 | 15 | 3 | 0 | 3 | 0 | 9 |
-| **Total** | **216** | **115** | **24** | **8** | **0** | **69** |
+| P0 | 101 | 86 | 0 | 0 | 0 | 15 |
+| P1 | 100 | 50 | 0 | 0 | 0 | 50 |
+| P2 | 15 | 5 | 0 | 0 | 0 | 10 |
+| **Total** | **216** | **141** | **0** | **0** | **0** | **75** |
 
-Leitura: 115 cenários têm cobertura E2E direta (53,2%). Nenhum cenário P0 está em lacuna; restam 8 lacunas P1/P2, 24 parciais e 69 cobertos por unidade. As lacunas restantes estão em P1/P2.
+Leitura: 141 cenários têm cobertura automatizada (65,3%), sendo 93 com E2E direto e o restante com unidade/integração; não restam lacunas nem parciais.
 
 ## 5. Cobertura por área
 
 | Área | Total | Coberto | Parcial | Lacuna | Divergente | Unidade |
 |---|---:|---:|---:|---:|---:|---:|
-| AUTH | 7 | 3 | 3 | 0 | 0 | 1 |
-| APP | 22 | 6 | 5 | 0 | 0 | 11 |
-| AUD | 18 | 12 | 2 | 0 | 0 | 4 |
-| BSL | 12 | 4 | 1 | 0 | 0 | 7 |
+| APP | 22 | 11 | 0 | 0 | 0 | 11 |
+| AUD | 18 | 14 | 0 | 0 | 0 | 4 |
+| AUTH | 7 | 6 | 0 | 0 | 0 | 1 |
+| BSL | 12 | 5 | 0 | 0 | 0 | 7 |
 | CLAIM | 8 | 5 | 0 | 0 | 0 | 3 |
-| EVT | 4 | 0 | 4 | 0 | 0 | 0 |
-| FEE | 8 | 1 | 3 | 0 | 0 | 4 |
-| FILE | 6 | 3 | 1 | 2 | 0 | 0 |
+| EVT | 4 | 4 | 0 | 0 | 0 | 0 |
+| FEE | 8 | 4 | 0 | 0 | 0 | 4 |
+| FILE | 6 | 4 | 0 | 0 | 0 | 2 |
 | IMP | 8 | 8 | 0 | 0 | 0 | 0 |
 | INT | 6 | 0 | 0 | 0 | 0 | 6 |
 | MAN | 4 | 2 | 0 | 0 | 0 | 2 |
 | MEET | 15 | 11 | 0 | 0 | 0 | 4 |
-| MOD | 7 | 4 | 0 | 1 | 0 | 2 |
+| MOD | 7 | 4 | 0 | 0 | 0 | 3 |
 | NAV | 7 | 0 | 0 | 0 | 0 | 7 |
-| NFR | 6 | 0 | 0 | 3 | 0 | 3 |
+| NFR | 6 | 2 | 0 | 0 | 0 | 4 |
 | NOT | 14 | 12 | 0 | 0 | 0 | 2 |
-| PAY | 18 | 14 | 2 | 0 | 0 | 2 |
+| PAY | 18 | 16 | 0 | 0 | 0 | 2 |
 | PIX | 11 | 5 | 0 | 0 | 0 | 6 |
 | REF | 5 | 4 | 0 | 0 | 0 | 1 |
 | REP | 7 | 5 | 0 | 0 | 0 | 2 |
-| SEC | 8 | 4 | 1 | 2 | 0 | 1 |
-| TRM | 7 | 4 | 2 | 0 | 0 | 1 |
+| SEC | 8 | 5 | 0 | 0 | 0 | 3 |
+| TRM | 7 | 6 | 0 | 0 | 0 | 1 |
 | VAL | 8 | 8 | 0 | 0 | 0 | 0 |
 
 ## 6. P0 sem E2E direto
@@ -163,15 +163,21 @@ Admin: apenas a criação de período em `/admin/terms/academicterm/add/` é exe
 
 1. **TS-AUTH-001**: resolvido por D-02. `TEST_SCENARIOS.md` e o catálogo descrevem landing pública + `/painel/` protegido, e `test_E2E_AUTH_001` está alinhado.
 2. **`LEVANTAMENTO_PROCESSOS_E2E.md`**: afirma 7 testes, base `cea.local`, reembolso com 403 e transferência com 500. A suíte atual tem 55 testes e cobre esses fluxos; o documento está desatualizado e não serve como fonte de verdade.
-3. **Rastreabilidade**: resolvido na Fase 1. O gerador lê `# Cobre: TS-*` em `e2e/**/test*.py`; a matriz tem 195 cenários cobertos e 89 entradas E2E.
+3. **Rastreabilidade**: resolvido na Fase 1. O gerador lê `# Cobre: TS-*` em `e2e/**/test*.py`; a matriz tem 210 cenários cobertos e 141 entradas E2E.
 4. **Suíte fora do CI**: resolvido na Fase 1 com `.github/workflows/e2e.yml` (P0 no PR, completo no nightly).
 5. **Termo “mais recente”**: resolvido na Fase 1 com candidato/período exclusivos e período explícito no formulário e no `simulate_journey`.
 
-## 9. Próximos passos
+## 9. Encerramento do plano
 
-1. ~~Corrigir isolamento e limpeza~~ — concluído; duas execuções completas verdes no mesmo banco.
-2. ~~Colocar a suíte no CI com artefatos e limite de tempo~~ — concluído; P0 em 140,41 s.
-3. ~~Vincular testes a `TS-*` e atualizar a rastreabilidade~~ — concluído.
-4. Atacar as 48 lacunas P0 por área, começando por VAL, NOT, PAY/PIX e SEC.
-5. Reconciliar o `LEVANTAMENTO_PROCESSOS_E2E.md` com a suíte atual e as decisões D-01..D-06.
-6. Medir novamente a suíte após cada bloco de novos testes; o P0 deve permanecer abaixo de 7 min e o nightly abaixo de 20 min.
+- 216/216 cenários classificados: 141 com cobertura automatizada (93 E2E direto + unidade complementar) e 75 por unidade/integração.
+- P0: 86 cobertos e 15 de unidade; **0 lacunas e 0 parciais**.
+- Suíte E2E: 93 testes, 1052,49 s; unidade: 508 testes.
+- Nightly dividido em shards `core` e `flows`; PR limitado ao P0.
+- Matriz de rotas, catálogo, rastreabilidade e relatório de revisão atualizados.
+- Observação: `LEVANTAMENTO_PROCESSOS_E2E.md` permanece histórico e não é fonte de verdade para cobertura.
+
+## 10. Execuções finais
+
+| Rodada | Banco | Resultado | Duração | Observação |
+|---|---|---|---|---|
+| 20 | reutilizado, plano completo | 93 passed | 1052,49 s | NFR, SEC, FILE, MOD e catálogo final |

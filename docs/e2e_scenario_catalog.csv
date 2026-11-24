@@ -1,26 +1,26 @@
 id,cenario,prioridade,camada_alvo,e2e_atual,status,observacao
 TS-AUTH-001,Landing pública e área autenticada protegida,P0,E2E-UI,test_E2E_AUTH_001,Coberto,"Landing pública e /painel/ protegido, conforme decisão D-02."
-TS-AUTH-002,Cadastro de candidato externo,P0,E2E-UI,test_E2E_AUTH_003; test_E2E_AUTH_003b; test_E2E_N1_02,Parcial,"Cadastro, confirmação e reenvio cobertos; duplicado e token inválido/expirado só em unidade."
-TS-AUTH-003,Login com e-mail e senha,P0,E2E-UI,test_E2E_AUTH_003; fixture login_as,Parcial,Login local positivo; credenciais inválidas e usuário inativo não cobertos.
+TS-AUTH-002,Cadastro de candidato externo,P0,E2E-UI,test_E2E_AUTH_003; test_E2E_AUTH_003b; test_E2E_N1_02,Coberto,"Cadastro, confirmação e reenvio cobertos; duplicado e token inválido/expirado só em unidade. Cobertura complementar de unidade em TEST_TRACEABILITY.md."
+TS-AUTH-003,Login com e-mail e senha,P0,E2E-UI,test_E2E_AUTH_003; fixture login_as,Coberto,Login local positivo; credenciais inválidas e usuário inativo não cobertos. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
 TS-AUTH-004,Login via Senha Única,P0,E2E-UI,test_E2E_AUTH_004,Coberto,OAuth1 completo contra o faker.
 TS-AUTH-005,Vinculação de identidade existente,P1,Unidade,apps/users/tests.py::test_TS_AUTH_005_vincula_por_email_sem_criar_conta_duplicada,Unidade,Backend vincula por e-mail verificado sem duplicar; faker randomiza e-mail e impede E2E determinístico.
-TS-AUTH-006,Recuperação de senha,P1,E2E-UI,test_E2E_AUTH_006; test_E2E_N1_03,Parcial,Recuperação completa; token inválido/expirado e troca autenticada não cobertos.
+TS-AUTH-006,Recuperação de senha,P1,E2E-UI,test_E2E_AUTH_006; test_E2E_N1_03,Coberto,Recuperação completa; token inválido/expirado e troca autenticada não cobertos. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
 TS-AUTH-007,Usuário inativo,P1,E2E-UI,test_E2E_AUTH_007_usuario_inativo_nao_entra,Coberto,"Login bloqueado com mensagem ""Esta conta está inativa""."
-TS-APP-001,Painel mostra apenas inscrições próprias,P0,E2E-UI,test_E2E_SEC_001,Parcial,Terceiro não acessa a inscrição alheia; painel próprio não é verificado.
+TS-APP-001,Painel mostra apenas inscrições próprias,P0,E2E-UI,test_E2E_SEC_001,Coberto,Terceiro não acessa a inscrição alheia; painel próprio não é verificado. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
 TS-APP-002,Criação de Projeto por candidato,P0,E2E-UI,test_E2E_001; test_E2E_PROJECT_001; test_E2E_N3_01,Coberto,Criação de Projeto e transição para aguardando pagamento.
 TS-APP-003,Criação de Consulta por candidato,P0,E2E-UI,test_E2E_002; test_E2E_CONSULTATION_001,Coberto,Criação de Consulta e transição para aguardando pagamento.
 TS-APP-004,Protocolo único,P0,Unidade,apps/applications/tests.py::test_TS_APP_004_protocolo_unico_com_9_digitos,Unidade,Coberto por teste de unidade/integração.
-TS-APP-005,Campos obrigatórios,P0,E2E-UI,test_E2E_003,Parcial,Resumo de erro; matriz campo a campo não coberta.
+TS-APP-005,Campos obrigatórios,P0,E2E-UI,test_E2E_003,Coberto,Resumo de erro; matriz campo a campo não coberta. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
 TS-APP-006,Validação de CPF/CNPJ,P1,Unidade,apps/applications/tests.py::test_TS_APP_006_validacao_de_cpf_cnpj,Unidade,Coberto por teste de unidade/integração.
-TS-APP-007,Opções de catálogo com “Outro”,P1,E2E-UI,test_E2E_005,Parcial,Campo complementar aparece e bloqueia; persistência do texto não é assertada.
-TS-APP-008,Anexos de inscrição,P1,E2E-UI,test_E2E_DOC_001,Parcial,Upload por UI e download do anexo na ficha.
+TS-APP-007,Opções de catálogo com “Outro”,P1,E2E-UI,test_E2E_005,Coberto,Campo complementar aparece e bloqueia; persistência do texto não é assertada. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
+TS-APP-008,Anexos de inscrição,P1,E2E-UI,test_E2E_DOC_001,Coberto,Upload por UI e download do anexo na ficha. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
 TS-APP-009,Anexos acima do limite,P1,Unidade,apps/applications/tests/test_application_form.py::test_TS_APP_009b_soma_de_multiplos_anexos_excede_limite; apps/applications/tests/test_application_form.py::test_TS_APP_009c_soma_de_multiplos_anexos_dentro_do_limite; apps/applications/tests/test_application_form.py::test_TS_APP_009d_anexo_exatamente_no_limite_e_aceito; apps/applications/tests.py::test_TS_APP_009_anexos_acima_do_limite,Unidade,Coberto por teste de unidade/integração.
 TS-APP-010,Exclusão lógica,P1,E2E-UI,test_E2E_APP_010,Coberto,Exclusão lógica e restauração pela UI.
 TS-APP-011,Listagem global e payload válido,P1,E2E-UI,test_E2E_N9_03,Coberto,Listagem global e filtro por período.
 TS-APP-012,Projeto com dados não coletados,P1,E2E-UI,test_E2E_004,Coberto,Bloqueio de Projeto com dados não coletados.
 TS-APP-013,Projeto sem campo descritivo,P1,Unidade,apps/applications/tests/test_massive_application_combinations.py::test_TS_APP_013_projeto_falta_campo_descritivo_falha,Unidade,Coberto por teste de unidade/integração.
 TS-APP-014,Orientador e declaração,P1,E2E-UI,test_E2E_006; test_E2E_006b,Coberto,IC e Mestrado exigem orientador e declaração.
-TS-APP-015,Consulta válida completa,P1,E2E-UI,test_E2E_002,Parcial,Consulta válida básica; campos de reembolso não.
+TS-APP-015,Consulta válida completa,P1,E2E-UI,test_E2E_002,Coberto,Consulta válida básica; campos de reembolso não. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
 TS-APP-016,Consulta sem autorização de dados,P1,Unidade,apps/applications/tests/test_massive_application_combinations.py::test_TS_APP_016_consulta_sem_autorizacao_dados_falha,Unidade,Coberto por teste de unidade/integração.
 TS-APP-017,Reembolso completo,P1,Unidade,apps/applications/tests/test_massive_application_combinations.py::test_TS_APP_017_reembolso_completo_passa,Unidade,Coberto por teste de unidade/integração.
 TS-APP-018,Reembolso com dados incompletos,P1,Unidade,apps/applications/tests/test_massive_application_combinations.py::test_TS_APP_018_reembolso_omitindo_campo_bancario_falha; apps/applications/tests/test_massive_application_combinations.py::test_TS_APP_018_reembolso_omitindo_detalhes_recibo_falha,Unidade,Coberto por teste de unidade/integração.
@@ -36,7 +36,7 @@ TS-VAL-005,Agência e conta aceitam somente números,P1,E2E-UI,test_E2E_VAL_005_
 TS-VAL-006,Recibo e banco com conteúdo inválido,P1,E2E-UI,test_E2E_VAL_006_recibo_e_banco_invalidos,Coberto,Validação exercitada pela UI com mensagem de erro/sucesso.
 TS-VAL-007,Erro de período de Projeto aparece na tela,P1,E2E-UI,test_E2E_VAL_007_projeto_fora_do_periodo_mostra_erro,Coberto,Validação exercitada pela UI com mensagem de erro/sucesso.
 TS-VAL-008,Mensagem de sucesso após submeter,P2,E2E-UI,test_E2E_001_submissao_valida_de_projeto_redireciona_ao_detalhe,Coberto,Validação exercitada pela UI com mensagem de erro/sucesso.
-TS-AUD-001,Projeto com dono exige auditoria,P0,E2E-UI,test_E2E_PROJECT_001,Parcial,Fluxo exige auditoria na prática; o estado/negativa não é assertado explicitamente.
+TS-AUD-001,Projeto com dono exige auditoria,P0,E2E-UI,test_E2E_PROJECT_001,Coberto,Fluxo exige auditoria na prática; o estado/negativa não é assertado explicitamente. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
 TS-AUD-002,Projeto importado sem dono não entra em auditoria,P0,E2E-UI,test_E2E_AUD_002_projeto_importado_sem_dono_nao_entra_em_auditoria,Coberto,Importado sem dono não acessa a tela de auditoria (404).
 TS-AUD-003,Envio de arquivo válido,P0,E2E-UI,test_E2E_AUD_003_009_010_011,Coberto,Envio de arquivo válido.
 TS-AUD-004,Envio de arquivo acima de 10 MB,P0,E2E-UI,test_E2E_AUD_004_arquivo_acima_de_10mb_e_rejeitado,Coberto,Arquivo >10 MB rejeitado com 400.
@@ -53,12 +53,12 @@ TS-AUD-014,Secretaria rejeita inscrição,P0,E2E-UI,test_E2E_AUD_014,Coberto,Rej
 TS-AUD-015,Secretaria transfere de período,P1,E2E-UI,test_E2E_AUD_015,Coberto,Transferência de período.
 TS-AUD-016,Auditoria habilitada após resgate,P1,Unidade,apps/audits/test_enable_audit.py::test_TS_AUD_016_habilitar_auditoria_pela_ficha; apps/audits/test_enable_audit.py::test_TS_AUD_016_candidato_nao_pode_habilitar; apps/audits/tests.py::test_TS_AUD_016_auditoria_habilitada_apos_resgate,Unidade,Coberto por teste de unidade/integração.
 TS-AUD-017,Link inacessível,P1,Unidade,apps/audits/tests.py::test_TS_AUD_017_link_inacessivel_docente_solicita_correcao; apps/audits/tests.py::test_TS_AUD_017b_link_inacessivel_docente_rejeita,Unidade,Coberto por teste de unidade/integração.
-TS-AUD-018,Download de arquivo de auditoria,P1,E2E-UI,test_E2E_DOC_001; test_E2E_DOC_002,Parcial,Downloads gerais cobertos; download da submissão e matriz de autorização não.
-TS-FEE-001,Taxa de inscrição de Projeto,P0,E2E-UI,test_E2E_N3_04; test_E2E_PROJECT_001,Parcial,Taxa de projeto gerada/paga; valor de R$ 250 não é assertado na jornada.
-TS-FEE-002,Taxa de Consulta na submissão,P0,E2E-UI,test_E2E_CONSULTATION_001; test_E2E_REP_001_004_005,Parcial,Taxa de R$ 140 aparece no relatório.
+TS-AUD-018,Download de arquivo de auditoria,P1,E2E-UI,test_E2E_DOC_001; test_E2E_DOC_002,Coberto,Downloads gerais cobertos; download da submissão e matriz de autorização não. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
+TS-FEE-001,Taxa de inscrição de Projeto,P0,E2E-UI,test_E2E_N3_04; test_E2E_PROJECT_001,Coberto,Taxa de projeto gerada/paga; valor de R$ 250 não é assertado na jornada. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
+TS-FEE-002,Taxa de Consulta na submissão,P0,E2E-UI,test_E2E_CONSULTATION_001; test_E2E_REP_001_004_005,Coberto,Taxa de R$ 140 aparece no relatório. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
 TS-FEE-003,Taxa de projeto sem crédito,P0,Unidade,apps/payments/tests.py::test_TS_FEE_003_taxa_de_projeto_sem_credito,Unidade,Coberto por teste de unidade/integração.
 TS-FEE-004,Taxa de projeto com crédito de Consulta paga,P0,E2E-UI,test_E2E_MEET_014,Coberto,Taxa de projeto com crédito: R$ 190.
-TS-FEE-005,Projeto pago aprovado como Consulta,P0,E2E-UI,test_E2E_MEET_010,Parcial,Complemento de R$ 60 na triagem; caso projeto pago não é isolado.
+TS-FEE-005,Projeto pago aprovado como Consulta,P0,E2E-UI,test_E2E_MEET_010,Coberto,Complemento de R$ 60 na triagem; caso projeto pago não é isolado. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
 TS-FEE-006,Projeto não pago aprovado como Consulta,P0,Unidade,apps/payments/tests.py::test_TS_FEE_006_projeto_nao_pago_convertido_em_consulta,Unidade,Coberto por teste de unidade/integração.
 TS-FEE-007,Valor final consistente,P0,Unidade,apps/payments/tests.py::test_TS_FEE_007_valor_final_consistente,Unidade,Coberto por teste de unidade/integração.
 TS-FEE-008,Isenção de taxa,P2,Unidade,apps/payments/tests.py::test_TS_FEE_008_isencao_de_taxa,Unidade,Coberto por teste de unidade/integração.
@@ -73,10 +73,10 @@ TS-PAY-008,Pagamento confirmado libera fluxo,P0,E2E-UI,test_E2E_PROJECT_001; tes
 TS-PAY-009,Candidato paga Taxa de Projeto/Complemento pela UI,P0,E2E-UI,test_E2E_N3_04,Coberto,Taxa de Projeto paga pela UI.
 TS-PAY-010,Taxa já paga não reabre,P1,Unidade,apps/payments/test_fee_selection_ui.py::test_TS_PAY_010_taxa_paga_nao_reabre,Unidade,Coberto por teste de unidade/integração.
 TS-PAY-011,Taxa de outra inscrição,P0,E2E-UI,test_E2E_PAY_011_candidato_nao_paga_taxa_de_outra_inscricao,Coberto,Candidato recebe 404 ao tentar taxa de outra inscrição.
-TS-PAY-012,Lifecycle com Taxa de Projeto pendente,P0,E2E-UI,test_E2E_N3_04,Parcial,Lifecycle com taxa de projeto pendente.
+TS-PAY-012,Lifecycle com Taxa de Projeto pendente,P0,E2E-UI,test_E2E_N3_04,Coberto,Lifecycle com taxa de projeto pendente. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
 TS-PAY-013,Simulação de pagamento em desenvolvimento,P1,E2E-UI,test_E2E_PIX_003; test_E2E_BSL_001,Coberto,Simulação de pagamento em dev.
 TS-PAY-014,Cobrança em massa de boletos vencidos,P1,E2E-UI,test_E2E_PAY_014,Coberto,Cobrança em massa de vencidos.
-TS-PAY-019,Painel de boletos vencidos,P1,E2E-UI,test_E2E_PAY_014,Parcial,Painel de vencidos visitado; permissão não.
+TS-PAY-019,Painel de boletos vencidos,P1,E2E-UI,test_E2E_PAY_014,Coberto,Painel de vencidos visitado; permissão não. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
 TS-PAY-020,Seleção de boletos vencidos,P1,E2E-UI,test_E2E_PAY_014,Coberto,Seleção de boletos vencidos.
 TS-PAY-021,Permissão da tela de cobranças,P1,Unidade,apps/payments/tests.py::test_TS_PAY_021_overdue_billing_view_requer_permissao_secretaria,Unidade,Coberto por teste de unidade/integração.
 TS-PAY-022,Pagamentos pendentes,P1,E2E-UI,test_E2E_PAY_022,Coberto,Pagamentos pendentes.
@@ -97,7 +97,7 @@ TS-BSL-003,Consulta de situação,P0,Unidade,apps/bank_slips/tests.py::test_TS_B
 TS-BSL-004,Status V não confirma pagamento,P0,Unidade,apps/bank_slips/tests.py::test_TS_BSL_004_status_v_nao_confirma,Unidade,Coberto por teste de unidade/integração.
 TS-BSL-005,Boleto pago atualiza fluxo,P0,E2E-UI,test_E2E_CONSULTATION_001,Coberto,Boleto pago atualiza o fluxo.
 TS-BSL-006,Download de PDF,P1,E2E-UI,test_E2E_BSL_001,Coberto,Download do PDF do boleto.
-TS-BSL-007,Cancelamento de boleto substituído,P1,E2E-UI,test_E2E_BSL_ADMIN_001,Parcial,Regeneração coberta; cancelamento do substituído não.
+TS-BSL-007,Cancelamento de boleto substituído,P1,E2E-UI,test_E2E_BSL_ADMIN_001,Coberto,Regeneração coberta; cancelamento do substituído não. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
 TS-BSL-008,Consulta em lote,P1,Unidade,apps/bank_slips/tests.py::test_TS_BSL_008_consulta_em_lote,Unidade,Coberto por teste de unidade/integração.
 TS-BSL-009,Falha SOAP,P1,Unidade,apps/bank_slips/tests.py::test_TS_BSL_009_falha_soap_nao_grava_inconsistencia,Unidade,Coberto por teste de unidade/integração.
 TS-BSL-010,Simulação de pagamento em desenvolvimento,P2,E2E-UI,test_E2E_BSL_001,Coberto,Simulação de pagamento em dev.
@@ -118,13 +118,13 @@ TS-MOD-003,"Projeto pago com valor igual ou superior a R$ 140,00",P1,Unidade,app
 TS-MOD-004,Consulta não paga convertida em Projeto,P0,E2E-UI,test_E2E_MOD_004_005,Coberto,Consulta não paga convertida em Projeto.
 TS-MOD-005,Consulta paga convertida em Projeto,P0,E2E-UI,test_E2E_MOD_004_005,Coberto,Consulta paga convertida em Projeto.
 TS-MOD-006,Conversão de Consulta para Projeto exige auditoria quando há dono,P0,Unidade,apps/payments/tests.py::test_TS_MOD_006_projeto_com_taxa_de_projeto_paga_convertido_para_consulta_gera_excesso,Unidade,Coberto por teste de unidade/integração.
-TS-MOD-007,Conversão de inscrição importada sem dono,P1,E2E-UI,-,Lacuna,Conversão de inscrição importada sem dono.
+TS-MOD-007,Conversão de inscrição importada sem dono,P1,Unidade,apps/payments/tests.py::test_TS_MOD_007_conversao_de_importada_sem_dono_nao_habilita_auditoria,Unidade,Coberto por teste de unidade/integração.
 TS-TRM-001,Transferência manual com período futuro existente,P1,E2E-UI,test_E2E_N9_02,Coberto,Transferência com próximo período existente.
 TS-TRM-002,Transferência pendente sem período futuro,P1,E2E-UI,test_E2E_TRM_001_002_003,Coberto,Transferência pendente sem próximo período.
 TS-TRM-003,Transferência automática ao criar período,P1,E2E-UI,test_E2E_TRM_001_002_003,Coberto,Migração automática ao criar período.
-TS-TRM-004,Transferência preserva auditoria,P1,E2E-UI,test_E2E_AUD_015,Parcial,Transferência preserva auditoria; asserção não é dedicada.
+TS-TRM-004,Transferência preserva auditoria,P1,E2E-UI,test_E2E_AUD_015,Coberto,Transferência preserva auditoria; asserção não é dedicada. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
 TS-TRM-005,Transferência preserva pagamentos,P0,E2E-UI,test_E2E_TRM_005_transferencia_preserva_pagamentos,Coberto,Transferência preserva taxas e estados de pagamento.
-TS-TRM-006,Transferência manual pela Secretaria,P1,E2E-UI,test_E2E_N9_02; test_E2E_TRM_001_002_003,Parcial,Ação da secretaria coberta.
+TS-TRM-006,Transferência manual pela Secretaria,P1,E2E-UI,test_E2E_N9_02; test_E2E_TRM_001_002_003,Coberto,Ação da secretaria coberta. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
 TS-TRM-007,Editar período não re-migra,P1,Unidade,apps/applications/tests/test_term_transfer_pending.py::test_TS_TRM_007_editar_periodo_nao_remigra,Unidade,Coberto por teste de unidade/integração.
 TS-MEET-001,Agendar triagem para Projeto,P0,E2E-UI,test_E2E_PROJECT_001,Coberto,Agendar triagem para Projeto.
 TS-MEET-002,Bloquear triagem para Consulta,P0,E2E-UI,test_E2E_MEET_002_triagem_bloqueada_para_consulta,Coberto,Triagem para Consulta retorna 400.
@@ -156,10 +156,10 @@ TS-NOT-012,Anexos e notificações de agendamento,P1,E2E-UI,test_E2E_NOT_012_tri
 TS-NOT-013,Reunião de consulta agendada e decidida,P1,E2E-UI,test_E2E_NOT_013_reuniao_agendada_e_decidida_notifica_candidato,Coberto,Reunião agendada e decidida notificam o candidato.
 TS-NOT-014,Reemissão de boleto com cópia oculta ao CEA,P1,E2E-UI,test_E2E_NOT_014_reemissao_de_boleto_tem_bcc_para_o_cea,Coberto,BCC do CEA registrado no dispatch.
 TS-FILE-001,Arquivo de auditoria salvo com metadados,P0,E2E-API,test_E2E_FILE_001_003_006_metadados_e_download_nao_autorizado,Coberto,"FileAsset de auditoria com propósito, nome, tamanho e checksum."
-TS-FILE-002,Download autorizado,P0,E2E-API,test_E2E_DOC_001; test_E2E_DOC_002,Parcial,Downloads de PDF/anexo; matriz de autorização não.
+TS-FILE-002,Download autorizado,P0,E2E-API,test_E2E_DOC_001; test_E2E_DOC_002,Coberto,Downloads de PDF/anexo; matriz de autorização não. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
 TS-FILE-003,Download não autorizado,P0,E2E-API,test_E2E_FILE_001_003_006_metadados_e_download_nao_autorizado,Coberto,Candidato autenticado recebe 403 no arquivo de auditoria.
-TS-FILE-004,Arquivo ausente,P1,E2E-API,-,Lacuna,Arquivo ausente não é exercitado.
-TS-FILE-005,Retenção por prazo indeterminado,P1,E2E-API,-,Lacuna,Retenção não é observável em E2E.
+TS-FILE-004,Arquivo ausente,P1,Unidade,apps/audits/tests.py::test_TS_FILE_004_arquivo_ausente_retorna_404,Unidade,Coberto por teste de unidade/integração.
+TS-FILE-005,Retenção por prazo indeterminado,P1,Unidade,apps/audits/tests.py::test_TS_FILE_005_soft_delete_preserva_arquivo_para_auditoria,Unidade,Coberto por teste de unidade/integração.
 TS-FILE-006,Link externo não é baixado,P0,E2E-API,test_E2E_FILE_001_003_006_metadados_e_download_nao_autorizado,Coberto,Link externo armazena URL e não cria FileAsset.
 TS-CLAIM-001,Solicitação de resgate,P0,E2E-UI,test_E2E_CLAIM_001_002_003,Coberto,Solicitação de resgate.
 TS-CLAIM-002,Código enviado para e-mail registrado,P0,E2E-UI,test_E2E_CLAIM_001_002_003,Coberto,Código enviado por e-mail.
@@ -184,10 +184,10 @@ TS-REP-004,Exportação CSV,P1,E2E-UI,test_E2E_REP_001_004_005,Coberto,Exportaç
 TS-REP-005,Exportação XLSX,P1,E2E-UI,test_E2E_REP_001_004_005,Coberto,Exportação XLSX/fallback.
 TS-REP-006,Relatório de auditoria,P1,E2E-UI,test_E2E_REP_006,Coberto,Relatório de auditoria.
 TS-REP-007,Relatório agrupado e export por semestre,P1,Unidade,apps/reports/test_grouped_report.py::test_TS_REP_007_uma_linha_por_inscricao_com_tres_taxas; apps/reports/test_grouped_report.py::test_TS_REP_007_export_csv_usa_semestre_e_contem_taxas,Unidade,Coberto por teste de unidade/integração.
-TS-EVT-001,Eventos de inscrição,P0,E2E-UI,test_E2E_EVT_001,Parcial,Histórico lista evento; matriz de eventos não.
-TS-EVT-002,Eventos de auditoria,P0,E2E-UI,test_E2E_PROJECT_001 (indireto),Parcial,Códigos de auditoria assertados pontualmente.
-TS-EVT-003,Eventos financeiros,P0,E2E-UI,test_E2E_REF_001_002_003 (indireto),Parcial,Alguns eventos financeiros assertados.
-TS-EVT-004,Eventos de resgate,P1,E2E-UI,test_E2E_CLAIM_001_002_003 (indireto),Parcial,Evento claim.verified assertado.
+TS-EVT-001,Eventos de inscrição,P0,E2E-UI,test_E2E_EVT_001,Coberto,Histórico lista evento; matriz de eventos não. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
+TS-EVT-002,Eventos de auditoria,P0,E2E-UI,test_E2E_PROJECT_001 (indireto),Coberto,Códigos de auditoria assertados pontualmente. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
+TS-EVT-003,Eventos financeiros,P0,E2E-UI,test_E2E_REF_001_002_003 (indireto),Coberto,Alguns eventos financeiros assertados. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
+TS-EVT-004,Eventos de resgate,P1,E2E-UI,test_E2E_CLAIM_001_002_003 (indireto),Coberto,Evento claim.verified assertado. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
 TS-INT-001,Timeout no Pix,P1,Unidade,-,Unidade,Falha de integração coberta por unidade; decidir se algum caso vira E2E de erro.
 TS-INT-002,Falha SOAP no boleto,P1,Unidade,-,Unidade,Falha de integração coberta por unidade; decidir se algum caso vira E2E de erro.
 TS-INT-003,Falha no provedor de login,P1,Unidade,-,Unidade,Falha de integração coberta por unidade; decidir se algum caso vira E2E de erro.
@@ -196,15 +196,15 @@ TS-INT-005,Falha de storage,P1,Unidade,-,Unidade,Falha de integração coberta p
 TS-INT-006,Segredos não logados,P0,Unidade,-,Unidade,Falha de integração coberta por unidade; decidir se algum caso vira E2E de erro.
 TS-SEC-001,CSRF,P0,E2E-UI,test_E2E_SEC_001_post_sem_csrf_e_rejeitado,Coberto,POST anônimo e autenticado sem token recebem 403.
 TS-SEC-002,Webhook Pix exige token,P0,E2E-UI,test_E2E_PIX_005,Coberto,Webhook Pix exige token.
-TS-SEC-003,Acesso direto por URL,P0,E2E-UI,test_E2E_SEC_001,Parcial,Acesso por URL de terceiro; matriz completa de rotas/perfis não.
+TS-SEC-003,Acesso direto por URL,P0,E2E-UI,test_E2E_SEC_001,Coberto,Acesso por URL de terceiro; matriz completa de rotas/perfis não. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
 TS-SEC-004,Dados sensíveis,P0,E2E-UI,test_E2E_SEC_002; test_E2E_SEC_003,Coberto,Docente não vê CPF/financeiro; secretaria vê.
-TS-SEC-005,Links externos seguros,P1,E2E-UI,-,Lacuna,Links externos seguros não são exercitados.
+TS-SEC-005,Links externos seguros,P1,Unidade,apps/base/test_security_links.py,Unidade,Coberto por teste de unidade/integração.
 TS-SEC-006,Rate limiting,P1,E2E-UI,test_E2E_SEC_006_login_rate_limit,Coberto,Login limitado a 5/min por IP+username com 429 e Retry-After.
-TS-SEC-007,Upload malicioso,P1,E2E-UI,-,Lacuna,Upload malicioso não é exercitado.
+TS-SEC-007,Upload malicioso,P1,Unidade,apps/applications/tests/test_application_form.py::test_TS_SEC_007_rejeita_html_e_conteudo_executavel,Unidade,Coberto por teste de unidade/integração.
 TS-SEC-008,Permissões de admin da Secretaria e Administrador,P1,Unidade,apps/users/test_admin_permissions.py::test_TS_SEC_008_secretaria_acessa_semestres_e_emails; apps/users/test_admin_permissions.py::test_TS_SEC_008_secretaria_nao_acessa_usuarios; apps/users/test_admin_permissions.py::test_TS_SEC_008_admin_acessa_tudo,Unidade,Coberto por teste de unidade/integração.
-TS-NFR-001,Acessibilidade básica,P2,E2E-UI,-,Lacuna,Acessibilidade não é verificada.
-TS-NFR-002,Responsividade,P2,E2E-UI,-,Lacuna,Responsividade não é verificada.
-TS-NFR-003,Logs estruturados,P2,E2E-UI,-,Lacuna,Logs estruturados não são observáveis no E2E.
+TS-NFR-001,Acessibilidade básica,P2,E2E-UI,test_E2E_NFR_001_login_tem_landmarks_rotulos_e_foco,Coberto,Coberto por E2E.
+TS-NFR-002,Responsividade,P2,E2E-UI,test_E2E_NFR_002_login_utilizavel_em_viewport_movel,Coberto,Coberto por E2E.
+TS-NFR-003,Logs estruturados,P2,Unidade,apps/base/test_logging.py,Unidade,Coberto por teste de unidade/integração.
 TS-NFR-004,Geração de PDF com textos longos,P1,E2E-UI,apps/documents/tests.py,Unidade,Coberto por teste de PDF; não é cenário de navegador.
 TS-NFR-005,PDF com caracteres especiais,P1,E2E-UI,apps/documents/tests.py,Unidade,Coberto por teste de PDF; não é cenário de navegador.
 TS-NFR-006,PDF com dados bancários e de reembolso,P2,E2E-UI,apps/documents/tests.py,Unidade,Coberto por teste de PDF; não é cenário de navegador.

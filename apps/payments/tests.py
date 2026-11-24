@@ -916,3 +916,32 @@ class PaymentScenarioTests(TestCase):
         self.assertEqual(
             instrument.state, PaymentInstrument.State.MANUAL_CONFIRMED
         )
+
+    def test_TS_MOD_007_conversao_de_importada_sem_dono_nao_habilita_auditoria(
+        self,
+    ) -> None:
+        application = self.create_project()
+        application.owner = None
+        application.origin = ServiceApplication.Origin.IMPORTED
+        application.dataset_audit_required = True
+        application.dataset_audit_state = ServiceApplication.DatasetAuditState.AWAITING_SUBMISSION
+        application.save(
+            update_fields=[
+                "owner",
+                "origin",
+                "dataset_audit_required",
+                "dataset_audit_state",
+            ]
+        )
+
+        self.modality_service.convert_to_consultation(
+            application=application, decided_by=self.secretariat
+        )
+        application.refresh_from_db()
+        self.assertEqual(
+            application.modality, ServiceApplication.Modality.CONSULTATION
+        )
+        self.assertIsNone(application.owner)
+        self.assertFalse(application.dataset_audit_required)
+        self.assertIsNone(application.dataset_audit_state)
+        self.assertEqual(application.audit_submissions.count(), 0)

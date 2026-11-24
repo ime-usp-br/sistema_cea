@@ -34,7 +34,7 @@
                 <div><dt>Estado</dt><dd><span class="badge badge-neutral">{{ slip.payment_instrument.get_state_display }}</span></dd></div>
             </dl>
             <div class="form-actions mt-2">
-                <a href="{% url 'bank_slips:download_pdf' slip.pk %}" target="_blank" class="btn btn-primary">Baixar PDF do boleto</a>
+                <a href="{% url 'bank_slips:download_pdf' slip.pk %}" target="_blank" rel="noopener noreferrer" class="btn btn-primary">Baixar PDF do boleto</a>
             </div>
             {% if allow_payment_simulation and slip.payment_instrument.state != 'paid' and slip.payment_instrument.state != 'manual_confirmed' %}
                 <form method="post" action="{% url 'payments:simulate_payment' slip.payment_instrument.pk %}" class="form mt-2">
