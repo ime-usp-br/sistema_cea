@@ -42,6 +42,7 @@ def send_notification_task(
         template=template,
         application=application,
         recipient_email=recipient_email,
+        bcc_recipients=bcc or [],
         status=NotificationDispatch.Status.PENDING,
     )
 

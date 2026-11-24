@@ -147,6 +147,7 @@ class Command(BaseCommand):
             {
                 "template": dispatch.template.code,
                 "recipient": dispatch.recipient_email,
+                "bcc": dispatch.bcc_recipients,
                 "status": dispatch.status,
                 "error": dispatch.error_message,
             }

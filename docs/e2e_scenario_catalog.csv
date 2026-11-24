@@ -5,7 +5,7 @@ TS-AUTH-003,Login com e-mail e senha,P0,E2E-UI,test_E2E_AUTH_003; fixture login_
 TS-AUTH-004,Login via Senha Única,P0,E2E-UI,test_E2E_AUTH_004,Coberto,OAuth1 completo contra o faker.
 TS-AUTH-005,Vinculação de identidade existente,P1,Unidade,apps/users/tests.py::test_TS_AUTH_005_vincula_por_email_sem_criar_conta_duplicada,Unidade,Backend vincula por e-mail verificado sem duplicar; faker randomiza e-mail e impede E2E determinístico.
 TS-AUTH-006,Recuperação de senha,P1,E2E-UI,test_E2E_AUTH_006; test_E2E_N1_03,Parcial,Recuperação completa; token inválido/expirado e troca autenticada não cobertos.
-TS-AUTH-007,Usuário inativo,P1,E2E-UI,test_E2E_AUTH_007_usuario_inativo_nao_entra,Coberto,Login bloqueado com mensagem "Esta conta está inativa".
+TS-AUTH-007,Usuário inativo,P1,E2E-UI,test_E2E_AUTH_007_usuario_inativo_nao_entra,Coberto,"Login bloqueado com mensagem ""Esta conta está inativa""."
 TS-APP-001,Painel mostra apenas inscrições próprias,P0,E2E-UI,test_E2E_SEC_001,Parcial,Terceiro não acessa a inscrição alheia; painel próprio não é verificado.
 TS-APP-002,Criação de Projeto por candidato,P0,E2E-UI,test_E2E_001; test_E2E_PROJECT_001; test_E2E_N3_01,Coberto,Criação de Projeto e transição para aguardando pagamento.
 TS-APP-003,Criação de Consulta por candidato,P0,E2E-UI,test_E2E_002; test_E2E_CONSULTATION_001,Coberto,Criação de Consulta e transição para aguardando pagamento.
@@ -141,20 +141,20 @@ TS-MEET-012,Feedback docente após evento,P1,E2E-UI,test_E2E_MEET_012; test_E2E_
 TS-MEET-013,Reagendamento limpa campos do modo anterior,P1,E2E-UI,-,Lacuna,Reagendamento limpando campos do modo anterior.
 TS-MEET-014,Consulta aprovada como Projeto gera taxa,P1,E2E-UI,test_E2E_MEET_014,Coberto,Consulta aprovada como Projeto gera taxa.
 TS-MEET-015,Alias da fila de agendamentos,P2,E2E-UI,-,Lacuna,Alias /agendamentos/ não é exercitado.
-TS-NOT-001,Inscrição submetida,P1,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.
+TS-NOT-001,Inscrição submetida,P1,E2E-UI,test_E2E_NOT_001_submissao_notifica_candidato_e_cea,Coberto,Candidato e CEA notificados na submissão.
 TS-NOT-002,Correção solicitada,P0,E2E-UI,test_E2E_NOT_002_003_correcao_e_aprovacao_notificam_candidato,Coberto,Correção solicitada ao candidato pela UI.
 TS-NOT-003,Auditoria aprovada,P0,E2E-UI,test_E2E_NOT_002_003_correcao_e_aprovacao_notificam_candidato,Coberto,Aprovação notifica próximo passo.
 TS-NOT-004,Auditoria rejeitada,P0,E2E-UI,test_E2E_NOT_004_rejeicao_notifica_candidato_e_secretaria,Coberto,Rejeição notifica candidato e secretaria.
-TS-NOT-005,Cobrança criada,P1,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.
+TS-NOT-005,Cobrança criada,P1,E2E-UI,test_E2E_NOT_005_cobranca_criada_notifica_candidato,Coberto,Cobrança Pix/boleto notifica o candidato.
 TS-NOT-006,Pagamento confirmado por Pix,P0,E2E-UI,test_E2E_NOT_006_007_pagamento_confirmado_notifica_candidato,Coberto,Pagamento Pix confirmado notifica candidato.
 TS-NOT-007,Pagamento confirmado por boleto,P0,E2E-UI,test_E2E_NOT_006_007_pagamento_confirmado_notifica_candidato,Coberto,Pagamento por boleto confirmado notifica candidato.
 TS-NOT-008,Pagamento manual não notifica candidato,P0,E2E-UI,test_E2E_NOT_008_pagamento_manual_nao_notifica_candidato,Coberto,Confirmação manual não envia e-mail ao candidato.
-TS-NOT-009,Template inativo,P1,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.
-TS-NOT-010,Falha de envio,P1,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.
-TS-NOT-011,Mudança de modalidade notifica candidato,P1,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.
+TS-NOT-009,Template inativo,P1,Unidade,apps/notifications/tests.py::test_TS_NOT_009_template_inativo_nao_envia,Unidade,Coberto por teste de unidade.
+TS-NOT-010,Falha de envio,P1,Unidade,apps/notifications/tests.py::test_TS_NOT_010_falha_de_envio_marca_failed,Unidade,Coberto por teste de unidade.
+TS-NOT-011,Mudança de modalidade notifica candidato,P1,E2E-UI,test_E2E_NOT_011_mudanca_de_modalidade_notifica_candidato,Coberto,Mudança pela secretaria notifica o candidato.
 TS-NOT-012,Anexos e notificações de agendamento,P1,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.
 TS-NOT-013,Reunião de consulta agendada e decidida,P1,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.
-TS-NOT-014,Reemissão de boleto com cópia oculta ao CEA,P1,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.
+TS-NOT-014,Reemissão de boleto com cópia oculta ao CEA,P1,E2E-UI,test_E2E_NOT_014_reemissao_de_boleto_tem_bcc_para_o_cea,Coberto,BCC do CEA registrado no dispatch.
 TS-FILE-001,Arquivo de auditoria salvo com metadados,P0,E2E-API,test_E2E_FILE_001_003_006_metadados_e_download_nao_autorizado,Coberto,"FileAsset de auditoria com propósito, nome, tamanho e checksum."
 TS-FILE-002,Download autorizado,P0,E2E-API,test_E2E_DOC_001; test_E2E_DOC_002,Parcial,Downloads de PDF/anexo; matriz de autorização não.
 TS-FILE-003,Download não autorizado,P0,E2E-API,test_E2E_FILE_001_003_006_metadados_e_download_nao_autorizado,Coberto,Candidato autenticado recebe 403 no arquivo de auditoria.

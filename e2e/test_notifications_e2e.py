@@ -182,3 +182,144 @@ def test_E2E_NOT_008_pagamento_manual_nao_notifica_candidato(
     assert mailbox(
         to=candidate_account["email"], subject_contains="Pagamento confirmado"
     ) == []
+
+
+# Cobre: TS-NOT-001
+def test_E2E_NOT_001_submissao_notifica_candidato_e_cea(
+    page: Page,
+    login,
+    track_protocol,
+    e2e_term,
+    application_state,
+    candidate_account,
+    latest_email,
+) -> None:
+    protocol = create_project_via_ui(
+        page,
+        login,
+        track_protocol,
+        e2e_term["id"],
+        contact_email=candidate_account["email"],
+    )
+    state = application_state(protocol)
+    candidate = _dispatch(state, "application_submitted_candidate")
+    center = _dispatch(state, "application_submitted_center")
+    assert candidate["status"] == "sent"
+    assert center["status"] == "sent"
+    assert candidate["recipient"] == candidate_account["email"]
+    assert center["recipient"] == "cea-e2e@example.com"
+
+    email = latest_email(
+        to=candidate_account["email"],
+        subject_contains=f"Inscrição {protocol} submetida com sucesso",
+    )
+    assert protocol in email["body"]
+    center_email = latest_email(
+        to="cea-e2e@example.com",
+        subject_contains=f"Nova inscrição {protocol}",
+    )
+    assert protocol in center_email["body"]
+
+
+# Cobre: TS-NOT-005
+def test_E2E_NOT_005_cobranca_criada_notifica_candidato(
+    page: Page,
+    login,
+    track_protocol,
+    e2e_term,
+    application_state,
+    candidate_account,
+    latest_email,
+) -> None:
+    protocol = create_consultation_via_ui(
+        page,
+        login,
+        track_protocol,
+        e2e_term["id"],
+        contact_email=candidate_account["email"],
+    )
+    start_payment(page, protocol, "pix")
+    dispatch = _dispatch(application_state(protocol), "payment_created")
+    assert dispatch["status"] == "sent"
+    assert dispatch["recipient"] == candidate_account["email"]
+    email = latest_email(
+        to=candidate_account["email"],
+        subject_contains=f"Pagamento disponível — inscrição {protocol}",
+    )
+    assert protocol in email["body"]
+
+
+def _change_modality(page: Page, protocol: str) -> None:
+    page.goto(f"{BASE_URL}/inscricoes/?term=all")
+    wait_for_page(page)
+    row = page.locator("tr", has_text=protocol).first
+    row.locator("button:has-text('Mudar')").click()
+    wait_for_page(page)
+
+
+# Cobre: TS-NOT-011
+def test_E2E_NOT_011_mudanca_de_modalidade_notifica_candidato(
+    page: Page,
+    login,
+    login_as,
+    track_protocol,
+    e2e_term,
+    application_state,
+    candidate_account,
+    latest_email,
+) -> None:
+    protocol = create_consultation_via_ui(
+        page,
+        login,
+        track_protocol,
+        e2e_term["id"],
+        contact_email=candidate_account["email"],
+    )
+    login_as("secretariat")
+    _change_modality(page, protocol)
+    state = application_state(protocol)
+    assert state["modality"] == "project"
+    dispatch = _dispatch(state, "service_modality_changed")
+    assert dispatch["status"] == "sent"
+    assert dispatch["recipient"] == candidate_account["email"]
+    email = latest_email(
+        to=candidate_account["email"],
+        subject_contains=f"Sua inscrição {protocol} foi alterada para Projeto",
+    )
+    assert "Projeto" in email["body"]
+
+
+# Cobre: TS-NOT-014
+def test_E2E_NOT_014_reemissao_de_boleto_tem_bcc_para_o_cea(
+    page: Page,
+    login,
+    login_as,
+    track_protocol,
+    e2e_term,
+    application_state,
+    candidate_account,
+) -> None:
+    protocol = create_consultation_via_ui(
+        page,
+        login,
+        track_protocol,
+        e2e_term["id"],
+        contact_email=candidate_account["email"],
+    )
+    login_as("secretariat")
+    page.goto(f"{BASE_URL}/inscricoes/?term=all")
+    wait_for_page(page)
+    row = page.locator("tr", has_text=protocol).first
+    page.once("dialog", lambda dialog: dialog.accept())
+    row.locator("button:has-text('Gerar Boleto (Manual)')").click()
+    wait_for_page(page)
+
+    page.goto(f"{BASE_URL}/inscricoes/{protocol}/")
+    wait_for_page(page)
+    page.click("button:has-text('Regenerar boleto')")
+    wait_for_page(page)
+
+    dispatch = _dispatch(application_state(protocol), "payment_slip_regenerated")
+    assert dispatch["status"] == "sent"
+    assert dispatch["recipient"] == candidate_account["email"]
+    assert dispatch["bcc"] == ["cea-e2e@example.com"]

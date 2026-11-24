@@ -57,6 +57,7 @@ class NotificationDispatch(models.Model):
         related_name="notification_dispatches",
     )
     recipient_email = models.EmailField(max_length=255)
+    bcc_recipients = models.JSONField(default=list, blank=True)
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
