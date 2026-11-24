@@ -58,7 +58,10 @@ def test_E2E_001_submissao_valida_de_projeto_redireciona_ao_detalhe(
 
     expect(page).to_have_url(re.compile(r".*" + DETAIL_PATH_RE.pattern))
     _track_current_application(page, track_protocol)
+    protocol = page.url.rstrip("/").split("/")[-1]
     expect(page.locator("h1.page-title")).to_contain_text("Inscrição")
+    expect(page.locator("body")).to_contain_text("Inscrição enviada com sucesso")
+    expect(page.locator("body")).to_contain_text(protocol)
     expect(page.locator("body")).to_contain_text("Aguardando pagamento")
 
 

@@ -28,14 +28,14 @@ TS-APP-019,CPF bancário inválido,P1,E2E-UI,-,Lacuna,CPF bancário inválido n�
 TS-APP-020,Sem reembolso e dados bancários vazios,P2,E2E-UI,-,Lacuna,Sem reembolso e dados bancários vazios não é exercitado.
 TS-APP-022,Regressão de payload representativo,P2,E2E-UI,-,Lacuna,Regressão de payload representativo não é exercitada na UI.
 TS-APP-024,Inscrição fora do período,P1,E2E-UI,-,Lacuna,Janela de inscrição não é exercitada no navegador.
-TS-VAL-001,Telefone inválido é rejeitado,P1,E2E-UI,-,Lacuna,Telefone inválido: apenas unidade.
-TS-VAL-002,WhatsApp exige celular,P1,E2E-UI,-,Lacuna,WhatsApp sem celular: apenas unidade.
-TS-VAL-003,Nome com número ou incompleto é rejeitado,P1,E2E-UI,-,Lacuna,Nome com número/incompleto: apenas unidade.
-TS-VAL-004,Confirmação de e-mail é obrigatória,P1,E2E-UI,-,Lacuna,Confirmação de e-mail na ficha: apenas unidade.
-TS-VAL-005,Agência e conta aceitam somente números,P1,E2E-UI,-,Lacuna,Agência/conta numéricas: apenas unidade.
-TS-VAL-006,Recibo e banco com conteúdo inválido,P1,E2E-UI,-,Lacuna,Recibo/banco com conteúdo inválido: apenas unidade.
-TS-VAL-007,Erro de período de Projeto aparece na tela,P1,E2E-UI,-,Lacuna,Erro de período de Projeto na tela não é exercitado.
-TS-VAL-008,Mensagem de sucesso após submeter,P2,E2E-UI,test_E2E_001,Parcial,Redireciona ao detalhe; a mensagem de sucesso não é assertada.
+TS-VAL-001,Telefone inválido é rejeitado,P1,E2E-UI,test_E2E_VAL_001_telefone_invalido_e_rejeitado,Coberto,Validação exercitada pela UI com mensagem de erro/sucesso.
+TS-VAL-002,WhatsApp exige celular,P1,E2E-UI,test_E2E_VAL_002_whatsapp_exige_celular,Coberto,Validação exercitada pela UI com mensagem de erro/sucesso.
+TS-VAL-003,Nome com número ou incompleto é rejeitado,P1,E2E-UI,test_E2E_VAL_003_nome_com_numero_ou_incompleto_e_rejeitado,Coberto,Validação exercitada pela UI com mensagem de erro/sucesso.
+TS-VAL-004,Confirmação de e-mail é obrigatória,P1,E2E-UI,test_E2E_VAL_004_confirmacao_de_email_obrigatoria,Coberto,Validação exercitada pela UI com mensagem de erro/sucesso.
+TS-VAL-005,Agência e conta aceitam somente números,P1,E2E-UI,test_E2E_VAL_005_agencia_e_conta_so_numeros,Coberto,Validação exercitada pela UI com mensagem de erro/sucesso.
+TS-VAL-006,Recibo e banco com conteúdo inválido,P1,E2E-UI,test_E2E_VAL_006_recibo_e_banco_invalidos,Coberto,Validação exercitada pela UI com mensagem de erro/sucesso.
+TS-VAL-007,Erro de período de Projeto aparece na tela,P1,E2E-UI,test_E2E_VAL_007_projeto_fora_do_periodo_mostra_erro,Coberto,Validação exercitada pela UI com mensagem de erro/sucesso.
+TS-VAL-008,Mensagem de sucesso após submeter,P2,E2E-UI,test_E2E_001_submissao_valida_de_projeto_redireciona_ao_detalhe,Coberto,Validação exercitada pela UI com mensagem de erro/sucesso.
 TS-AUD-001,Projeto com dono exige auditoria,P0,E2E-UI,test_E2E_PROJECT_001,Parcial,Fluxo exige auditoria na prática; o estado/negativa não é assertado explicitamente.
 TS-AUD-002,Projeto importado sem dono não entra em auditoria,P0,E2E-UI,test_E2E_AUD_002_projeto_importado_sem_dono_nao_entra_em_auditoria,Coberto,Importado sem dono não acessa a tela de auditoria (404).
 TS-AUD-003,Envio de arquivo válido,P0,E2E-UI,test_E2E_AUD_003_009_010_011,Coberto,Envio de arquivo válido.

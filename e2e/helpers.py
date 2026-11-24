@@ -64,10 +64,14 @@ def fill_required_basic_fields(page: Page) -> None:
     page.check('input[name="data_use_authorization_accepted"]')
 
 
-def fill_valid_project(page: Page) -> None:
+def fill_valid_project(page: Page, ensure_modality: bool = True) -> None:
     """Preenche uma inscrição de Projeto 100% válida (inclui orientador)."""
-    page.check('input[name="modality"][value="project"]')
-    page.check('input[name="data_already_collected"][value="true"]')
+    if ensure_modality and not page.is_checked(
+        'input[name="modality"][value="project"]'
+    ):
+        page.check('input[name="modality"][value="project"]')
+    if not page.is_checked('input[name="data_already_collected"][value="true"]'):
+        page.check('input[name="data_already_collected"][value="true"]')
     fill_required_basic_fields(page)
     page.fill('input[name="mentor_name"]', "Profa. Orientadora Teste")
     page.check('input[name="mentor_declaration_accepted"]')
@@ -80,7 +84,8 @@ def fill_valid_project(page: Page) -> None:
 
 def fill_valid_consultation(page: Page) -> None:
     """Preenche uma inscrição de Consulta válida (sem campos de projeto)."""
-    page.check('input[name="modality"][value="consultation"]')
+    if not page.is_checked('input[name="modality"][value="consultation"]'):
+        page.check('input[name="modality"][value="consultation"]')
     fill_required_basic_fields(page)
     select_catalog_option(page, "student")
     select_catalog_option(page, "publication")
