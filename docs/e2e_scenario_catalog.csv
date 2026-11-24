@@ -194,7 +194,7 @@ TS-INT-003,Falha no provedor de login,P1,Unidade,-,Unidade,Falha de integração
 TS-INT-004,Falha de e-mail,P1,Unidade,-,Unidade,Falha de integração coberta por unidade; decidir se algum caso vira E2E de erro.
 TS-INT-005,Falha de storage,P1,Unidade,-,Unidade,Falha de integração coberta por unidade; decidir se algum caso vira E2E de erro.
 TS-INT-006,Segredos não logados,P0,Unidade,-,Unidade,Falha de integração coberta por unidade; decidir se algum caso vira E2E de erro.
-TS-SEC-001,CSRF,P0,E2E-UI,-,Lacuna,CSRF não é exercitado no E2E.
+TS-SEC-001,CSRF,P0,E2E-UI,test_E2E_SEC_001_post_sem_csrf_e_rejeitado,Coberto,POST anônimo e autenticado sem token recebem 403.
 TS-SEC-002,Webhook Pix exige token,P0,E2E-UI,test_E2E_PIX_005,Coberto,Webhook Pix exige token.
 TS-SEC-003,Acesso direto por URL,P0,E2E-UI,test_E2E_SEC_001,Parcial,Acesso por URL de terceiro; matriz completa de rotas/perfis não.
 TS-SEC-004,Dados sensíveis,P0,E2E-UI,test_E2E_SEC_002; test_E2E_SEC_003,Coberto,Docente não vê CPF/financeiro; secretaria vê.

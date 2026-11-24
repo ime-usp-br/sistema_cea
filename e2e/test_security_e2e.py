@@ -107,3 +107,20 @@ def test_E2E_SEC_006_login_rate_limit(page: Page) -> None:
     page.fill("#id_password", "senha-errada")
     page.click("button[type='submit']")
     expect(page.locator("body")).to_contain_text("Muitas tentativas")
+
+
+# Cobre: TS-SEC-001
+def test_E2E_SEC_001_post_sem_csrf_e_rejeitado(page: Page, login) -> None:
+    page.goto(f"{BASE_URL}/auth/login/")
+    anonymous = page.request.post(
+        f"{BASE_URL}/auth/login/",
+        form={"username": "sem-csrf@example.com", "password": "x"},
+    )
+    assert anonymous.status == 403
+
+    login()
+    authenticated = page.request.post(
+        f"{BASE_URL}/inscricoes/nova/",
+        form={"researcher_name": "Sem CSRF"},
+    )
+    assert authenticated.status == 403

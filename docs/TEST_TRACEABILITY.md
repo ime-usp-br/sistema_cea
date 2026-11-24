@@ -201,7 +201,7 @@ Atualize-a com `python scripts/gen_test_traceability.py` (ou manualmente) ao mov
 | TS-INT-004 | Falha de e-mail | — | Sem teste |
 | TS-INT-005 | Falha de storage | — | Sem teste |
 | TS-INT-006 | Segredos não logados | — | Sem teste |
-| TS-SEC-001 | CSRF | — | Sem teste |
+| TS-SEC-001 | CSRF | `e2e/test_security_e2e.py::test_E2E_SEC_001_post_sem_csrf_e_rejeitado` | Coberto |
 | TS-SEC-002 | Webhook Pix exige token | `e2e/test_payments_e2e.py::test_E2E_PIX_005_webhook_com_token_invalido_nao_confirma` | Coberto |
 | TS-SEC-003 | Acesso direto por URL | `e2e/test_security_e2e.py::test_E2E_SEC_001_candidato_nao_acessa_inscricao_de_terceiro` | Coberto |
 | TS-SEC-004 | Dados sensíveis | `e2e/test_security_e2e.py::test_E2E_SEC_002_docente_nao_ve_cpf_nem_financeiro`<br>`e2e/test_security_e2e.py::test_E2E_SEC_003_secretaria_ve_financeiro_e_cpf` | Coberto |
