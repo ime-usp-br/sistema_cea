@@ -182,6 +182,45 @@ class CustomSenhaUnicaBackendTests(TestCase):
             1,
         )
 
+    def test_TS_AUTH_005_vincula_por_email_sem_criar_conta_duplicada(self) -> None:
+        from users.backends import CustomSenhaUnicaBackend
+
+        local = User.objects.create_user(
+            username="maria-local",
+            email="maria@usp.br",
+            is_email_verified=True,
+        )
+        with (
+            self._settings(),
+            patch(
+                "users.senhaunica.SenhaUnicaClient.get_user_info",
+                return_value=self.user_info,
+            ),
+            patch(
+                "users.senhaunica.SenhaUnicaClient.fetch_access_token",
+                return_value={"oauth_token": "t", "oauth_token_secret": "s"},
+            ),
+        ):
+            result = CustomSenhaUnicaBackend().authenticate(
+                self._request(),
+                oauth_token="tok",
+                oauth_verifier="ver",
+                oauth_token_secret="sec",
+            )
+
+        local.refresh_from_db()
+        self.assertEqual(result, local)
+        self.assertEqual(local.username, "maria-local")
+        self.assertEqual(local.codpes, 123456)
+        self.assertEqual(User.objects.filter(email="maria@usp.br").count(), 1)
+        self.assertTrue(
+            IdentityProviderLink.objects.filter(
+                user=local,
+                provider=IdentityProviderLink.Provider.USP_SENHA_UNICA,
+                external_id="123456",
+            ).exists()
+        )
+
 
 class RoleGroupSyncTests(TestCase):
     def test_role_secretariat_sincroniza_grupo_ao_criar(self) -> None:

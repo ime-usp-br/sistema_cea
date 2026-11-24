@@ -95,9 +95,9 @@ Falha original (antes da Fase 1):
 | Prioridade | Total | Coberto | Parcial | Lacuna | Divergente | Unidade |
 |---|---:|---:|---:|---:|---:|---:|
 | P0 | 101 | 72 | 14 | 0 | 0 | 15 |
-| P1 | 100 | 34 | 10 | 49 | 0 | 7 |
+| P1 | 100 | 34 | 10 | 48 | 0 | 8 |
 | P2 | 15 | 3 | 0 | 11 | 0 | 1 |
-| **Total** | **216** | **109** | **24** | **60** | **0** | **23** |
+| **Total** | **216** | **109** | **24** | **59** | **0** | **24** |
 
 Leitura: 109 cenários têm cobertura E2E direta (50,5%). Nenhum cenário P0 está em lacuna; 14 são parciais e 15 têm cobertura de unidade. As lacunas restantes estão em P1/P2.
 
@@ -105,7 +105,7 @@ Leitura: 109 cenários têm cobertura E2E direta (50,5%). Nenhum cenário P0 est
 
 | Área | Total | Coberto | Parcial | Lacuna | Divergente | Unidade |
 |---|---:|---:|---:|---:|---:|---:|
-| AUTH | 7 | 3 | 3 | 1 | 0 | 0 |
+| AUTH | 7 | 3 | 3 | 0 | 0 | 1 |
 | APP | 22 | 6 | 5 | 10 | 0 | 1 |
 | VAL | 8 | 8 | 0 | 0 | 0 | 0 |
 | AUD | 18 | 12 | 2 | 4 | 0 | 0 |

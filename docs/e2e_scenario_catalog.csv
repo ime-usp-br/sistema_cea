@@ -3,7 +3,7 @@ TS-AUTH-001,Landing pública e área autenticada protegida,P0,E2E-UI,test_E2E_AU
 TS-AUTH-002,Cadastro de candidato externo,P0,E2E-UI,test_E2E_AUTH_003; test_E2E_AUTH_003b; test_E2E_N1_02,Parcial,"Cadastro, confirmação e reenvio cobertos; duplicado e token inválido/expirado só em unidade."
 TS-AUTH-003,Login com e-mail e senha,P0,E2E-UI,test_E2E_AUTH_003; fixture login_as,Parcial,Login local positivo; credenciais inválidas e usuário inativo não cobertos.
 TS-AUTH-004,Login via Senha Única,P0,E2E-UI,test_E2E_AUTH_004,Coberto,OAuth1 completo contra o faker.
-TS-AUTH-005,Vinculação de identidade existente,P1,E2E-UI,-,Lacuna,Vinculação de identidade existente não é exercitada na UI.
+TS-AUTH-005,Vinculação de identidade existente,P1,Unidade,apps/users/tests.py::test_TS_AUTH_005_vincula_por_email_sem_criar_conta_duplicada,Unidade,Backend vincula por e-mail verificado sem duplicar; faker randomiza e-mail e impede E2E determinístico.
 TS-AUTH-006,Recuperação de senha,P1,E2E-UI,test_E2E_AUTH_006; test_E2E_N1_03,Parcial,Recuperação completa; token inválido/expirado e troca autenticada não cobertos.
 TS-AUTH-007,Usuário inativo,P1,E2E-UI,test_E2E_AUTH_007_usuario_inativo_nao_entra,Coberto,Login bloqueado com mensagem "Esta conta está inativa".
 TS-APP-001,Painel mostra apenas inscrições próprias,P0,E2E-UI,test_E2E_SEC_001,Parcial,Terceiro não acessa a inscrição alheia; painel próprio não é verificado.

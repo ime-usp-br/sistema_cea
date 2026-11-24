@@ -89,17 +89,35 @@ class CustomSenhaUnicaBackend(SenhaUnicaBackend):
 
             codpes = int(codpes_raw)
             now = timezone.now()
-            user, _ = User.objects.get_or_create(
-                username=str(codpes),
-                defaults={
-                    "codpes": codpes,
-                    "email": email,
-                    "is_email_verified": True,
-                    "email_verified_at": now,
-                },
-            )
 
-            user.codpes = codpes
+            user = User.objects.filter(codpes=codpes).first() or User.objects.filter(
+                username=str(codpes)
+            ).first()
+            if user is None and email:
+                email_user = User.objects.filter(email__iexact=email).first()
+                if email_user is not None:
+                    # Só vincula uma conta local já confirmada; e-mail não
+                    # verificado não é prova suficiente de identidade.
+                    if (
+                        not email_user.is_email_verified
+                        or email_user.codpes not in (None, codpes)
+                    ):
+                        return None
+                    user = email_user
+
+            if user is None:
+                user = User.objects.create(
+                    username=str(codpes),
+                    codpes=codpes,
+                    email=email,
+                    is_email_verified=True,
+                    email_verified_at=now,
+                )
+            else:
+                if user.codpes not in (None, codpes):
+                    return None
+                user.codpes = codpes
+
             user.full_name = nome or user.full_name
             user.first_name = nome or user.first_name
             user.email = email or user.email
@@ -107,6 +125,17 @@ class CustomSenhaUnicaBackend(SenhaUnicaBackend):
             if not user.email_verified_at:
                 user.email_verified_at = now
             user.save()
+
+            conflicting_link = (
+                IdentityProviderLink.objects.filter(
+                    provider=IdentityProviderLink.Provider.USP_SENHA_UNICA,
+                    external_id=str(codpes),
+                )
+                .exclude(user=user)
+                .exists()
+            )
+            if conflicting_link:
+                return None
 
             IdentityProviderLink.objects.update_or_create(
                 user=user,
