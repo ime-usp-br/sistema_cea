@@ -593,3 +593,86 @@ class AuditScenarioTests(TestCase):
             reverse("audits:download_file", args=[submission.pk])
         )
         self.assertEqual(response.status_code, 404)
+
+
+class AuditFileMaintenanceTests(TestCase):
+    def setUp(self) -> None:
+        self.candidate = User.objects.create_user(
+            username="file-candidate",
+            email="file-candidate@example.com",
+            password="pass",
+        )
+        self.teacher = User.objects.create_user(
+            username="file-teacher",
+            email="file-teacher@example.com",
+            password="pass",
+            role=User.Role.TEACHER,
+        )
+        self.secretariat = User.objects.create_user(
+            username="file-secretariat",
+            email="file-secretariat@example.com",
+            password="pass",
+            role=User.Role.SECRETARIAT,
+        )
+        self.term = AcademicTerm.objects.create(year=2027, period="first")
+        self.service = DatasetAuditService()
+
+    def _project(self) -> ServiceApplication:
+        return ApplicationSubmissionService().create_application(
+            term=self.term,
+            owner=self.candidate,
+            modality="project",
+            researcher_name="Maria Pesquisadora",
+            contact_email="maria@example.com",
+        )
+
+    def _paid_project(self) -> ServiceApplication:
+        from payments.models import FeeRequirement
+        from payments.services import (
+            ManualPaymentService,
+            PaymentOrchestrationService,
+        )
+
+        application = self._project()
+        fee = application.fee_requirements.get(
+            fee_type=FeeRequirement.FeeType.APPLICATION_FEE
+        )
+        instrument = PaymentOrchestrationService().create_payment_instrument(
+            fee_requirement=fee, method="pix", created_by=self.candidate
+        )
+        ManualPaymentService().confirm_manual_payment(
+            instrument=instrument, confirmed_by=self.secretariat
+        )
+        return application
+
+    def _submit(self, application: ServiceApplication) -> DatasetAuditSubmission:
+        return self.service.submit_dataset(
+            application=application,
+            submitted_by=self.candidate,
+            channel="file",
+            uploaded_file=_file(),
+        )
+
+    def test_TS_FILE_004_arquivo_ausente_retorna_404(self) -> None:
+        application = self._paid_project()
+        submission = self._submit(application)
+        asset = submission.file_asset
+        from django.core.files.storage import default_storage
+
+        default_storage.delete(asset.storage_key)
+        self.client.force_login(self.teacher)
+        response = self.client.get(
+            reverse("audits:download_file", args=[submission.pk])
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_TS_FILE_005_soft_delete_preserva_arquivo_para_auditoria(self) -> None:
+        application = self._paid_project()
+        submission = self._submit(application)
+        asset_id = submission.file_asset_id
+        submission_id = submission.pk
+        application.soft_delete()
+        self.assertTrue(
+            DatasetAuditSubmission.objects.filter(pk=submission_id).exists()
+        )
+        self.assertTrue(FileAsset.objects.filter(pk=asset_id).exists())

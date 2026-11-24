@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import logging
 from typing import Any, cast
 
 from django.contrib import messages
@@ -16,6 +19,7 @@ from .forms import DatasetResolutionForm, DatasetReviewForm, DatasetSubmissionFo
 from .models import DatasetAuditSubmission
 from .services import DatasetAuditService
 
+logger = logging.getLogger(__name__)
 _service = DatasetAuditService()
 
 
@@ -125,8 +129,18 @@ class SubmissionFileDownloadView(RoleRequiredMixin, View):
         asset = submission.file_asset
         if asset is None:
             raise Http404("Esta submissão não possui arquivo para download.")
+        try:
+            handle = default_storage.open(asset.storage_key, "rb")
+        except FileNotFoundError as exc:
+            logger.warning(
+                "Arquivo de auditoria ausente: submission=%s asset=%s key=%s",
+                submission.pk,
+                asset.pk,
+                asset.storage_key,
+            )
+            raise Http404("Arquivo não encontrado.") from exc
         return FileResponse(
-            default_storage.open(asset.storage_key, "rb"),
+            handle,
             content_type=asset.content_type or "application/octet-stream",
             as_attachment=True,
             filename=asset.original_filename,
