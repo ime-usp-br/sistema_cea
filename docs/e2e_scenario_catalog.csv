@@ -5,7 +5,7 @@ TS-AUTH-003,Login com e-mail e senha,P0,E2E-UI,test_E2E_AUTH_003; fixture login_
 TS-AUTH-004,Login via Senha Única,P0,E2E-UI,test_E2E_AUTH_004,Coberto,OAuth1 completo contra o faker.
 TS-AUTH-005,Vinculação de identidade existente,P1,E2E-UI,-,Lacuna,Vinculação de identidade existente não é exercitada na UI.
 TS-AUTH-006,Recuperação de senha,P1,E2E-UI,test_E2E_AUTH_006; test_E2E_N1_03,Parcial,Recuperação completa; token inválido/expirado e troca autenticada não cobertos.
-TS-AUTH-007,Usuário inativo,P1,E2E-UI,-,Lacuna,Login de usuário inativo não é verificado.
+TS-AUTH-007,Usuário inativo,P1,E2E-UI,test_E2E_AUTH_007_usuario_inativo_nao_entra,Coberto,Login bloqueado com mensagem "Esta conta está inativa".
 TS-APP-001,Painel mostra apenas inscrições próprias,P0,E2E-UI,test_E2E_SEC_001,Parcial,Terceiro não acessa a inscrição alheia; painel próprio não é verificado.
 TS-APP-002,Criação de Projeto por candidato,P0,E2E-UI,test_E2E_001; test_E2E_PROJECT_001; test_E2E_N3_01,Coberto,Criação de Projeto e transição para aguardando pagamento.
 TS-APP-003,Criação de Consulta por candidato,P0,E2E-UI,test_E2E_002; test_E2E_CONSULTATION_001,Coberto,Criação de Consulta e transição para aguardando pagamento.

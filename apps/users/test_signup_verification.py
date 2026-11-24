@@ -66,6 +66,22 @@ class CandidateAccountTests(TestCase):
             self.client.login(username="nova@example.com", password="senha-forte-123")
         )
 
+    def test_TS_AUTH_007_usuario_inativo_recebe_mensagem_clara(self) -> None:
+        User.objects.create_user(
+            username="inativo@example.com",
+            email="inativo@example.com",
+            password="senha-forte-123",
+            is_active=False,
+            is_email_verified=True,
+        )
+        response = self.client.post(
+            reverse("login"),
+            {"username": "inativo@example.com", "password": "senha-forte-123"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Esta conta está inativa")
+        self.assertNotIn("_auth_user_id", self.client.session)
+
     def test_TS_AUTH_002_token_invalido_e_expirado(self) -> None:
         user = User.objects.create_user(
             username="tok@example.com",

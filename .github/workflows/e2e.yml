@@ -70,10 +70,25 @@ jobs:
         run: docker compose -f docker-compose.e2e.yml -f docker-compose.e2e.host.yml down -v --remove-orphans
 
   nightly:
-    name: Suíte completa (nightly)
+    name: Suíte completa (nightly) — ${{ matrix.shard.name }}
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        shard:
+          - name: core
+            files: >-
+              e2e/test_application_e2e.py e2e/test_audits_e2e.py
+              e2e/test_auth_e2e.py e2e/test_backoffice_e2e.py
+              e2e/test_full_journeys_e2e.py e2e/test_imports_e2e.py
+          - name: flows
+            files: >-
+              e2e/test_journeys_e2e.py e2e/test_meetings_e2e.py
+              e2e/test_notifications_e2e.py e2e/test_payments_e2e.py
+              e2e/test_remaining_processes_e2e.py e2e/test_security_e2e.py
+              e2e/test_validations_e2e.py
     steps:
       - uses: actions/checkout@v4
 
@@ -95,11 +110,11 @@ jobs:
       - name: Subir stack E2E
         run: docker compose -f docker-compose.e2e.yml -f docker-compose.e2e.host.yml up -d --build --wait web db redis senhaunica-faker
 
-      - name: Executar suíte completa
+      - name: Executar suíte completa (${{ matrix.shard.name }})
         timeout-minutes: 20
         run: |
           mkdir -p e2e-artifacts test-results
-          pytest -q -p no:cacheprovider e2e -c e2e/pytest.ini \
+          pytest -q -p no:cacheprovider ${{ matrix.shard.files }} -c e2e/pytest.ini \
             --junitxml=e2e-artifacts/junit.xml \
             --tracing=retain-on-failure \
             --screenshot=only-on-failure
@@ -112,7 +127,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-nightly
+          name: e2e-nightly-${{ matrix.shard.name }}
           path: |
             e2e-artifacts
             test-results

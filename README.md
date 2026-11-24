@@ -205,7 +205,8 @@ usuários criados são desativados e o namespace E2E é limpo com
 **CI**
 
 - Pull request: job `P0`, com limite de 7 minutos para a execução do pytest.
-- Nightly/manual: suíte completa, com limite de 20 minutos.
+- Nightly/manual: suíte completa em dois shards paralelos (`core` e `flows`),
+  cada um com limite de 20 minutos.
 - Artefatos de falha: JUnit, trace e screenshot em `e2e-artifacts/` e
   `test-results/`.
 - O workflow está em `.github/workflows/e2e.yml` e roda o pytest no host do

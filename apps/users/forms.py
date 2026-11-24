@@ -27,6 +27,15 @@ class EmailVerificationAuthenticationForm(AuthenticationForm):
                     "entrada ou solicite um novo link.",
                     code="email_not_verified",
                 )
+            if (
+                user is not None
+                and not user.is_active
+                and user.check_password(password)
+            ):
+                raise forms.ValidationError(
+                    "Esta conta está inativa. Entre em contato com a secretaria.",
+                    code="inactive_account",
+                )
         return super().clean()
 
 

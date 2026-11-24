@@ -7,6 +7,7 @@ candidato (confirmação de e-mail e recuperação de senha).
 
 from __future__ import annotations
 
+import json
 import re
 import uuid
 
@@ -138,3 +139,26 @@ def test_E2E_AUTH_004_login_senha_unica_com_faker(page: Page) -> None:
     expect(page).to_have_url(re.compile(r".*/painel/?$"))
     expect(page.locator("h1.page-title")).to_be_visible()
     expect(page.locator("body")).to_contain_text("Painel")
+
+
+# Cobre: TS-AUTH-007
+def test_E2E_AUTH_007_usuario_inativo_nao_entra(
+    page: Page, manage, created_user_emails
+) -> None:
+    data = json.loads(
+        manage(
+            "e2e_create_user",
+            "--suffix",
+            uuid.uuid4().hex[:8],
+            "--inactive",
+        )
+        .strip()
+        .splitlines()[-1]
+    )
+    created_user_emails.append(data["email"])
+    page.goto(f"{BASE_URL}/auth/login/")
+    page.fill("#id_username", data["username"])
+    page.fill("#id_password", data["password"])
+    page.click("button[type='submit']")
+    expect(page.locator("body")).to_contain_text("Esta conta está inativa")
+    expect(page).to_have_url(re.compile(r".*/auth/login/?$"))

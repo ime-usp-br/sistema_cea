@@ -60,6 +60,7 @@ docker compose -p sistema_cea_e2e -f docker-compose.e2e.yml run --rm \
 | 14 | reutilizado, com FILE/CLAIM | 68 passed | 792,37 s | Metadados, download negado, link externo e resgate incorreto. |
 | 15 | reutilizado, P0 sem lacunas | 77 passed | 895,59 s | AUD, MOD, MEET e TRM; 15 P0 unitários. |
 | 16 | reutilizado, com VAL | 84 passed | 952,69 s | Validações de formulário e mensagem de sucesso. |
+| 17 | reutilizado, com AUTH-007 | 85 passed | 957,72 s | Inativo bloqueado e nightly em shards. |
 
 Falha original (antes da Fase 1):
 
@@ -74,7 +75,7 @@ Falha original (antes da Fase 1):
 | Métrica | Valor |
 |---|---:|
 | Cenários em `TEST_SCENARIOS.md` | 216 |
-| Testes E2E | 84 |
+| Testes E2E | 85 |
 | Módulos com criação/pagamento UI-only | 10 de 10 |
 | Arquivos de teste E2E | 11 |
 | Rotas não-admin | 72 |
@@ -83,7 +84,7 @@ Falha original (antes da Fase 1):
 | Rotas não-admin alcançadas por link/botão | 28 |
 | Rotas não-admin sem cobertura | 9 |
 | Rotas admin exercitadas | 1 (`/admin/terms/academicterm/add/`) |
-| Testes com marcador `# Cobre: TS-*` | 83 de 84 |
+| Testes com marcador `# Cobre: TS-*` | 84 de 85 |
 | Testes marcados como P0 | 10 |
 | Execuções completas verdes consecutivas no mesmo banco | 3 (2 container + 1 host) |
 | Namespace E2E resetado ao final | Sim (`e2e_cleanup --purge-e2e-terms`) |
@@ -94,17 +95,17 @@ Falha original (antes da Fase 1):
 | Prioridade | Total | Coberto | Parcial | Lacuna | Divergente | Unidade |
 |---|---:|---:|---:|---:|---:|---:|
 | P0 | 101 | 72 | 14 | 0 | 0 | 15 |
-| P1 | 100 | 33 | 10 | 50 | 0 | 7 |
+| P1 | 100 | 34 | 10 | 49 | 0 | 7 |
 | P2 | 15 | 3 | 0 | 11 | 0 | 1 |
-| **Total** | **216** | **108** | **24** | **61** | **0** | **23** |
+| **Total** | **216** | **109** | **24** | **60** | **0** | **23** |
 
-Leitura: 108 cenários têm cobertura E2E direta (50,0%). Nenhum cenário P0 está em lacuna; 14 são parciais e 15 têm cobertura de unidade. As lacunas restantes estão em P1/P2.
+Leitura: 109 cenários têm cobertura E2E direta (50,5%). Nenhum cenário P0 está em lacuna; 14 são parciais e 15 têm cobertura de unidade. As lacunas restantes estão em P1/P2.
 
 ## 5. Cobertura por área
 
 | Área | Total | Coberto | Parcial | Lacuna | Divergente | Unidade |
 |---|---:|---:|---:|---:|---:|---:|
-| AUTH | 7 | 2 | 3 | 2 | 0 | 0 |
+| AUTH | 7 | 3 | 3 | 1 | 0 | 0 |
 | APP | 22 | 6 | 5 | 10 | 0 | 1 |
 | VAL | 8 | 8 | 0 | 0 | 0 | 0 |
 | AUD | 18 | 12 | 2 | 4 | 0 | 0 |

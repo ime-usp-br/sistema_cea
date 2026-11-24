@@ -28,6 +28,11 @@ class Command(BaseCommand):
             help="Sufixo único para username/e-mail (ex.: run-teste).",
         )
         parser.add_argument("--password", default=self.DEFAULT_PASSWORD)
+        parser.add_argument(
+            "--inactive",
+            action="store_true",
+            help="Cria a conta já desativada (para TS-AUTH-007).",
+        )
 
     def handle(self, *args: Any, **options: Any) -> None:
         from users.models import User
@@ -51,7 +56,7 @@ class Command(BaseCommand):
             email=email,
             full_name=f"E2E candidate {suffix}",
             role=User.Role.CANDIDATE,
-            is_active=True,
+            is_active=not options["inactive"],
             is_email_verified=True,
             is_staff=False,
             is_superuser=False,
