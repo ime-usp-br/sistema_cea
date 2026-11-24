@@ -105,7 +105,7 @@ TS-BSL-011,Falha SOAP notifica a equipe CEA,P1,E2E-UI,-,Lacuna,Falha SOAP notifi
 TS-BSL-012,Regeneração automática de boletos vencidos,P1,E2E-UI,-,Lacuna,Regeneração automática de vencidos não é exercitada.
 TS-MAN-001,Confirmação manual de pagamento,P0,E2E-UI,test_E2E_MAN_001,Coberto,Confirmação manual de boleto vencido.
 TS-MAN-002,Pagamento manual não altera status externo,P0,E2E-UI,-,Lacuna,Status bancário externo preservado não é assertado.
-TS-MAN-003,Pagamento manual não envia e-mail ao candidato,P0,E2E-UI,-,Lacuna,Manual não envia e-mail ao candidato não é assertado.
+TS-MAN-003,Pagamento manual não envia e-mail ao candidato,P0,E2E-UI,test_E2E_NOT_008_pagamento_manual_nao_notifica_candidato,Coberto,Confirmação manual não envia e-mail (coberto por NOT-008).
 TS-MAN-004,Confirmação manual em instrumento pago,P1,E2E-UI,-,Lacuna,Confirmação manual em instrumento pago não é exercitada.
 TS-REF-001,Solicitação de reembolso após rejeição paga,P0,E2E-UI,test_E2E_REF_001_002_003,Coberto,Solicitação pela UI.
 TS-REF-002,Aprovação de reembolso,P1,E2E-UI,test_E2E_REF_001_002_003,Coberto,Aprovação pela secretaria.
@@ -155,18 +155,18 @@ TS-NOT-011,Mudança de modalidade notifica candidato,P1,E2E-UI,-,Lacuna,Sem mape
 TS-NOT-012,Anexos e notificações de agendamento,P1,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.
 TS-NOT-013,Reunião de consulta agendada e decidida,P1,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.
 TS-NOT-014,Reemissão de boleto com cópia oculta ao CEA,P1,E2E-UI,-,Lacuna,Sem mapeamento E2E registrado neste catálogo.
-TS-FILE-001,Arquivo de auditoria salvo com metadados,P0,E2E-API,-,Lacuna,Metadados do arquivo de auditoria não são inspectados no E2E.
+TS-FILE-001,Arquivo de auditoria salvo com metadados,P0,E2E-API,test_E2E_FILE_001_003_006_metadados_e_download_nao_autorizado,Coberto,"FileAsset de auditoria com propósito, nome, tamanho e checksum."
 TS-FILE-002,Download autorizado,P0,E2E-API,test_E2E_DOC_001; test_E2E_DOC_002,Parcial,Downloads de PDF/anexo; matriz de autorização não.
-TS-FILE-003,Download não autorizado,P0,E2E-API,-,Lacuna,Download não autorizado não é exercitado.
+TS-FILE-003,Download não autorizado,P0,E2E-API,test_E2E_FILE_001_003_006_metadados_e_download_nao_autorizado,Coberto,Candidato autenticado recebe 403 no arquivo de auditoria.
 TS-FILE-004,Arquivo ausente,P1,E2E-API,-,Lacuna,Arquivo ausente não é exercitado.
 TS-FILE-005,Retenção por prazo indeterminado,P1,E2E-API,-,Lacuna,Retenção não é observável em E2E.
-TS-FILE-006,Link externo não é baixado,P0,E2E-API,-,Lacuna,Link externo não é baixado.
+TS-FILE-006,Link externo não é baixado,P0,E2E-API,test_E2E_FILE_001_003_006_metadados_e_download_nao_autorizado,Coberto,Link externo armazena URL e não cria FileAsset.
 TS-CLAIM-001,Solicitação de resgate,P0,E2E-UI,test_E2E_CLAIM_001_002_003,Coberto,Solicitação de resgate.
 TS-CLAIM-002,Código enviado para e-mail registrado,P0,E2E-UI,test_E2E_CLAIM_001_002_003,Coberto,Código enviado por e-mail.
 TS-CLAIM-003,Código correto vincula inscrição,P0,E2E-UI,test_E2E_CLAIM_001_002_003,Coberto,Código correto vincula.
-TS-CLAIM-004,Código incorreto,P0,E2E-UI,-,Lacuna,Código incorreto não é exercitado.
+TS-CLAIM-004,Código incorreto,P0,E2E-UI,test_E2E_CLAIM_004_006_codigo_incorreto_nao_vincula,Coberto,Código incorreto retorna 400 e registra falha.
 TS-CLAIM-005,Código expirado,P1,E2E-UI,-,Lacuna,Código expirado não é exercitado.
-TS-CLAIM-006,Nenhuma vinculação automática silenciosa,P0,E2E-UI,-,Lacuna,Ausência de vinculação silenciosa não é assertada.
+TS-CLAIM-006,Nenhuma vinculação automática silenciosa,P0,E2E-UI,test_E2E_CLAIM_004_006_codigo_incorreto_nao_vincula,Coberto,Solicitar código não vincula silenciosamente.
 TS-CLAIM-007,Aprovação manual,P1,E2E-UI,-,Lacuna,Aprovação manual na fila de resgates.
 TS-CLAIM-008,Inscrição resgatada pode entrar em auditoria,P1,E2E-UI,-,Lacuna,Auditoria após resgate não é exercitada.
 TS-IMP-001,Inscrições importadas sem dono,P0,E2E-CLI,test_E2E_IMP_001_importa_json_preserva_estado_e_detecta_duplicidade,Coberto,"Importação real via import_legacy_data com fixture JSON, pagamento, anexo, ausente, dono nulo, auditoria desligada, duplicidade e transferência."

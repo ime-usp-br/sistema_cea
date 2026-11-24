@@ -94,6 +94,17 @@ class Command(BaseCommand):
                     "state": submission.state,
                     "channel": submission.submission_channel,
                     "has_file": submission.file_asset_id is not None,
+                    "file": (
+                        {
+                            "filename": submission.file_asset.original_filename,
+                            "content_type": submission.file_asset.content_type,
+                            "size": submission.file_asset.size_bytes,
+                            "checksum": submission.file_asset.sha256_checksum,
+                            "purpose": submission.file_asset.purpose,
+                        }
+                        if submission.file_asset_id is not None
+                        else None
+                    ),
                     "external_url": submission.external_url,
                     "reviews": [
                         {

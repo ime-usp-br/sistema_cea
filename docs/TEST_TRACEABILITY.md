@@ -162,18 +162,18 @@ Atualize-a com `python scripts/gen_test_traceability.py` (ou manualmente) ao mov
 | TS-NOT-012 | Anexos e notificações de agendamento | `apps/notifications/test_triggers.py::test_TS_NOT_012_triagem_agendada_e_decidida_notifica`<br>`apps/notifications/tests.py::test_TS_NOT_012_anexo_de_boleto_pdf_chega_ao_email` | Coberto |
 | TS-NOT-013 | Reunião de consulta agendada e decidida | `apps/notifications/test_triggers.py::test_TS_NOT_013_reuniao_agendada_e_decidida_notifica` | Coberto |
 | TS-NOT-014 | Reemissão de boleto com cópia oculta ao CEA | `apps/notifications/test_triggers.py::test_TS_NOT_014_reemissao_boleto_envia_copia_oculta_ao_centro` | Coberto |
-| TS-FILE-001 | Arquivo de auditoria salvo com metadados | — | Sem teste |
+| TS-FILE-001 | Arquivo de auditoria salvo com metadados | `e2e/test_remaining_processes_e2e.py::test_E2E_FILE_001_003_006_metadados_e_download_nao_autorizado` | Coberto |
 | TS-FILE-002 | Download autorizado | `e2e/test_backoffice_e2e.py::test_E2E_DOC_001_pdfs_e_anexos_baixam`<br>`e2e/test_remaining_processes_e2e.py::test_E2E_DOC_002_recibo_de_pagamento_e_resumo_da_triagem` | Coberto |
-| TS-FILE-003 | Download não autorizado | — | Sem teste |
+| TS-FILE-003 | Download não autorizado | `e2e/test_remaining_processes_e2e.py::test_E2E_FILE_001_003_006_metadados_e_download_nao_autorizado` | Coberto |
 | TS-FILE-004 | Arquivo ausente | — | Sem teste |
 | TS-FILE-005 | Retenção por prazo indeterminado | — | Sem teste |
-| TS-FILE-006 | Link externo não é baixado | — | Sem teste |
+| TS-FILE-006 | Link externo não é baixado | `e2e/test_remaining_processes_e2e.py::test_E2E_FILE_001_003_006_metadados_e_download_nao_autorizado` | Coberto |
 | TS-CLAIM-001 | Solicitação de resgate | `apps/imports/tests.py::test_TS_CLAIM_001_solicitacao_cria_claim`<br>`apps/imports/tests.py::test_TS_CLAIM_001b_protocolo_e_documento_com_mascara_funcionam`<br>`apps/imports/tests.py::test_TS_CLAIM_001c_email_do_cadastro_atual_tambem_localiza`<br>`apps/imports/tests.py::test_TS_CLAIM_001d_inscricao_do_portal_recebe_mensagem_clara`<br>`e2e/test_remaining_processes_e2e.py::test_E2E_CLAIM_001_002_003_resgate_por_codigo_do_email` | Coberto |
 | TS-CLAIM-002 | Código enviado para e-mail registrado | `apps/imports/tests.py::test_TS_CLAIM_002_codigo_enviado_como_hash_com_expiracao`<br>`e2e/test_remaining_processes_e2e.py::test_E2E_CLAIM_001_002_003_resgate_por_codigo_do_email` | Coberto |
 | TS-CLAIM-003 | Código correto vincula inscrição | `apps/imports/tests.py::test_TS_CLAIM_003_codigo_correto_vincula_inscricao`<br>`e2e/test_remaining_processes_e2e.py::test_E2E_CLAIM_001_002_003_resgate_por_codigo_do_email` | Coberto |
-| TS-CLAIM-004 | Código incorreto | `apps/imports/tests.py::test_TS_CLAIM_004_codigo_incorreto_nao_vincula_e_limita` | Coberto |
+| TS-CLAIM-004 | Código incorreto | `apps/imports/tests.py::test_TS_CLAIM_004_codigo_incorreto_nao_vincula_e_limita`<br>`e2e/test_remaining_processes_e2e.py::test_E2E_CLAIM_004_006_codigo_incorreto_nao_vincula` | Coberto |
 | TS-CLAIM-005 | Código expirado | `apps/imports/tests.py::test_TS_CLAIM_005_codigo_expirado_rejeitado` | Coberto |
-| TS-CLAIM-006 | Nenhuma vinculação automática silenciosa | `apps/imports/tests.py::test_TS_CLAIM_006_sem_vinculacao_automatica_silenciosa` | Coberto |
+| TS-CLAIM-006 | Nenhuma vinculação automática silenciosa | `apps/imports/tests.py::test_TS_CLAIM_006_sem_vinculacao_automatica_silenciosa`<br>`e2e/test_remaining_processes_e2e.py::test_E2E_CLAIM_004_006_codigo_incorreto_nao_vincula` | Coberto |
 | TS-CLAIM-007 | Aprovação manual | `apps/imports/tests.py::test_TS_CLAIM_007_aprovacao_manual_pela_secretaria` | Coberto |
 | TS-CLAIM-008 | Inscrição resgatada pode entrar em auditoria | `apps/imports/tests.py::test_TS_CLAIM_008_inscricao_resgatada_pode_entrar_em_auditoria` | Coberto |
 | TS-IMP-001 | Inscrições importadas sem dono | `apps/imports/tests.py::test_TS_IMP_001_inscricao_importada_sem_dono_preserva_contatos`<br>`e2e/test_imports_e2e.py::test_E2E_IMP_001_importa_json_preserva_estado_e_detecta_duplicidade` | Coberto |

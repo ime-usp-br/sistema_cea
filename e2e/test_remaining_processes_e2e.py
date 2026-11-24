@@ -17,6 +17,7 @@ from helpers import (
     review_submission_by_protocol,
     schedule_screening_for,
     start_payment,
+    submit_dataset_external_link,
     submit_dataset_file,
     wait_for_page,
 )
@@ -196,3 +197,86 @@ def test_E2E_CLAIM_001_002_003_resgate_por_codigo_do_email(
     state = application_state(protocol)
     assert state["owner"] == candidate_account["username"]
     assert "claim.verified" in {event["code"] for event in state["events"]}
+
+
+# Cobre: TS-FILE-001, TS-FILE-003, TS-FILE-006
+def test_E2E_FILE_001_003_006_metadados_e_download_nao_autorizado(
+    page: Page, login, track_protocol, e2e_term, application_state
+) -> None:
+    protocol = create_project_via_ui(page, login, track_protocol, e2e_term["id"])
+    pay_fee(page, protocol, "pix")
+    submit_dataset_file(page, protocol)
+    submission = application_state(protocol)["audit_submissions"][-1]
+    assert submission["has_file"] is True
+    assert submission["file"]["purpose"] == "dataset_submission"
+    assert submission["file"]["filename"] == "dados-e2e.csv"
+    assert submission["file"]["size"] > 0
+    assert submission["file"]["checksum"]
+
+    unauthorized = page.request.get(
+        f"{BASE_URL}/auditoria/submissao/{submission['id']}/arquivo/"
+    )
+    assert unauthorized.status == 403
+
+    link_protocol = create_project_via_ui(
+        page, login, track_protocol, e2e_term["id"]
+    )
+    pay_fee(page, link_protocol, "pix")
+    submit_dataset_external_link(page, link_protocol)
+    link_submission = application_state(link_protocol)["audit_submissions"][-1]
+    assert link_submission["channel"] == "external_link"
+    assert link_submission["has_file"] is False
+    assert link_submission["file"] is None
+    assert link_submission["external_url"] == "https://example.com/dados-e2e"
+
+
+# Cobre: TS-CLAIM-004, TS-CLAIM-006
+def test_E2E_CLAIM_004_006_codigo_incorreto_nao_vincula(
+    page: Page,
+    login,
+    latest_email,
+    application_state,
+    manage,
+    candidate_account,
+    track_protocol,
+) -> None:
+    protocol = f"{uuid.uuid4().int % 1_000_000_000:09d}"
+    contact_email = candidate_account["email"]
+    manage(
+        "e2e_create_imported_application",
+        "--protocol",
+        protocol,
+        "--contact-email",
+        contact_email,
+    )
+    track_protocol(protocol)
+
+    login()
+    page.goto(f"{BASE_URL}/vincular-inscricao/")
+    wait_for_page(page)
+    page.fill('input[name="protocol"]', protocol)
+    page.fill('input[name="contact_email_or_tax_id"]', contact_email)
+    page.click("button:has-text('Enviar código')")
+    wait_for_page(page)
+
+    # TS-CLAIM-006: solicitar o código não vincula silenciosamente.
+    assert application_state(protocol)["owner"] is None
+
+    message = latest_email(to=contact_email)
+    match = re.search(r"código de resgate é:\s*(\d{6})", message["body"])
+    assert match is not None, message["body"]
+    correct_code = match.group(1)
+    wrong_code = "000000" if correct_code != "000000" else "111111"
+
+    page.fill('input[name="code"]', wrong_code)
+    with page.expect_response(
+        lambda response: "/vincular-inscricao/confirmar/" in response.url
+    ) as response_info:
+        page.click("button:has-text('Confirmar')")
+    assert response_info.value.status == 400
+
+    state = application_state(protocol)
+    assert state["owner"] is None
+    assert "claim.verification_failed" in {
+        event["code"] for event in state["events"]
+    }
