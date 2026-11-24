@@ -41,6 +41,7 @@ O problema não é a qualidade do happy path, e sim a **cobertura e a repetibili
 | 12 | reutilizado, com NOT P0 | 65 passed | 753,20 s |
 | 13 | reutilizado, com CSRF | 66 passed | 761,16 s |
 | 14 | reutilizado, com FILE/CLAIM | 68 passed | 792,37 s |
+| 15 | reutilizado, P0 sem lacunas | 77 passed | 895,59 s |
 
 Fase 1 aplicada:
 

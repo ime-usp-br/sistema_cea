@@ -9,7 +9,7 @@ TS-AUTH-007,Usuário inativo,P1,E2E-UI,-,Lacuna,Login de usuário inativo não �
 TS-APP-001,Painel mostra apenas inscrições próprias,P0,E2E-UI,test_E2E_SEC_001,Parcial,Terceiro não acessa a inscrição alheia; painel próprio não é verificado.
 TS-APP-002,Criação de Projeto por candidato,P0,E2E-UI,test_E2E_001; test_E2E_PROJECT_001; test_E2E_N3_01,Coberto,Criação de Projeto e transição para aguardando pagamento.
 TS-APP-003,Criação de Consulta por candidato,P0,E2E-UI,test_E2E_002; test_E2E_CONSULTATION_001,Coberto,Criação de Consulta e transição para aguardando pagamento.
-TS-APP-004,Protocolo único,P0,E2E-UI,-,Lacuna,Unicidade do protocolo é observável apenas no backend.
+TS-APP-004,Protocolo único,P0,Unidade,apps/applications/tests.py::test_TS_APP_004_protocolo_unico_com_9_digitos,Unidade,Coberto por teste de unidade/integração.
 TS-APP-005,Campos obrigatórios,P0,E2E-UI,test_E2E_003,Parcial,Resumo de erro; matriz campo a campo não coberta.
 TS-APP-006,Validação de CPF/CNPJ,P1,E2E-UI,-,Lacuna,CPF/CNPJ inválido não é exercitado na UI.
 TS-APP-007,Opções de catálogo com “Outro”,P1,E2E-UI,test_E2E_005,Parcial,Campo complementar aparece e bloqueia; persistência do texto não é assertada.
@@ -37,13 +37,13 @@ TS-VAL-006,Recibo e banco com conteúdo inválido,P1,E2E-UI,-,Lacuna,Recibo/banc
 TS-VAL-007,Erro de período de Projeto aparece na tela,P1,E2E-UI,-,Lacuna,Erro de período de Projeto na tela não é exercitado.
 TS-VAL-008,Mensagem de sucesso após submeter,P2,E2E-UI,test_E2E_001,Parcial,Redireciona ao detalhe; a mensagem de sucesso não é assertada.
 TS-AUD-001,Projeto com dono exige auditoria,P0,E2E-UI,test_E2E_PROJECT_001,Parcial,Fluxo exige auditoria na prática; o estado/negativa não é assertado explicitamente.
-TS-AUD-002,Projeto importado sem dono não entra em auditoria,P0,E2E-UI,-,Lacuna,Projeto importado sem dono não entra em auditoria.
+TS-AUD-002,Projeto importado sem dono não entra em auditoria,P0,E2E-UI,test_E2E_AUD_002_projeto_importado_sem_dono_nao_entra_em_auditoria,Coberto,Importado sem dono não acessa a tela de auditoria (404).
 TS-AUD-003,Envio de arquivo válido,P0,E2E-UI,test_E2E_AUD_003_009_010_011,Coberto,Envio de arquivo válido.
-TS-AUD-004,Envio de arquivo acima de 10 MB,P0,E2E-UI,-,Lacuna,Arquivo acima de 10 MB não é exercitado.
+TS-AUD-004,Envio de arquivo acima de 10 MB,P0,E2E-UI,test_E2E_AUD_004_arquivo_acima_de_10mb_e_rejeitado,Coberto,Arquivo >10 MB rejeitado com 400.
 TS-AUD-005,Envio de link externo,P0,E2E-UI,test_E2E_AUD_005,Coberto,Link externo e fila docente.
 TS-AUD-006,Link externo inválido,P1,E2E-UI,-,Lacuna,Link externo inválido não é exercitado.
 TS-AUD-007,Link sem declaração de acesso,P1,E2E-UI,-,Lacuna,Link sem declaração não é exercitado.
-TS-AUD-008,Submissão não aceita arquivo e link simultâneos,P0,E2E-UI,-,Lacuna,Arquivo e link simultâneos não são exercitados.
+TS-AUD-008,Submissão não aceita arquivo e link simultâneos,P0,E2E-UI,test_E2E_AUD_008_arquivo_e_link_simultaneos_sao_rejeitados,Coberto,Arquivo e link simultâneos rejeitados nos dois canais.
 TS-AUD-009,Docente solicita correção,P0,E2E-UI,test_E2E_AUD_003_009_010_011,Coberto,Correção solicitada.
 TS-AUD-010,Candidato corrige e reenvia,P0,E2E-UI,test_E2E_AUD_003_009_010_011,Coberto,Correção e reenvio.
 TS-AUD-011,Docente aprova auditoria,P0,E2E-UI,test_E2E_AUD_003_009_010_011; test_E2E_PROJECT_001,Coberto,Aprovação libera agendamento.
@@ -56,11 +56,11 @@ TS-AUD-017,Link inacessível,P1,E2E-UI,-,Lacuna,Link inacessível na revisão do
 TS-AUD-018,Download de arquivo de auditoria,P1,E2E-UI,test_E2E_DOC_001; test_E2E_DOC_002,Parcial,Downloads gerais cobertos; download da submissão e matriz de autorização não.
 TS-FEE-001,Taxa de inscrição de Projeto,P0,E2E-UI,test_E2E_N3_04; test_E2E_PROJECT_001,Parcial,Taxa de projeto gerada/paga; valor de R$ 250 não é assertado na jornada.
 TS-FEE-002,Taxa de Consulta na submissão,P0,E2E-UI,test_E2E_CONSULTATION_001; test_E2E_REP_001_004_005,Parcial,Taxa de R$ 140 aparece no relatório.
-TS-FEE-003,Taxa de projeto sem crédito,P0,E2E-UI,-,Lacuna,Taxa de projeto sem crédito não é isolada.
+TS-FEE-003,Taxa de projeto sem crédito,P0,Unidade,apps/payments/tests.py::test_TS_FEE_003_taxa_de_projeto_sem_credito,Unidade,Coberto por teste de unidade/integração.
 TS-FEE-004,Taxa de projeto com crédito de Consulta paga,P0,E2E-UI,test_E2E_MEET_014,Coberto,Taxa de projeto com crédito: R$ 190.
 TS-FEE-005,Projeto pago aprovado como Consulta,P0,E2E-UI,test_E2E_MEET_010,Parcial,Complemento de R$ 60 na triagem; caso projeto pago não é isolado.
-TS-FEE-006,Projeto não pago aprovado como Consulta,P0,E2E-UI,-,Lacuna,Projeto não pago aprovado como Consulta.
-TS-FEE-007,Valor final consistente,P0,E2E-UI,-,Lacuna,Valor final consistente não é verificado na UI.
+TS-FEE-006,Projeto não pago aprovado como Consulta,P0,Unidade,apps/payments/tests.py::test_TS_FEE_006_projeto_nao_pago_convertido_em_consulta,Unidade,Coberto por teste de unidade/integração.
+TS-FEE-007,Valor final consistente,P0,Unidade,apps/payments/tests.py::test_TS_FEE_007_valor_final_consistente,Unidade,Coberto por teste de unidade/integração.
 TS-FEE-008,Isenção de taxa,P2,E2E-UI,-,Lacuna,Isenção de taxa não tem fluxo E2E.
 TS-PAY-001,Candidato escolhe Pix,P0,E2E-UI,test_E2E_N3_01,Coberto,Escolha de Pix e confirmação.
 TS-PAY-002,Candidato escolhe boleto,P0,E2E-UI,test_E2E_BSL_001; test_E2E_CONSULTATION_001,Coberto,Escolha de boleto e confirmação.
@@ -92,9 +92,9 @@ TS-PIX-009,Reconciliação com listarConcluidos,P1,E2E-UI,-,Lacuna,Reconciliaç�
 TS-PIX-010,Simulação de pagamento em desenvolvimento,P2,E2E-UI,test_E2E_PIX_003,Coberto,Simulação dev coberta pelo botão.
 TS-PIX-011,PDF e QR Code,P1,E2E-UI,-,Lacuna,QR Code/PDF Pix não são assertados.
 TS-BSL-001,Geração de boleto registrado,P0,E2E-UI,test_E2E_BSL_001; test_E2E_BSL_ADMIN_001,Coberto,Geração pela UI e pela secretaria.
-TS-BSL-002,Dados obrigatórios do boleto,P0,E2E-UI,-,Lacuna,Dados obrigatórios do boleto só em unidade.
-TS-BSL-003,Consulta de situação,P0,E2E-UI,-,Lacuna,Consulta de situação não é exercitada na UI.
-TS-BSL-004,Status V não confirma pagamento,P0,E2E-UI,-,Lacuna,Status V não é exercitado.
+TS-BSL-002,Dados obrigatórios do boleto,P0,Unidade,apps/bank_slips/tests.py::test_TS_BSL_002_dados_obrigatorios,Unidade,Coberto por teste de unidade/integração.
+TS-BSL-003,Consulta de situação,P0,Unidade,apps/bank_slips/tests.py::test_TS_BSL_003_situacao_convertida,Unidade,Coberto por teste de unidade/integração.
+TS-BSL-004,Status V não confirma pagamento,P0,Unidade,apps/bank_slips/tests.py::test_TS_BSL_004_status_v_nao_confirma,Unidade,Coberto por teste de unidade/integração.
 TS-BSL-005,Boleto pago atualiza fluxo,P0,E2E-UI,test_E2E_CONSULTATION_001,Coberto,Boleto pago atualiza o fluxo.
 TS-BSL-006,Download de PDF,P1,E2E-UI,test_E2E_BSL_001,Coberto,Download do PDF do boleto.
 TS-BSL-007,Cancelamento de boleto substituído,P1,E2E-UI,test_E2E_BSL_ADMIN_001,Parcial,Regeneração coberta; cancelamento do substituído não.
@@ -104,32 +104,32 @@ TS-BSL-010,Simulação de pagamento em desenvolvimento,P2,E2E-UI,test_E2E_BSL_00
 TS-BSL-011,Falha SOAP notifica a equipe CEA,P1,E2E-UI,-,Lacuna,Falha SOAP notificando o CEA não é exercitada.
 TS-BSL-012,Regeneração automática de boletos vencidos,P1,E2E-UI,-,Lacuna,Regeneração automática de vencidos não é exercitada.
 TS-MAN-001,Confirmação manual de pagamento,P0,E2E-UI,test_E2E_MAN_001,Coberto,Confirmação manual de boleto vencido.
-TS-MAN-002,Pagamento manual não altera status externo,P0,E2E-UI,-,Lacuna,Status bancário externo preservado não é assertado.
+TS-MAN-002,Pagamento manual não altera status externo,P0,Unidade,apps/payments/tests.py::test_TS_MAN_002_pagamento_manual_nao_altera_status_externo,Unidade,Coberto por teste de unidade/integração.
 TS-MAN-003,Pagamento manual não envia e-mail ao candidato,P0,E2E-UI,test_E2E_NOT_008_pagamento_manual_nao_notifica_candidato,Coberto,Confirmação manual não envia e-mail (coberto por NOT-008).
 TS-MAN-004,Confirmação manual em instrumento pago,P1,E2E-UI,-,Lacuna,Confirmação manual em instrumento pago não é exercitada.
 TS-REF-001,Solicitação de reembolso após rejeição paga,P0,E2E-UI,test_E2E_REF_001_002_003,Coberto,Solicitação pela UI.
 TS-REF-002,Aprovação de reembolso,P1,E2E-UI,test_E2E_REF_001_002_003,Coberto,Aprovação pela secretaria.
 TS-REF-003,Execução de reembolso,P1,E2E-UI,test_E2E_REF_001_002_003,Coberto,Execução do reembolso.
-TS-REF-004,Conversão em vez de reembolso,P0,E2E-UI,-,Lacuna,Conversão em vez de reembolso não é exercitada.
-TS-REF-005,Reembolso não pode exceder valor pago,P0,E2E-UI,-,Lacuna,Reembolso acima do pago não é exercitado.
-TS-MOD-001,Projeto não pago convertido em Consulta,P0,E2E-UI,-,Lacuna,Projeto não pago convertido em Consulta.
-TS-MOD-002,Projeto pago convertido em Consulta,P0,E2E-UI,-,Lacuna,Projeto pago convertido em Consulta.
+TS-REF-004,Conversão em vez de reembolso,P0,Unidade,apps/payments/tests.py::test_TS_REF_004_conversao_em_vez_de_reembolso,Unidade,Coberto por teste de unidade/integração.
+TS-REF-005,Reembolso não pode exceder valor pago,P0,E2E-UI,test_E2E_REF_005_reembolso_acima_do_pago_e_rejeitado,Coberto,Reembolso acima do pago retorna 400.
+TS-MOD-001,Projeto não pago convertido em Consulta,P0,E2E-UI,test_E2E_MOD_001_projeto_nao_pago_convertido_em_consulta,Coberto,Projeto não pago convertido em Consulta pela UI.
+TS-MOD-002,Projeto pago convertido em Consulta,P0,E2E-UI,test_E2E_MOD_002_projeto_pago_convertido_em_consulta,Coberto,Projeto pago gera complemento de R$ 60.
 TS-MOD-003,"Projeto pago com valor igual ou superior a R$ 140,00",P1,E2E-UI,-,Lacuna,Projeto pago com valor >= R$ 140.
 TS-MOD-004,Consulta não paga convertida em Projeto,P0,E2E-UI,test_E2E_MOD_004_005,Coberto,Consulta não paga convertida em Projeto.
 TS-MOD-005,Consulta paga convertida em Projeto,P0,E2E-UI,test_E2E_MOD_004_005,Coberto,Consulta paga convertida em Projeto.
-TS-MOD-006,Conversão de Consulta para Projeto exige auditoria quando há dono,P0,E2E-UI,-,Lacuna,Exigência de auditoria na conversão não é exercitada.
+TS-MOD-006,Conversão de Consulta para Projeto exige auditoria quando há dono,P0,Unidade,apps/payments/tests.py::test_TS_MOD_006_projeto_com_taxa_de_projeto_paga_convertido_para_consulta_gera_excesso,Unidade,Coberto por teste de unidade/integração.
 TS-MOD-007,Conversão de inscrição importada sem dono,P1,E2E-UI,-,Lacuna,Conversão de inscrição importada sem dono.
 TS-TRM-001,Transferência manual com período futuro existente,P1,E2E-UI,test_E2E_N9_02,Coberto,Transferência com próximo período existente.
 TS-TRM-002,Transferência pendente sem período futuro,P1,E2E-UI,test_E2E_TRM_001_002_003,Coberto,Transferência pendente sem próximo período.
 TS-TRM-003,Transferência automática ao criar período,P1,E2E-UI,test_E2E_TRM_001_002_003,Coberto,Migração automática ao criar período.
 TS-TRM-004,Transferência preserva auditoria,P1,E2E-UI,test_E2E_AUD_015,Parcial,Transferência preserva auditoria; asserção não é dedicada.
-TS-TRM-005,Transferência preserva pagamentos,P0,E2E-UI,-,Lacuna,Transferência preserva pagamentos.
+TS-TRM-005,Transferência preserva pagamentos,P0,E2E-UI,test_E2E_TRM_005_transferencia_preserva_pagamentos,Coberto,Transferência preserva taxas e estados de pagamento.
 TS-TRM-006,Transferência manual pela Secretaria,P1,E2E-UI,test_E2E_N9_02; test_E2E_TRM_001_002_003,Parcial,Ação da secretaria coberta.
 TS-TRM-007,Editar período não re-migra,P1,E2E-UI,-,Lacuna,Editar período não re-migra.
 TS-MEET-001,Agendar triagem para Projeto,P0,E2E-UI,test_E2E_PROJECT_001,Coberto,Agendar triagem para Projeto.
-TS-MEET-002,Bloquear triagem para Consulta,P0,E2E-UI,-,Lacuna,Bloquear triagem para Consulta.
+TS-MEET-002,Bloquear triagem para Consulta,P0,E2E-UI,test_E2E_MEET_002_triagem_bloqueada_para_consulta,Coberto,Triagem para Consulta retorna 400.
 TS-MEET-003,Agendar reunião para Consulta,P0,E2E-UI,test_E2E_CONSULTATION_001; test_E2E_MEET_003_007_008,Coberto,Agendar reunião para Consulta.
-TS-MEET-004,Bloquear reunião para Projeto,P0,E2E-UI,-,Lacuna,Bloquear reunião para Projeto.
+TS-MEET-004,Bloquear reunião para Projeto,P0,E2E-UI,test_E2E_MEET_004_reuniao_bloqueada_para_projeto,Coberto,Reunião para Projeto retorna 400.
 TS-MEET-005,Reunião online exige link,P1,E2E-UI,-,Lacuna,Reunião online exige link.
 TS-MEET-006,Reunião presencial exige local,P1,E2E-UI,-,Lacuna,Reunião presencial exige local.
 TS-MEET-007,Reagendar,P1,E2E-UI,test_E2E_MEET_007_008; test_E2E_MEET_003_007_008,Coberto,Reagendamento.
@@ -179,7 +179,7 @@ TS-IMP-007,Protocolos únicos na importação,P0,E2E-CLI,test_E2E_IMP_001_import
 TS-IMP-008,Arquivos ausentes,P1,E2E-CLI,test_E2E_IMP_001_importa_json_preserva_estado_e_detecta_duplicidade,Coberto,"Importação real via import_legacy_data com fixture JSON, pagamento, anexo, ausente, dono nulo, auditoria desligada, duplicidade e transferência."
 TS-REP-001,Relatório financeiro,P0,E2E-UI,test_E2E_REP_001_004_005; test_E2E_N9_03,Coberto,Relatório financeiro.
 TS-REP-002,Sincronização Pix,P0,E2E-UI,test_E2E_REP_002,Coberto,Sincronização via gateway simulado.
-TS-REP-003,Sincronização boleto,P0,E2E-UI,-,Lacuna,Sincronização específica de boleto não é isolada.
+TS-REP-003,Sincronização boleto,P0,Unidade,apps/reports/tests.py::test_TS_REP_003_sincronizacao_boleto_estados,Unidade,Coberto por teste de unidade/integração.
 TS-REP-004,Exportação CSV,P1,E2E-UI,test_E2E_REP_001_004_005,Coberto,Exportação CSV.
 TS-REP-005,Exportação XLSX,P1,E2E-UI,test_E2E_REP_001_004_005,Coberto,Exportação XLSX/fallback.
 TS-REP-006,Relatório de auditoria,P1,E2E-UI,test_E2E_REP_006,Coberto,Relatório de auditoria.

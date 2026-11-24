@@ -3,6 +3,8 @@ rejeição e resolução administrativa."""
 
 from __future__ import annotations
 
+import uuid
+
 import pytest
 from helpers import (
     BASE_URL,
@@ -185,3 +187,88 @@ def test_E2E_AUD_015_transferencia_de_periodo(
     state = application_state(protocol)
     assert state["term"]["id"] == target["id"]
     assert state["audit_submissions"][0]["resolutions"][0]["resolution"] == "transfer_term"
+
+
+# Cobre: TS-AUD-002
+def test_E2E_AUD_002_projeto_importado_sem_dono_nao_entra_em_auditoria(
+    page: Page,
+    login,
+    track_protocol,
+    manage,
+    candidate_account,
+) -> None:
+    protocol = f"{uuid.uuid4().int % 1_000_000_000:09d}"
+    manage(
+        "e2e_create_imported_application",
+        "--protocol",
+        protocol,
+        "--contact-email",
+        candidate_account["email"],
+    )
+    track_protocol(protocol)
+    login()
+    response = page.goto(f"{BASE_URL}/auditoria/inscricao/{protocol}/enviar/")
+    assert response is not None and response.status == 404
+
+
+# Cobre: TS-AUD-004
+def test_E2E_AUD_004_arquivo_acima_de_10mb_e_rejeitado(
+    page: Page, login, track_protocol, e2e_term
+) -> None:
+    protocol = create_project_via_ui(page, login, track_protocol, e2e_term["id"])
+    pay_fee(page, protocol, "pix")
+    page.goto(f"{BASE_URL}/auditoria/inscricao/{protocol}/enviar/")
+    page.select_option('select[name="channel"]', "file")
+    page.set_input_files(
+        'input[name="file"]',
+        files=[
+            {
+                "name": "grande.pdf",
+                "mimeType": "application/pdf",
+                "buffer": b"x" * (10 * 1024 * 1024 + 1),
+            }
+        ],
+    )
+    with page.expect_response(
+        lambda response: response.request.method == "POST"
+    ) as response_info:
+        page.click("button[type='submit']")
+    assert response_info.value.status == 400
+    expect(page.locator("body")).to_contain_text("10 MB")
+
+
+# Cobre: TS-AUD-008
+def test_E2E_AUD_008_arquivo_e_link_simultaneos_sao_rejeitados(
+    page: Page, login, track_protocol, e2e_term
+) -> None:
+    protocol = create_project_via_ui(page, login, track_protocol, e2e_term["id"])
+    pay_fee(page, protocol, "pix")
+
+    page.goto(f"{BASE_URL}/auditoria/inscricao/{protocol}/enviar/")
+    page.select_option('select[name="channel"]', "file")
+    page.set_input_files(
+        'input[name="file"]',
+        files=[{"name": "dados.csv", "mimeType": "text/csv", "buffer": b"a,b\n1,2\n"}],
+    )
+    page.fill('input[name="external_url"]', "https://example.com/dados")
+    with page.expect_response(
+        lambda response: response.request.method == "POST"
+    ) as response_info:
+        page.click("button[type='submit']")
+    assert response_info.value.status == 400
+    expect(page.locator("body")).to_contain_text("Não informe um link")
+
+    page.goto(f"{BASE_URL}/auditoria/inscricao/{protocol}/enviar/")
+    page.select_option('select[name="channel"]', "external_link")
+    page.fill('input[name="external_url"]', "https://example.com/dados")
+    page.check('input[name="external_link_declaration"]')
+    page.set_input_files(
+        'input[name="file"]',
+        files=[{"name": "dados.csv", "mimeType": "text/csv", "buffer": b"a,b\n1,2\n"}],
+    )
+    with page.expect_response(
+        lambda response: response.request.method == "POST"
+    ) as response_info:
+        page.click("button[type='submit']")
+    assert response_info.value.status == 400
+    expect(page.locator("body")).to_contain_text("Não envie um arquivo")

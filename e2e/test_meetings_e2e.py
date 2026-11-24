@@ -209,3 +209,47 @@ def test_E2E_MEET_014_consulta_aprovada_como_projeto_gera_taxa_com_credito(
     state = application_state(protocol)
     assert state["lifecycle_status"] == "approved_as_project"
     assert state["payment_state"] == "paid"
+
+
+def _fill_schedule(page: Page, date_str: str) -> None:
+    page.fill('input[name="scheduled_date"]', date_str)
+    page.fill('input[name="scheduled_time"]', "10:00")
+    page.select_option('select[name="meeting_mode"]', "online")
+    page.fill('input[name="virtual_link"]', "https://meet.example.com/e2e")
+
+
+# Cobre: TS-MEET-002
+def test_E2E_MEET_002_triagem_bloqueada_para_consulta(
+    page: Page, login, login_as, track_protocol, e2e_term, application_state
+) -> None:
+    protocol = _awaiting_consultation(page, login, track_protocol, e2e_term)
+    login_as("secretariat")
+    page.goto(f"{BASE_URL}/agendamentos/triagem/{protocol}/")
+    wait_for_page(page)
+    _fill_schedule(page, YESTERDAY)
+    with page.expect_response(
+        lambda response: response.request.method == "POST"
+    ) as response_info:
+        page.click("button[type='submit']")
+    assert response_info.value.status == 400
+    state = application_state(protocol)
+    assert state["screening"] is None
+    assert state["lifecycle_status"] == "awaiting_consultation_scheduling"
+
+
+# Cobre: TS-MEET-004
+def test_E2E_MEET_004_reuniao_bloqueada_para_projeto(
+    page: Page, login, login_as, track_protocol, e2e_term, application_state
+) -> None:
+    protocol = _awaiting_screening(page, login, login_as, track_protocol, e2e_term)
+    login_as("secretariat")
+    page.goto(f"{BASE_URL}/agendamentos/reuniao/{protocol}/")
+    wait_for_page(page)
+    _fill_schedule(page, YESTERDAY)
+    with page.expect_response(
+        lambda response: response.request.method == "POST"
+    ) as response_info:
+        page.click("button[type='submit']")
+    assert response_info.value.status == 400
+    state = application_state(protocol)
+    assert state["consultation"] is None

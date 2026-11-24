@@ -163,3 +163,34 @@ def test_E2E_N1_03_recuperacao_de_senha_abre(page: Page) -> None:
     page.goto(f"{BASE_URL}/auth/password_reset/")
     _detail(page)
     expect(page.locator("body")).to_contain_text("Recuperar senha")
+
+
+# Cobre: TS-TRM-005
+def test_E2E_TRM_005_transferencia_preserva_pagamentos(
+    login,
+    login_as,
+    track_protocol,
+    e2e_term,
+    create_term,
+    application_state,
+    page: Page,
+) -> None:
+    protocol = create_project_via_ui(page, login, track_protocol, e2e_term["id"])
+    pay_fee(page, protocol, "pix")
+    before = application_state(protocol)["fees"]
+    next_term = create_term()
+
+    login_as("secretariat")
+    page.goto(f"{BASE_URL}/inscricoes/{protocol}/")
+    _detail(page)
+    page.once("dialog", lambda dialog: dialog.accept())
+    page.click("button:has-text('Transferir semestre')")
+    _detail(page)
+
+    after_state = application_state(protocol)
+    assert after_state["term"]["id"] == next_term["id"]
+    assert [
+        (fee["id"], fee["type"], fee["amount"], fee["is_paid"]) for fee in after_state["fees"]
+    ] == [
+        (fee["id"], fee["type"], fee["amount"], fee["is_paid"]) for fee in before
+    ]

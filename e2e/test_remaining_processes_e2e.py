@@ -21,7 +21,7 @@ from helpers import (
     submit_dataset_file,
     wait_for_page,
 )
-from playwright.sync_api import Page
+from playwright.sync_api import Page, expect
 
 
 def test_E2E_ENV_001_stack_sem_gateways_externos(e2e_environment: dict) -> None:
@@ -280,3 +280,59 @@ def test_E2E_CLAIM_004_006_codigo_incorreto_nao_vincula(
     assert "claim.verification_failed" in {
         event["code"] for event in state["events"]
     }
+
+
+def _change_modality(page: Page, protocol: str) -> None:
+    page.goto(f"{BASE_URL}/inscricoes/?term=all")
+    wait_for_page(page)
+    row = page.locator("tr", has_text=protocol).first
+    row.locator("button:has-text('Mudar')").click()
+    wait_for_page(page)
+
+
+# Cobre: TS-MOD-001
+def test_E2E_MOD_001_projeto_nao_pago_convertido_em_consulta(
+    page: Page, login, login_as, track_protocol, e2e_term, application_state
+) -> None:
+    protocol = create_project_via_ui(page, login, track_protocol, e2e_term["id"])
+    login_as("secretariat")
+    _change_modality(page, protocol)
+    state = application_state(protocol)
+    assert state["modality"] == "consultation"
+    fee = next(item for item in state["fees"] if item["type"] == "application_fee")
+    assert fee["amount"] == "140.00"
+
+
+# Cobre: TS-MOD-002
+def test_E2E_MOD_002_projeto_pago_convertido_em_consulta(
+    page: Page, login, login_as, track_protocol, e2e_term, application_state
+) -> None:
+    protocol = create_project_via_ui(page, login, track_protocol, e2e_term["id"])
+    pay_fee(page, protocol, "pix")
+    login_as("secretariat")
+    _change_modality(page, protocol)
+    state = application_state(protocol)
+    assert state["modality"] == "consultation"
+    supplement = next(item for item in state["fees"] if item["type"] == "supplement_fee")
+    assert supplement["amount"] == "60.00"
+    app_fee = next(item for item in state["fees"] if item["type"] == "application_fee")
+    assert app_fee["is_paid"] is True
+
+
+# Cobre: TS-REF-005
+def test_E2E_REF_005_reembolso_acima_do_pago_e_rejeitado(
+    page: Page, login, track_protocol, e2e_term, application_state
+) -> None:
+    protocol = create_consultation_via_ui(page, login, track_protocol, e2e_term["id"])
+    pay_fee(page, protocol, "pix")
+    page.goto(f"{BASE_URL}/reembolsos/inscricao/{protocol}/solicitar/")
+    wait_for_page(page)
+    page.fill('input[name="amount"]', "999.00")
+    page.fill('textarea[name="reason"]', "Acima do pago.")
+    with page.expect_response(
+        lambda response: response.request.method == "POST"
+    ) as response_info:
+        page.click("button[type='submit']")
+    assert response_info.value.status == 400
+    expect(page.locator("body")).to_contain_text("não pode exceder")
+    assert application_state(protocol)["refunds"] == []

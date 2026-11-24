@@ -58,6 +58,7 @@ docker compose -p sistema_cea_e2e -f docker-compose.e2e.yml run --rm \
 | 12 | reutilizado, com NOT P0 | 65 passed | 753,20 s | Correção, aprovação, rejeição, Pix, boleto e manual sem e-mail. |
 | 13 | reutilizado, com CSRF | 66 passed | 761,16 s | POST sem token anônimo e autenticado retorna 403. |
 | 14 | reutilizado, com FILE/CLAIM | 68 passed | 792,37 s | Metadados, download negado, link externo e resgate incorreto. |
+| 15 | reutilizado, P0 sem lacunas | 77 passed | 895,59 s | AUD, MOD, MEET e TRM; 15 P0 unitários. |
 
 Falha original (antes da Fase 1):
 
@@ -72,7 +73,7 @@ Falha original (antes da Fase 1):
 | Métrica | Valor |
 |---|---:|
 | Cenários em `TEST_SCENARIOS.md` | 216 |
-| Testes E2E | 68 |
+| Testes E2E | 77 |
 | Módulos com criação/pagamento UI-only | 10 de 10 |
 | Arquivos de teste E2E | 11 |
 | Rotas não-admin | 72 |
@@ -81,7 +82,7 @@ Falha original (antes da Fase 1):
 | Rotas não-admin alcançadas por link/botão | 28 |
 | Rotas não-admin sem cobertura | 9 |
 | Rotas admin exercitadas | 1 (`/admin/terms/academicterm/add/`) |
-| Testes com marcador `# Cobre: TS-*` | 67 de 68 |
+| Testes com marcador `# Cobre: TS-*` | 76 de 77 |
 | Testes marcados como P0 | 10 |
 | Execuções completas verdes consecutivas no mesmo banco | 3 (2 container + 1 host) |
 | Namespace E2E resetado ao final | Sim (`e2e_cleanup --purge-e2e-terms`) |
@@ -91,62 +92,44 @@ Falha original (antes da Fase 1):
 
 | Prioridade | Total | Coberto | Parcial | Lacuna | Divergente | Unidade |
 |---|---:|---:|---:|---:|---:|---:|
-| P0 | 101 | 63 | 14 | 20 | 0 | 4 |
+| P0 | 101 | 72 | 14 | 0 | 0 | 15 |
 | P1 | 100 | 26 | 10 | 57 | 0 | 7 |
 | P2 | 15 | 2 | 1 | 11 | 0 | 1 |
-| **Total** | **216** | **91** | **25** | **88** | **0** | **12** |
+| **Total** | **216** | **100** | **25** | **68** | **0** | **23** |
 
-Leitura: 91 cenários têm cobertura E2E direta (42,1%). Mesmo entre P0, 20 estão em lacuna e 14 são parciais. Isso mostra que a suíte atual é boa em happy paths, mas ainda distante de “100% dos cenários de uso”.
+Leitura: 100 cenários têm cobertura E2E direta (46,3%). Nenhum cenário P0 está em lacuna; 14 são parciais e 15 têm cobertura de unidade. As lacunas restantes estão em P1/P2.
 
 ## 5. Cobertura por área
 
 | Área | Total | Coberto | Parcial | Lacuna | Divergente | Unidade |
 |---|---:|---:|---:|---:|---:|---:|
 | AUTH | 7 | 2 | 3 | 2 | 0 | 0 |
-| APP | 22 | 6 | 5 | 11 | 0 | 0 |
+| APP | 22 | 6 | 5 | 10 | 0 | 1 |
 | VAL | 8 | 0 | 1 | 7 | 0 | 0 |
-| AUD | 18 | 9 | 2 | 7 | 0 | 0 |
-| FEE | 8 | 1 | 3 | 4 | 0 | 0 |
+| AUD | 18 | 12 | 2 | 4 | 0 | 0 |
+| FEE | 8 | 1 | 3 | 1 | 0 | 3 |
 | PAY | 18 | 14 | 2 | 2 | 0 | 0 |
 | PIX | 11 | 5 | 0 | 3 | 0 | 3 |
-| BSL | 12 | 4 | 1 | 7 | 0 | 0 |
-| MAN | 4 | 2 | 0 | 2 | 0 | 0 |
-| REF | 5 | 3 | 0 | 2 | 0 | 0 |
-| MOD | 7 | 2 | 0 | 5 | 0 | 0 |
-| TRM | 7 | 3 | 2 | 2 | 0 | 0 |
-| MEET | 15 | 9 | 0 | 6 | 0 | 0 |
+| BSL | 12 | 4 | 1 | 4 | 0 | 3 |
+| MAN | 4 | 2 | 0 | 1 | 0 | 1 |
+| REF | 5 | 4 | 0 | 0 | 0 | 1 |
+| MOD | 7 | 4 | 0 | 2 | 0 | 1 |
+| TRM | 7 | 4 | 2 | 1 | 0 | 0 |
+| MEET | 15 | 11 | 0 | 4 | 0 | 0 |
 | NOT | 14 | 6 | 0 | 8 | 0 | 0 |
 | FILE | 6 | 3 | 1 | 2 | 0 | 0 |
 | CLAIM | 8 | 5 | 0 | 3 | 0 | 0 |
 | IMP | 8 | 8 | 0 | 0 | 0 | 0 |
-| REP | 7 | 5 | 0 | 2 | 0 | 0 |
+| REP | 7 | 5 | 0 | 1 | 0 | 1 |
 | EVT | 4 | 0 | 4 | 0 | 0 | 0 |
 | INT | 6 | 0 | 0 | 0 | 0 | 6 |
 | SEC | 8 | 4 | 1 | 3 | 0 | 0 |
 | NFR | 6 | 0 | 0 | 3 | 0 | 3 |
 | NAV | 7 | 0 | 0 | 7 | 0 | 0 |
 
-## 6. Lacunas P0 por área
+## 6. P0 sem E2E direto
 
-| Área | Cenários P0 em lacuna |
-|---|---|
-| APP | `TS-APP-004` |
-| AUD | `TS-AUD-002`, `TS-AUD-004`, `TS-AUD-008` |
-| BSL | `TS-BSL-002`, `TS-BSL-003`, `TS-BSL-004` |
-| CLAIM | `TS-CLAIM-004`, `TS-CLAIM-006` |
-| FEE | `TS-FEE-003`, `TS-FEE-006`, `TS-FEE-007` |
-| FILE | `TS-FILE-001`, `TS-FILE-003`, `TS-FILE-006` |
-| IMP | `TS-IMP-001`, `TS-IMP-002`, `TS-IMP-003`, `TS-IMP-004`, `TS-IMP-005`, `TS-IMP-007` |
-| MAN | `TS-MAN-002`, `TS-MAN-003` |
-| MEET | `TS-MEET-002`, `TS-MEET-004` |
-| MOD | `TS-MOD-001`, `TS-MOD-002`, `TS-MOD-006` |
-| NOT | `TS-NOT-002`, `TS-NOT-003`, `TS-NOT-004`, `TS-NOT-006`, `TS-NOT-007`, `TS-NOT-008` |
-| PAY | `TS-PAY-003`, `TS-PAY-004`, `TS-PAY-005`, `TS-PAY-006`, `TS-PAY-007`, `TS-PAY-011` |
-| PIX | `TS-PIX-001`, `TS-PIX-002`, `TS-PIX-007` |
-| REF | `TS-REF-004`, `TS-REF-005` |
-| REP | `TS-REP-003` |
-| SEC | `TS-SEC-001` |
-| TRM | `TS-TRM-005` |
+Nenhum cenário P0 está em lacuna. Restam 14 parciais (a maioria já coberta por E2E) e 15 cobertos apenas por unidade, todos com evidência no catálogo `docs/e2e_scenario_catalog.csv`.
 
 ## 7. Cobertura de rotas
 
