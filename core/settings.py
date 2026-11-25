@@ -204,6 +204,14 @@ if not _db_url:
     else:
         _db_url = 'sqlite:///db.sqlite3'
 
+if _db_url.startswith('mysql://'):
+    # PyMySQL é o driver puro-Python para MySQL/MariaDB: a imagem de runtime
+    # não traz mysqlclient. O shim expõe PyMySQL como MySQLdb, que é o módulo
+    # esperado pelo backend django.db.backends.mysql.
+    import pymysql
+
+    pymysql.install_as_MySQLdb()
+
 DATABASES = {
     'default': env.db_url_config(_db_url),
 }
