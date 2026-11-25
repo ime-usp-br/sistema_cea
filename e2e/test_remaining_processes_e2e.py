@@ -31,6 +31,8 @@ def test_E2E_ENV_001_stack_sem_gateways_externos(e2e_environment: dict) -> None:
     assert e2e_environment["bank_slip_gateway"] == "FakeBankSlipGateway"
     assert e2e_environment["celery_task_always_eager"] is True
     assert "filebased" in e2e_environment["email_backend"]
+    assert e2e_environment["timezone"] == "America/Sao_Paulo"
+    assert e2e_environment["today"] == date.today().isoformat()
 
 
 # Cobre: TS-MOD-004, TS-MOD-005

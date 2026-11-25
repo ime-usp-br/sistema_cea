@@ -4,7 +4,6 @@ pendente, lixeira/restauração, histórico, relatórios, exportações e PDFs."
 from __future__ import annotations
 
 import json
-from datetime import date
 
 from helpers import (
     BASE_URL,
@@ -19,13 +18,13 @@ from helpers import (
 from playwright.sync_api import Page, expect
 
 
-def _admin_create_term(page: Page, year: int) -> None:
+def _admin_create_term(page: Page, year: int, start_date: str) -> None:
     page.goto(f"{BASE_URL}/admin/terms/academicterm/add/")
     expect(page.locator("#id_year")).to_be_visible()
     page.fill("#id_year", str(year))
     page.select_option("#id_period", "first")
     if page.locator("#id_submission_start_date").count():
-        page.fill("#id_submission_start_date", date.today().isoformat())
+        page.fill("#id_submission_start_date", start_date)
     if page.locator("#id_submission_end_date").count():
         page.fill("#id_submission_end_date", f"{year}-12-31")
     page.click("input[name='_save'], button[name='_save']")
@@ -58,10 +57,11 @@ def test_E2E_TRM_001_002_003_cadastro_de_semestre_e_transferencia_pendente(
     created_terms: list[int],
     manage,
     peek_term,
+    app_today: str,
 ) -> None:
     base_year = peek_term()
     login_as("admin")
-    _admin_create_term(page, base_year)
+    _admin_create_term(page, base_year, app_today)
     base_term = json.loads(
         manage("e2e_create_term", "--year", str(base_year), "--period", "first")
         .strip()
@@ -85,7 +85,7 @@ def test_E2E_TRM_001_002_003_cadastro_de_semestre_e_transferencia_pendente(
     # Criar o próximo semestre pelo admin conclui a migração automática.
     next_year = peek_term()
     login_as("admin")
-    _admin_create_term(page, next_year)
+    _admin_create_term(page, next_year, app_today)
     next_term = json.loads(
         manage("e2e_create_term", "--year", str(next_year), "--period", "first")
         .strip()

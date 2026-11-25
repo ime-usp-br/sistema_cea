@@ -1,5 +1,7 @@
 import tempfile
+from datetime import date
 from typing import cast
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -121,6 +123,26 @@ class ApplicationFormFakerTest(TestCase):
             )
         )
         self.assertEqual(ServiceApplication.objects.count(), 0)
+
+    # TS-APP-024 (fronteira) — o período usa a data local do app, não UTC.
+    def test_TS_APP_024_abertura_do_periodo_respeita_fuso_do_app(self) -> None:
+        self.term.submission_start_date = date(2026, 11, 25)
+        self.term.submission_end_date = date(2026, 12, 31)
+        self.term.save()
+
+        with patch(
+            "applications.views.timezone.localdate",
+            return_value=date(2026, 11, 24),
+        ):
+            before = self.client.get(reverse("applications:create"))
+        self.assertFalse(before.context["project_submission_open"])
+
+        with patch(
+            "applications.views.timezone.localdate",
+            return_value=date(2026, 11, 25),
+        ):
+            opening_day = self.client.get(reverse("applications:create"))
+        self.assertTrue(opening_day.context["project_submission_open"])
 
     # TS-APP-024 (variação) — Consulta em fluxo contínuo não é bloqueada
     def test_TS_APP_024_consulta_nao_e_bloqueada_fora_do_periodo(self) -> None:

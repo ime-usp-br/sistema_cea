@@ -12,6 +12,7 @@ from typing import Any
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
+from django.utils import timezone
 
 
 class Command(BaseCommand):
@@ -36,6 +37,8 @@ class Command(BaseCommand):
                     "email_file_path": settings.EMAIL_FILE_PATH,
                     "media_root": settings.MEDIA_ROOT,
                     "notification_center_email": settings.NOTIFICATION_CENTER_EMAIL,
+                    "timezone": settings.TIME_ZONE,
+                    "today": timezone.localdate().isoformat(),
                 }
             )
         )

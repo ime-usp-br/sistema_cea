@@ -18,6 +18,9 @@
 x-e2e-app-environment: &e2e-app-environment
   DJANGO_ENV: development
   DEBUG: "True"
+  # Mantém o relógio do container alinhado ao TIME_ZONE do app. Sem isto,
+  # ``date.today()`` em comandos/testes pode ficar um dia à frente do app.
+  TZ: America/Sao_Paulo
   SECRET_KEY: e2e-secret-key-not-for-production
   ALLOWED_HOSTS: "*"
   DATABASE_URL: postgres://e2e:e2e@db:5432/e2e
@@ -130,6 +133,8 @@ services:
     environment:
       # A aplicação sob teste é o serviço ``web`` desta mesma stack.
       E2E_BASE_URL: http://web:8000
+      # O container de testes precisa usar o mesmo fuso do app.
+      TZ: America/Sao_Paulo
       # Caminho absoluto do repositório no HOST: necessário porque os testes
       # executam comandos de management via socket do Docker.
       E2E_HOST_ROOT: "${E2E_HOST_ROOT:-.}"

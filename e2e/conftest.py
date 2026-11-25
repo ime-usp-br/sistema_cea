@@ -311,6 +311,12 @@ def e2e_environment() -> dict[str, Any]:
 
 
 @pytest.fixture
+def app_today(e2e_environment: dict[str, Any]) -> str:
+    """Data corrente no fuso do app, para não depender do TZ do host."""
+    return str(e2e_environment["today"])
+
+
+@pytest.fixture
 def manage() -> Callable[..., str]:
     """Executa um comando de management na stack E2E (setup/inspeção)."""
 
