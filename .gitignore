@@ -32,6 +32,8 @@ staticfiles/
 .env
 .env.*
 !.env.example
+# Ambiente dev carregado no Portainer (contém segredos; nunca commitar)
+.env.dev
 
 # IDEs
 .vscode/
