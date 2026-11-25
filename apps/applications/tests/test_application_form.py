@@ -1,11 +1,9 @@
 import tempfile
-from datetime import date
-from typing import cast
+from datetime import date, timedelta
+from typing import Any
 from unittest.mock import patch
 
-from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.http import HttpResponse
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -15,8 +13,7 @@ from applications.models import ServiceApplication
 from terms.factories import AcademicTermFactory
 from terms.models import AcademicTerm
 from users.factories import UserFactory
-
-User = get_user_model()
+from users.models import User
 
 
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp(prefix="cea-appform-media-"))
@@ -29,11 +26,11 @@ class ApplicationFormFakerTest(TestCase):
     """
 
     def setUp(self) -> None:
-        self.term: AcademicTerm = AcademicTermFactory()  # type: ignore[assignment]
-        self.user: User = cast(User, UserFactory())
+        self.term: AcademicTerm = AcademicTermFactory.create()
+        self.user: User = UserFactory.create()
         self.client.force_login(self.user)
 
-    def _post(self, payload) -> HttpResponse:
+    def _post(self, payload) -> Any:
         return self.client.post(reverse("applications:create"), payload)
 
     def test_payload_completo_cria_projeto(self) -> None:
@@ -105,8 +102,8 @@ class ApplicationFormFakerTest(TestCase):
     # TS-APP-024
     def test_TS_APP_024_bloqueio_inscricao_projeto_fora_do_periodo(self) -> None:
         """Rejeita Projeto quando o termo está fora da janela de submissão (Gap 1)."""
-        past_date = timezone.localdate() - timezone.timedelta(days=1)
-        self.term.submission_start_date = past_date - timezone.timedelta(days=30)
+        past_date = timezone.localdate() - timedelta(days=1)
+        self.term.submission_start_date = past_date - timedelta(days=30)
         self.term.submission_end_date = past_date
         self.term.save()
 
@@ -146,8 +143,8 @@ class ApplicationFormFakerTest(TestCase):
 
     # TS-APP-024 (variação) — Consulta em fluxo contínuo não é bloqueada
     def test_TS_APP_024_consulta_nao_e_bloqueada_fora_do_periodo(self) -> None:
-        past_date = timezone.localdate() - timezone.timedelta(days=1)
-        self.term.submission_start_date = past_date - timezone.timedelta(days=30)
+        past_date = timezone.localdate() - timedelta(days=1)
+        self.term.submission_start_date = past_date - timedelta(days=30)
         self.term.submission_end_date = past_date
         self.term.save()
 
@@ -384,8 +381,8 @@ class ApplicationFormFakerTest(TestCase):
         self.assertIn("refund_bank_name", response.context["form"].errors)
 
     def test_TS_VAL_007_erro_de_periodo_de_projeto_aparece_na_tela(self) -> None:
-        self.term.submission_start_date = timezone.localdate() - timezone.timedelta(days=30)
-        self.term.submission_end_date = timezone.localdate() - timezone.timedelta(days=1)
+        self.term.submission_start_date = timezone.localdate() - timedelta(days=30)
+        self.term.submission_end_date = timezone.localdate() - timedelta(days=1)
         self.term.save()
 
         payload = build_valid_form_payload(

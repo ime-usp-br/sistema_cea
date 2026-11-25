@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import tempfile
 from decimal import Decimal
+from typing import Any, cast
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError, transaction
@@ -560,7 +563,9 @@ class AuditScenarioTests(TestCase):
             response["Content-Disposition"],
             'attachment; filename="dados_revisao.csv"',
         )
-        self.assertEqual(b"".join(response.streaming_content), b"a,b\n1,2\n")
+        self.assertEqual(
+            b"".join(cast(Any, response).streaming_content), b"a,b\n1,2\n"
+        )
 
     def test_TS_AUD_018b_secretaria_tambem_baixa_arquivo(self) -> None:
         application = self.create_project()
@@ -572,7 +577,10 @@ class AuditScenarioTests(TestCase):
             reverse("audits:download_file", args=[submission.pk])
         )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(b"".join(response.streaming_content), b"coluna_a,coluna_b\n1,2\n")
+        self.assertEqual(
+            b"".join(cast(Any, response).streaming_content),
+            b"coluna_a,coluna_b\n1,2\n",
+        )
 
     def test_TS_AUD_018c_candidato_nao_pode_baixar_arquivo(self) -> None:
         application = self.create_project()
@@ -657,6 +665,7 @@ class AuditFileMaintenanceTests(TestCase):
         application = self._paid_project()
         submission = self._submit(application)
         asset = submission.file_asset
+        assert asset is not None
         from django.core.files.storage import default_storage
 
         default_storage.delete(asset.storage_key)
@@ -670,6 +679,7 @@ class AuditFileMaintenanceTests(TestCase):
         application = self._paid_project()
         submission = self._submit(application)
         asset_id = submission.file_asset_id
+        assert asset_id is not None
         submission_id = submission.pk
         application.soft_delete()
         self.assertTrue(

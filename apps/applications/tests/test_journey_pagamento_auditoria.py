@@ -63,8 +63,8 @@ class PixBoletoConsultationJourneyTests(TestCase):
     """Jornada 1: Inscrição de Consulta com pagamento via Pix ou Boleto."""
 
     def setUp(self) -> None:
-        self.term = AcademicTermFactory()
-        self.candidate = UserFactory()
+        self.term = AcademicTermFactory.create()
+        self.candidate = UserFactory.create()
         self.client.force_login(self.candidate)
 
     def _create_consultation_form(self) -> ServiceApplication:
@@ -124,7 +124,9 @@ class PixBoletoConsultationJourneyTests(TestCase):
         self.assertEqual(response.context["fee"].amount, Decimal("140.00"))
 
         self._choose_method(application, "pix")
-        instrument = application.fee_requirements.first().payment_instruments.get()
+        fee = application.fee_requirements.first()
+        assert fee is not None
+        instrument = fee.payment_instruments.get()
         self.assertEqual(instrument.method, "pix")
         self.assertEqual(instrument.state, "active")
         self.assertIsNotNone(instrument.active_unique_fee_token)
@@ -132,7 +134,9 @@ class PixBoletoConsultationJourneyTests(TestCase):
     def test_TS_PAY_002_pagina_de_pagamento_aceita_boleto(self) -> None:
         application = self._create_consultation_form()
         self._choose_method(application, "bank_slip")
-        instrument = application.fee_requirements.first().payment_instruments.get()
+        fee = application.fee_requirements.first()
+        assert fee is not None
+        instrument = fee.payment_instruments.get()
         self.assertEqual(instrument.method, "bank_slip")
         self.assertEqual(instrument.state, "active")
 
@@ -301,10 +305,10 @@ class AuditProjectJourneyTests(TestCase):
     """Jornada 2: Inscrição de Projeto submetida à auditoria docente."""
 
     def setUp(self) -> None:
-        self.term = AcademicTermFactory()
-        self.candidate = UserFactory()
-        self.teacher = TeacherFactory()
-        self.secretariat = SecretariatFactory()
+        self.term = AcademicTermFactory.create()
+        self.candidate = UserFactory.create()
+        self.teacher = TeacherFactory.create()
+        self.secretariat = SecretariatFactory.create()
 
     def _create_project_form(self) -> ServiceApplication:
         payload = build_valid_form_payload(

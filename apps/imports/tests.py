@@ -539,6 +539,7 @@ class LegacyClaimViewTests(TestCase):
         )
         response = self.client.get(reverse("imports:claim_queue"))
         self.assertEqual(response.status_code, 200)
+        assert claim.protocol is not None
         self.assertContains(response, claim.protocol)
 
     def test_view_claim_queue_requer_secretaria(self) -> None:

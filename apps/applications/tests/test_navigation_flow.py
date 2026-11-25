@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import base64
 import tempfile
+from typing import Any
 from unittest.mock import patch
 
 from django.test import TestCase, override_settings
@@ -46,23 +47,23 @@ SLIP_RESULT = {
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp(prefix="cea-nav-media-"))
 class NavigationFlowTests(TestCase):
     def setUp(self) -> None:
-        self.term = AcademicTermFactory()
-        self.candidate = UserFactory()
-        self.secretariat = SecretariatFactory()
-        self.teacher = TeacherFactory()
-        self.admin = AdministratorFactory()
+        self.term = AcademicTermFactory.create()
+        self.candidate = UserFactory.create()
+        self.secretariat = SecretariatFactory.create()
+        self.teacher = TeacherFactory.create()
+        self.admin = AdministratorFactory.create()
 
     def _application(
         self,
         modality: str = ServiceApplication.Modality.CONSULTATION,
         owner=None,
     ) -> ServiceApplication:
-        return ApplicationFactory(modality=modality, owner=owner or self.candidate)
+        return ApplicationFactory.create(modality=modality, owner=owner or self.candidate)
 
-    def _get(self, url: str) -> object:
+    def _get(self, url: str) -> Any:
         return self.client.get(url)
 
-    def _assert_link_present(self, response: object, url: str, msg: str | None = None) -> None:
+    def _assert_link_present(self, response: Any, url: str, msg: str | None = None) -> None:
         self.assertContains(response, f'href="{url}"', msg_prefix=msg or "")
 
     # ------------------------------------------------------------------
@@ -122,7 +123,7 @@ class NavigationFlowTests(TestCase):
 
         pix_detail = self._get(reverse("pix:detail", args=[application.protocol]))
         self.assertContains(pix_detail, "Pix copia e cola")
-        self.assertContains(pix_detail, PIX_RESULT["qrCode"])
+        self.assertContains(pix_detail, str(PIX_RESULT["qrCode"]))
 
     def test_TS_NAV_002_fluxo_auditoria_secretaria_sem_urls_manuais(self) -> None:
         # Fluxo sequencial: o Projeto paga a taxa de inscrição antes de poder
@@ -175,6 +176,7 @@ class NavigationFlowTests(TestCase):
         self.assertEqual(submit.status_code, 302)
         submission = project.audit_submissions.first()
         self.assertIsNotNone(submission)
+        assert submission is not None
 
         # Secretaria acessa a fila de auditoria a partir do menu global.
         self.client.logout()
@@ -299,23 +301,24 @@ class NavigationFlowTests(TestCase):
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp(prefix="cea-nav-media-"))
 class PaymentInstrumentNavigationTests(TestCase):
     def setUp(self) -> None:
-        self.term = AcademicTermFactory()
-        self.candidate = UserFactory()
+        self.term = AcademicTermFactory.create()
+        self.candidate = UserFactory.create()
         self.client.force_login(self.candidate)
 
-    def _get(self, url: str) -> object:
+    def _get(self, url: str) -> Any:
         return self.client.get(url)
 
-    def _assert_link_present(self, response: object, url: str, msg: str | None = None) -> None:
+    def _assert_link_present(self, response: Any, url: str, msg: str | None = None) -> None:
         self.assertContains(response, f'href="{url}"', msg_prefix=msg or "")
 
     def test_TS_NAV_007_instrumentos_ligam_ao_boleto_pix_e_recibo(self) -> None:
-        application = ApplicationFactory(
+        application = ApplicationFactory.create(
             modality=ServiceApplication.Modality.CONSULTATION,
             owner=self.candidate,
         )
         fee = application.fee_requirements.first()
         self.assertIsNotNone(fee)
+        assert fee is not None
 
         # Cria um boleto e valida o link da tela de pagamento para o boleto.
         with patch(

@@ -16,8 +16,8 @@ from users.factories import SecretariatFactory, UserFactory
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp(prefix="cea-transfer-media-"))
 class TermTransferPendingTests(TestCase):
     def setUp(self) -> None:
-        self.candidate = UserFactory()
-        self.secretariat = SecretariatFactory()
+        self.candidate = UserFactory.create()
+        self.secretariat = SecretariatFactory.create()
         self.term = AcademicTerm.objects.create(year=2100, period="first")
 
     def _application(self, modality: str = "project") -> ServiceApplication:

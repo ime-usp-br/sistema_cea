@@ -3,7 +3,7 @@ import factory
 from .models import AcademicTerm
 
 
-class AcademicTermFactory(factory.django.DjangoModelFactory):
+class AcademicTermFactory(factory.django.DjangoModelFactory[AcademicTerm]):
     class Meta:
         model = AcademicTerm
 

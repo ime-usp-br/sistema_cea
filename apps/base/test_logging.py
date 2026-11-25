@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+from typing import Any, cast
 
 from core.logging import JsonFormatter
 from django.conf import settings
@@ -23,7 +24,7 @@ class StructuredLoggingTests(SimpleTestCase):
         )
         record.application_id = 42
         record.protocol = "123456789"
-        payload = json.loads(JsonFormatter().format(record))
+        payload = cast(dict[str, Any], json.loads(JsonFormatter().format(record)))
         self.assertEqual(payload["level"], "ERROR")
         self.assertEqual(payload["logger"], "applications.services")
         self.assertEqual(payload["message"], "Falha ao processar")
@@ -32,8 +33,11 @@ class StructuredLoggingTests(SimpleTestCase):
         self.assertIn("timestamp", payload)
 
     def test_TS_NFR_003_logging_configurado_com_formatter_json(self) -> None:
+        logging_config = cast(dict[str, Any], settings.LOGGING)
         self.assertEqual(
-            settings.LOGGING["formatters"]["json"]["()"],
+            logging_config["formatters"]["json"]["()"],
             "core.logging.JsonFormatter",
         )
-        self.assertEqual(settings.LOGGING["handlers"]["console"]["formatter"], "json")
+        self.assertEqual(
+            logging_config["handlers"]["console"]["formatter"], "json"
+        )

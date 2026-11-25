@@ -130,7 +130,7 @@ class SecretariaScreenTests(TestCase):
         from applications.factories import ApplicationFactory
         from documents.services import DocumentRenderingService
 
-        application = ApplicationFactory(
+        application = ApplicationFactory.create(
             modality=ServiceApplication.Modality.PROJECT,
             term=self.term_second,
         )

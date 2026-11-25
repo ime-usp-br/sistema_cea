@@ -83,12 +83,12 @@ SAMPLE_RECIPES = [
 
 @pytest.fixture
 def term(db):
-    return AcademicTermFactory()
+    return AcademicTermFactory.create()
 
 
 @pytest.fixture
 def user(db):
-    return UserFactory()
+    return UserFactory.create()
 
 
 @pytest.fixture

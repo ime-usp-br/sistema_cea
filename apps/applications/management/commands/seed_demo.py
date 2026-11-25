@@ -41,7 +41,7 @@ class Command(BaseCommand):
             period=AcademicTerm.Period.FIRST,
             defaults={"submission_start_date": date.today()},
         )
-        users = [UserFactory() for _ in range(options["users"])]
+        users = [UserFactory.create() for _ in range(options["users"])]
         self.stdout.write(
             self.style.SUCCESS(f"Período {term} e {len(users)} candidatos criados.")
         )

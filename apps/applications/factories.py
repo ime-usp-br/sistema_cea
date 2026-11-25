@@ -167,7 +167,7 @@ def build_valid_form_payload(
     return payload
 
 
-class ApplicationFormPayloadFactory(factory.Factory):
+class ApplicationFormPayloadFactory(factory.Factory[dict[str, Any]]):
     """Factory que gera um dicionário de POST válido para o ApplicationForm.
 
     Obs.: campos com prefixo ``refund_`` só entram quando o recibo é desejado.
@@ -224,7 +224,7 @@ def service_kwargs_from_payload(payload: dict[str, Any], term: Any) -> dict[str,
     }
 
 
-class ApplicationFactory(factory.Factory):
+class ApplicationFactory(factory.Factory[ServiceApplication]):
     """Cria inscrições válidas percorrendo o Service Layer (fluxo real).
 
     NÃO insere direto no model: passa pelo ApplicationSubmissionService para

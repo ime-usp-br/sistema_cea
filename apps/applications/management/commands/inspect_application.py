@@ -88,21 +88,22 @@ class Command(BaseCommand):
 
         submissions = []
         for submission in application.audit_submissions.all().order_by("submitted_at"):
+            submission_file = submission.file_asset
             submissions.append(
                 {
                     "id": submission.pk,
                     "state": submission.state,
                     "channel": submission.submission_channel,
-                    "has_file": submission.file_asset_id is not None,
+                    "has_file": submission_file is not None,
                     "file": (
                         {
-                            "filename": submission.file_asset.original_filename,
-                            "content_type": submission.file_asset.content_type,
-                            "size": submission.file_asset.size_bytes,
-                            "checksum": submission.file_asset.sha256_checksum,
-                            "purpose": submission.file_asset.purpose,
+                            "filename": submission_file.original_filename,
+                            "content_type": submission_file.content_type,
+                            "size": submission_file.size_bytes,
+                            "checksum": submission_file.sha256_checksum,
+                            "purpose": submission_file.purpose,
                         }
-                        if submission.file_asset_id is not None
+                        if submission_file is not None
                         else None
                     ),
                     "external_url": submission.external_url,

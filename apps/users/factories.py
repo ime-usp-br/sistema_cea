@@ -15,7 +15,7 @@ def _unique_tax_id() -> str:
             return tax_id
 
 
-class UserFactory(factory.django.DjangoModelFactory):
+class UserFactory(factory.django.DjangoModelFactory[User]):
     class Meta:
         model = User
 

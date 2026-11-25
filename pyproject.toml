@@ -70,12 +70,6 @@ exclude = ["^tmp/"]
 module = "senhaunica_socialite.*"
 ignore_missing_imports = true
 
-# Testes usam factory_boy (retornos não tipados de forma útil) e assertContain
-# em context de respostas; a checagem estrita nesses módulos só gera ruído.
-[[tool.mypy.overrides]]
-module = ["*.tests", "*.tests.*"]
-ignore_errors = true
-
 [tool.django-stubs]
 django_settings_module = "core.settings"
 

@@ -19,9 +19,9 @@ EAGER = override_settings(CELERY_TASK_ALWAYS_EAGER=True)
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp())
 class LegacyParityGapsTests(TestCase):
     def setUp(self) -> None:
-        self.term = AcademicTermFactory()
-        self.secretariat = SecretariatFactory()
-        self.candidate = UserFactory()
+        self.term = AcademicTermFactory.create()
+        self.secretariat = SecretariatFactory.create()
+        self.candidate = UserFactory.create()
 
     # ------------------------------------------------------------------
     # GAP 1: TRANSFERÊNCIA MANUAL DE SEMESTRE (TermTransferService)
@@ -29,7 +29,7 @@ class LegacyParityGapsTests(TestCase):
     def test_TS_TRM_006_secretaria_transfere_inscricao_manualmente(self):
         """No Laravel a Secretaria tinha um botão na view para transferir de semestre."""
         self.client.force_login(self.secretariat)
-        next_term = AcademicTermFactory(year=2099)
+        next_term = AcademicTermFactory.create(year=2099)
 
         application = ServiceApplication.objects.create(
             term=self.term,
@@ -112,7 +112,7 @@ class LegacyParityGapsTests(TestCase):
         BankSlipPaymentInstrument.objects.create(
             payment_instrument=instrument,
             bank_slip_reference="boleto-velho",
-            due_date=(timezone.now() - timedelta(days=1)).date(),
+            due_date=timezone.localdate() - timedelta(days=1),
             bank_status="E",
         )
 

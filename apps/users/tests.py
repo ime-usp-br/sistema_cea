@@ -278,10 +278,11 @@ class SenhaUnicaFakerIntegrationTests(TestCase):
             response = self.client.get(reverse("users:senhaunica_login"))
 
         self.assertEqual(response.status_code, 302)
+        response_url = getattr(response, "url", "")
         self.assertIn(
-            "http://senhaunica-faker:3141/wsusuario/oauth/authorize", response.url
+            "http://senhaunica-faker:3141/wsusuario/oauth/authorize", response_url
         )
-        self.assertIn("oauth_token=request-token", response.url)
+        self.assertIn("oauth_token=request-token", response_url)
         self.assertEqual(
             self.client.session["senhaunica_token_secret"], "request-secret"
         )
@@ -313,7 +314,7 @@ class SenhaUnicaFakerIntegrationTests(TestCase):
             )
 
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, "/")
+        self.assertEqual(getattr(response, "url", ""), "/")
         self.assertIn("_auth_user_id", self.client.session)
         user = User.objects.get(username="1600001")
         self.assertEqual(user.codpes, 1600001)

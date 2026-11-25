@@ -15,11 +15,13 @@ from users.models import User
 
 
 def _latest_application(modality: str) -> ServiceApplication:
-    return (
+    application = (
         ServiceApplication.objects.filter(owner__username="sim_candidate", modality=modality)
         .order_by("-created_at")
         .first()
     )
+    assert application is not None
+    return application
 
 
 class SimulateJourneyCommandProjectTests(TestCase):
@@ -134,6 +136,7 @@ class SimulateJourneyCommandConsultationTests(TestCase):
         self.assertEqual(app.lifecycle_status, ServiceApplication.LifecycleStatus.AWAITING_PAYMENT)
         project_fee = app.fee_requirements.filter(fee_type="project_fee").first()
         self.assertIsNotNone(project_fee)
+        assert project_fee is not None
         self.assertFalse(project_fee.is_paid)
 
 

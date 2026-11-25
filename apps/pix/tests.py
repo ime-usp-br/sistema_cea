@@ -2,6 +2,7 @@ import base64
 import tempfile
 from datetime import timedelta
 from decimal import Decimal
+from typing import Any
 from unittest.mock import patch
 
 from django.test import TestCase, override_settings
@@ -484,7 +485,7 @@ class PixDetailViewPermissionTests(TestCase):
         self.client.force_login(self.candidate)
         response = self.client.get(self._detail_url())
         self.assertContains(response, "Gerar Pix")
-        self.assertNotContains(response, PIX_RESULT["qrCode"])
+        self.assertNotContains(response, str(PIX_RESULT["qrCode"]))
 
     def test_pix_ativo_mais_recente_tem_prioridade_sobre_pix_pago_antigo(self) -> None:
         fee = self.application.fee_requirements.get(
@@ -520,8 +521,8 @@ class PixDetailViewPermissionTests(TestCase):
             )
         self.client.force_login(self.candidate)
         response = self.client.get(self._detail_url())
-        self.assertContains(response, new_result["qrCode"])
-        self.assertNotContains(response, PIX_RESULT["qrCode"])
+        self.assertContains(response, str(new_result["qrCode"]))
+        self.assertNotContains(response, str(PIX_RESULT["qrCode"]))
 
 
 class _FakeResponse:
@@ -555,9 +556,9 @@ class PixGatewayContractTests(TestCase):
         from pix.gateways import PixGateway
 
         self.gateway = PixGateway()
-        self.calls: list[tuple] = []
+        self.calls: list[tuple[Any, ...]] = []
 
-    def _patch_request(self, payload: object, content: bytes = b"") -> patch:
+    def _patch_request(self, payload: object, content: bytes = b"") -> Any:
         def fake_request(method: str, path: str, *, json_body: dict | None = None, params: dict | None = None):
             self.calls.append((method, path, json_body, params))
             return _FakeResponse(payload, content)
