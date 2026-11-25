@@ -122,8 +122,11 @@ def test_E2E_AUTH_006_recuperacao_de_senha_por_email(
 
 
 # Cobre: TS-AUTH-004
-def test_E2E_AUTH_004_login_senha_unica_com_faker(page: Page) -> None:
+def test_E2E_AUTH_004_login_senha_unica_com_faker(
+    page: Page, created_user_codpes: list[str]
+) -> None:
     """Login OAuth1 completo contra o uspdev/senhaunica-faker da stack E2E."""
+    created_user_codpes.append("1600001")
     page.goto(f"{BASE_URL}/auth/login/")
     page.click("a:has-text('Entrar com Senha Única USP')")
 

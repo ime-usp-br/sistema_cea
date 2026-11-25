@@ -19,7 +19,10 @@ def test_E2E_IMP_001_importa_json_preserva_estado_e_detecta_duplicidade(
     login_as,
     create_term,
 ) -> None:
-    manage("e2e_cleanup", "--purge-e2e-terms")
+    cleanup_args = ["e2e_cleanup"]
+    for protocol in PROTOCOLS:
+        cleanup_args.extend(["--purge-protocol", protocol])
+    manage(*cleanup_args)
     output = manage("import_legacy_data", "--data", FIXTURE)
     assert "Criadas: 3" in output
     assert "storage não informada" in output

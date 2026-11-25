@@ -24,25 +24,19 @@ for line in DOC.read_text(encoding="utf-8").splitlines():
 tests: dict[str, list[str]] = {}
 for path in sorted(ROOT.glob("apps/**/test*.py")):
     relative = path.relative_to(ROOT)
-    for line in path.read_text(encoding="utf-8").splitlines():
-        match = TEST_RE.match(line)
-        if not match:
-            continue
-        test_name = match.group(1)
-        id_match = re.match(r"test_(TS_[A-Z]+_[0-9]{3})", test_name)
-        if not id_match:
-            continue
-        scenario_id = id_match.group(1).replace("_", "-")
-        tests.setdefault(scenario_id, []).append(f"`{relative}::{test_name}`")
-
-for path in sorted(ROOT.glob("e2e/**/test*.py")):
-    relative = path.relative_to(ROOT)
     pending: list[str] = []
     for line in path.read_text(encoding="utf-8").splitlines():
         comment = COBRE_RE.match(line)
         if comment:
             pending = TS_ID_RE.findall(comment.group(1))
             continue
+        match = TEST_RE.match(line)
+        if match:
+            test_name = match.group(1)
+            id_match = re.match(r"test_(TS_[A-Z]+_[0-9]{3})", test_name)
+            if id_match:
+                scenario_id = id_match.group(1).replace("_", "-")
+                tests.setdefault(scenario_id, []).append(f"`{relative}::{test_name}`")
         definition = DEF_RE.match(line)
         if definition and pending:
             test_name = definition.group(1)
@@ -52,12 +46,32 @@ for path in sorted(ROOT.glob("e2e/**/test*.py")):
                 if entry not in tests[scenario_id]:
                     tests[scenario_id].append(entry)
             pending = []
+        elif definition:
+            pending = []
+
+for path in sorted(ROOT.glob("e2e/**/test*.py")):
+    relative = path.relative_to(ROOT)
+    e2e_pending: list[str] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        comment = COBRE_RE.match(line)
+        if comment:
+            e2e_pending = TS_ID_RE.findall(comment.group(1))
+            continue
+        definition = DEF_RE.match(line)
+        if definition and e2e_pending:
+            test_name = definition.group(1)
+            for scenario_id in dict.fromkeys(e2e_pending):
+                entry = f"`{relative}::{test_name}`"
+                tests.setdefault(scenario_id, [])
+                if entry not in tests[scenario_id]:
+                    tests[scenario_id].append(entry)
+            e2e_pending = []
 
 lines = [
     "# Matriz de rastreabilidade — cenários × testes",
     "",
     "Gerada a partir de `docs/TEST_SCENARIOS.md`, dos arquivos `apps/**/test*.py` e",
-    "dos marcadores `# Cobre: TS-*` em `e2e/**/test*.py`.",
+    "dos marcadores `# Cobre: TS-*` em `apps/**/test*.py` e `e2e/**/test*.py`.",
     "Atualize-a com `python scripts/gen_test_traceability.py` (ou manualmente) ao mover/renomear testes.",
     "",
     "| ID | Cenário | Arquivo::teste | Status |",

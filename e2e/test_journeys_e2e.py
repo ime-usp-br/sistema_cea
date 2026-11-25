@@ -138,10 +138,13 @@ def test_E2E_N9_03_backoffice_lista_e_relatorio(
 
 
 # Cobre: TS-AUTH-002
-def test_E2E_N1_02_cadastro_bloqueia_login_ate_confirmar(page: Page) -> None:
+def test_E2E_N1_02_cadastro_bloqueia_login_ate_confirmar(
+    page: Page, created_user_emails: list[str]
+) -> None:
     page.goto(f"{BASE_URL}/cadastro/")
     _detail(page)
     email = f"e2e.cadastro.{uuid.uuid4().hex[:8]}@example.com"
+    created_user_emails.append(email)
     page.fill('input[name="full_name"]', "Cadastro E2E")
     page.fill('input[name="email"]', email)
     page.fill('input[name="password1"]', "senha-forte-123")

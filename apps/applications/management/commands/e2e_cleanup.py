@@ -45,12 +45,33 @@ class Command(BaseCommand):
             help="E-mail de usuário criado pelo E2E (desativado ao final).",
         )
         parser.add_argument(
+            "--deactivate-prefix",
+            action="append",
+            default=[],
+            dest="email_prefixes",
+            help="Desativa usuários cujo e-mail começa com o prefixo (pode repetir).",
+        )
+        parser.add_argument(
+            "--deactivate-codpes",
+            action="append",
+            default=[],
+            dest="codpes_values",
+            help="Desativa usuários criados pelo E2E pelo número USP (pode repetir).",
+        )
+        parser.add_argument(
             "--purge-e2e-terms",
             action="store_true",
             help=(
                 "Remove fisicamente inscrições e períodos do namespace E2E "
                 "(anos 9000–9999). Uso exclusivo da stack descartável de testes."
             ),
+        )
+        parser.add_argument(
+            "--purge-protocol",
+            action="append",
+            default=[],
+            dest="purge_protocols",
+            help="Remove fisicamente apenas a inscrição do protocolo indicado.",
         )
         parser.add_argument("--namespace-start", type=int, default=9000)
         parser.add_argument("--namespace-end", type=int, default=9999)
@@ -103,7 +124,44 @@ class Command(BaseCommand):
                 )
             )
 
-        if options["purge_e2e_terms"]:
+        seed_usernames = {
+            "e2e_candidate",
+            "e2e_teacher",
+            "e2e_secretariat",
+            "e2e_admin",
+        }
+        for prefix in options["email_prefixes"]:
+            updated_users = (
+                User.objects.filter(
+                    email__istartswith=prefix, is_active=True
+                )
+                .exclude(username__in=seed_usernames)
+                .update(is_active=False, updated_at=timezone.now())
+            )
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"{updated_users} usuário(s) com prefixo {prefix!r} desativado(s)."
+                )
+            )
+
+        for codpes in options["codpes_values"]:
+            try:
+                codpes_value = int(codpes)
+            except (TypeError, ValueError):
+                continue
+            updated_users = (
+                User.objects.filter(codpes=codpes_value, is_active=True)
+                .exclude(username__in=seed_usernames)
+                .update(is_active=False, updated_at=timezone.now())
+            )
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"{updated_users} usuário(s) com codpes {codpes_value} desativado(s)."
+                )
+            )
+
+        purge_protocols: list[str] = options["purge_protocols"]
+        if purge_protocols or options["purge_e2e_terms"]:
             from django.db import transaction
 
             from audits.models import DatasetAuditResolution, DatasetAuditSubmission
@@ -111,10 +169,15 @@ class Command(BaseCommand):
             from payments.models import FeeRequirement, PaymentInstrument, RefundRequest
 
             with transaction.atomic():
-                applications = ServiceApplication.all_objects.filter(
-                    term__year__gte=options["namespace_start"],
-                    term__year__lte=options["namespace_end"],
-                )
+                if purge_protocols:
+                    applications = ServiceApplication.all_objects.filter(
+                        protocol__in=purge_protocols
+                    )
+                else:
+                    applications = ServiceApplication.all_objects.filter(
+                        term__year__gte=options["namespace_start"],
+                        term__year__lte=options["namespace_end"],
+                    )
                 application_ids = list(applications.values_list("pk", flat=True))
                 applications_count = len(application_ids)
                 # FKs com on_delete=RESTRICT precisam sair antes da inscrição.
@@ -136,12 +199,14 @@ class Command(BaseCommand):
                 ).delete()
                 FeeRequirement.objects.filter(application_id__in=application_ids).delete()
                 applications.delete()
-                terms = AcademicTerm.objects.filter(
-                    year__gte=options["namespace_start"],
-                    year__lte=options["namespace_end"],
-                )
-                terms_count = terms.count()
-                terms.delete()
+                terms_count = 0
+                if not purge_protocols:
+                    terms = AcademicTerm.objects.filter(
+                        year__gte=options["namespace_start"],
+                        year__lte=options["namespace_end"],
+                    )
+                    terms_count = terms.count()
+                    terms.delete()
             self.stdout.write(
                 self.style.SUCCESS(
                     f"Namespace E2E limpo: {applications_count} inscrição(ões) e "
@@ -153,6 +218,9 @@ class Command(BaseCommand):
             not protocols
             and not options["term_ids"]
             and not emails
+            and not options["email_prefixes"]
+            and not options["codpes_values"]
+            and not options["purge_protocols"]
             and not options["purge_e2e_terms"]
         ):
             self.stdout.write(

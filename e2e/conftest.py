@@ -151,6 +151,12 @@ def created_user_emails() -> list[str]:
     return []
 
 
+@pytest.fixture(scope="session")
+def created_user_codpes() -> list[str]:
+    """Números USP de usuários criados pela suíte (desativados ao final)."""
+    return []
+
+
 @pytest.fixture(autouse=True)
 def clear_rate_limit_counters() -> None:
     """Zera os contadores de rate limit antes de cada teste."""
@@ -163,16 +169,19 @@ def cleanup_e2e_data(
     created_protocols: list[str],
     created_terms: list[int],
     created_user_emails: list[str],
+    created_user_codpes: list[str],
 ) -> object:
     """Remove/soft-deleta os dados criados pela suíte ao final."""
     yield
-    args: list[str] = ["e2e_cleanup"]
+    args: list[str] = ["e2e_cleanup", "--deactivate-prefix", "e2e."]
     for protocol in sorted(set(created_protocols)):
         args.extend(["--protocol", protocol])
     for term_id in sorted(set(created_terms)):
         args.extend(["--term-id", str(term_id)])
     for email in sorted(set(created_user_emails)):
         args.extend(["--deactivate-email", email])
+    for codpes in sorted(set(created_user_codpes)):
+        args.extend(["--deactivate-codpes", codpes])
     if len(args) > 1:
         args.append("--purge-e2e-terms")
         run_manage(*args)
