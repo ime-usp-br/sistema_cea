@@ -3,6 +3,10 @@
 .env
 .env.*
 !.env.example
+backups
+.github
+docker-compose*.yml
+Makefile
 tmp
 media
 staticfiles

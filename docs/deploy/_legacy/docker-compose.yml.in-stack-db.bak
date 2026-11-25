@@ -1,0 +1,123 @@
+# Docker Compose compatível com deploy via Portainer a partir do repositório GitHub.
+#
+# Em desenvolvimento local, o compose interpola as variáveis do arquivo .env da raiz.
+# No Portainer, defina os valores na seção "Environment variables" do Stack
+# (não é necessário nem recomendado commitar o .env com segredos).
+# Para produção, ajuste DJANGO_ENV=production, SECRET_KEY, ALLOWED_HOSTS e as credenciais do banco.
+
+x-app-environment: &app-environment
+  DJANGO_ENV: "${DJANGO_ENV:-development}"
+  DEBUG: "${DEBUG:-True}"
+  SECRET_KEY: "${SECRET_KEY:-django-insecure-change-me}"
+  ALLOWED_HOSTS: "${ALLOWED_HOSTS:-*}"
+  CSRF_TRUSTED_ORIGINS: "${CSRF_TRUSTED_ORIGINS:-}"
+  SECURE_PROXY_SSL_HEADER: "${SECURE_PROXY_SSL_HEADER:-}"
+  DATABASE_URL: "${DATABASE_URL:-postgres://uspuser:usppass@db:5432/uspdb}"
+  REDIS_URL: "${REDIS_URL:-redis://redis:${REDIS_PORT:-6379}/0}"
+  WEB_PORT: "${WEB_PORT:-8000}"
+  ENABLE_LOCAL_LOGIN: "${ENABLE_LOCAL_LOGIN:-True}"
+  GUNICORN_WORKERS: "${GUNICORN_WORKERS:-3}"
+  SENHAUNICA_KEY: "${SENHAUNICA_KEY:-}"
+  SENHAUNICA_SECRET: "${SENHAUNICA_SECRET:-}"
+  SENHAUNICA_CALLBACK_ID: "${SENHAUNICA_CALLBACK_ID:-}"
+  SENHAUNICA_ENV: "${SENHAUNICA_ENV:-prod}"
+  SENHAUNICA_OAUTH_BASE_URL: "${SENHAUNICA_OAUTH_BASE_URL:-}"
+  SENHAUNICA_LOGIN_REDIRECT_URL: "${SENHAUNICA_LOGIN_REDIRECT_URL:-/}"
+  PIX_BASE_URL: "${PIX_BASE_URL:-https://api-dev.portalservicos.usp.br/wspix/api}"
+  PIX_USERNAME: "${PIX_USERNAME:-}"
+  PIX_PASSWORD: "${PIX_PASSWORD:-}"
+  PIX_WEBHOOK_TOKEN: "${PIX_WEBHOOK_TOKEN:-dev-webhook-token}"
+  PIX_EXPIRATION_SECONDS: "${PIX_EXPIRATION_SECONDS:-3600}"
+  PIX_CODIGO_FONTE_RECURSO: "${PIX_CODIGO_FONTE_RECURSO:-423}"
+  PIX_CODIGO_UNIDADE_DESPESA: "${PIX_CODIGO_UNIDADE_DESPESA:-1}"
+  PIX_ESTRUTURA_HIERARQUICA: '${PIX_ESTRUTURA_HIERARQUICA:-\DISTRIBUIDOR}'
+  PIX_RECONCILIATION_MAX_DAYS: "${PIX_RECONCILIATION_MAX_DAYS:-30}"
+  BANK_SLIP_WSDL_URL: "${BANK_SLIP_WSDL_URL:-https://dev.uspdigital.usp.br/wsboleto/wsdl/boleto.wsdl}"
+  BANK_SLIP_USERNAME: "${BANK_SLIP_USERNAME:-}"
+  BANK_SLIP_PASSWORD: "${BANK_SLIP_PASSWORD:-}"
+  BANK_SLIP_DUE_DAYS: "${BANK_SLIP_DUE_DAYS:-3}"
+  BANK_SLIP_CODIGO_FONTE_RECURSO: "${BANK_SLIP_CODIGO_FONTE_RECURSO:-423}"
+  BANK_SLIP_CODIGO_UNIDADE_DESPESA: "${BANK_SLIP_CODIGO_UNIDADE_DESPESA:-1}"
+  BANK_SLIP_ESTRUTURA_HIERARQUICA: '${BANK_SLIP_ESTRUTURA_HIERARQUICA:-\DISTRIBUIDOR}'
+  BANK_SLIP_SACADO_INFO: "${BANK_SLIP_SACADO_INFO:-Dúvidas: cea@ime.usp.br}"
+  MAIL_DRIVER: "${MAIL_DRIVER:-log}"
+  MAIL_HOST: "${MAIL_HOST:-smtp.ime.usp.br}"
+  MAIL_PORT: "${MAIL_PORT:-587}"
+  MAIL_USERNAME: "${MAIL_USERNAME:-}"
+  MAIL_PASSWORD: "${MAIL_PASSWORD:-}"
+  MAIL_ENCRYPTION: "${MAIL_ENCRYPTION:-tls}"
+  MAIL_FROM_ADDRESS: "${MAIL_FROM_ADDRESS:-noreply@cea.ime.usp.br}"
+  MAIL_FROM_NAME: "${MAIL_FROM_NAME:-Inscrições CEA}"
+  MAIL_DEV_TEST: "${MAIL_DEV_TEST:-}"
+  MAIL_CEA: "${MAIL_CEA:-cea@ime.usp.br}"
+  EMAIL_BACKEND: "${EMAIL_BACKEND:-}"
+  EMAIL_FILE_PATH: "${EMAIL_FILE_PATH:-}"
+  CELERY_TASK_ALWAYS_EAGER: "${CELERY_TASK_ALWAYS_EAGER:-False}"
+  CELERY_TASK_EAGER_PROPAGATES: "${CELERY_TASK_EAGER_PROPAGATES:-True}"
+  PAYMENT_GATEWAY_FAKE: "${PAYMENT_GATEWAY_FAKE:-False}"
+
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    volumes:
+      - staticfiles:/app/staticfiles
+      - media:/app/media
+    environment: *app-environment
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - default
+      - web
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:-uspdb}"
+      POSTGRES_USER: "${POSTGRES_USER:-uspuser}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-usppass}"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-uspuser} -d ${POSTGRES_DB:-uspdb}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    expose:
+      - "${REDIS_PORT:-6379}"
+    networks:
+      - default
+
+  celery_worker:
+    build: .
+    command: celery -A core worker -l info
+    restart: unless-stopped
+    volumes:
+      - media:/app/media
+    environment: *app-environment
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - default
+
+networks:
+  web:
+    external: true
+
+volumes:
+  postgres_data:
+  staticfiles:
+  media:

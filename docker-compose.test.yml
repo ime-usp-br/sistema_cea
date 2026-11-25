@@ -1,0 +1,79 @@
+# Stack ISOLADA de testes (pytest de unidade/integração).
+#
+# - Projeto Compose separado: use `-p sistema_cea_test` (o Makefile já faz).
+# - Banco efêmero próprio (sem volume), Redis próprio e rede interna.
+# - Sem rede `web`, sem portas publicadas e sem tocar no banco de dev/homolog/prod.
+# - É a única exceção ao princípio de banco externo: existe só para testes.
+#
+# Uso:
+#   make test
+#   docker compose -p sistema_cea_test -f docker-compose.test.yml run --rm app python -m pytest
+
+x-test-environment: &test-environment
+  APP_ENV: test
+  DJANGO_ENV: development
+  DEBUG: "True"
+  SECRET_KEY: test-secret-key-not-for-production
+  ALLOWED_HOSTS: "*"
+  TZ: America/Sao_Paulo
+  # Banco efêmero do próprio compose de testes.
+  DB_CONNECTION: postgres
+  DB_HOST: db
+  DB_PORT: "5432"
+  DB_NAME: cea_test
+  DB_USER: cea_test
+  DB_PASSWORD: cea_test
+  DATABASE_URL: postgres://cea_test:cea_test@db:5432/cea_test
+  # Permite host de serviço Compose apenas nesta stack descartável.
+  DB_ALLOW_LOCAL_HOST: "true"
+  DB_WAIT_TIMEOUT: "60"
+  DB_WAIT_INTERVAL: "2"
+  REDIS_URL: redis://redis:6379/0
+  CACHE_URL: redis://redis:6379/1
+  ENABLE_LOCAL_LOGIN: "True"
+  # Mantém o mesmo comportamento do CI/host: os testes mockam os gateways e o
+  # backend de e-mail locmem individualmente. Não ligue PAYMENT_GATEWAY_FAKE
+  # nem EMAIL_BACKEND filebased aqui.
+  RUN_MIGRATIONS: "true"
+  RUN_SEEDERS: "false"
+  WARM_CACHE: "false"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: test
+    image: sistema-cea-app:test
+    environment: *test-environment
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - default
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: cea_test
+      POSTGRES_USER: cea_test
+      POSTGRES_PASSWORD: cea_test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cea_test -d cea_test"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+    networks:
+      - default
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - default

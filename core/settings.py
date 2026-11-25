@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 import sys
 from pathlib import Path
+from urllib.parse import quote_plus
 
 import environ
 from django.core.exceptions import ImproperlyConfigured
@@ -42,6 +43,27 @@ SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
+
+# Ambiente de deploy padronizado (dev|homolog|prod). `DJANGO_ENV` continua
+# sendo a variável nativa do Django (development|production) e é mapeada a
+# partir de APP_ENV quando não informada explicitamente.
+APP_ENV = env('APP_ENV', default='dev').strip().lower()
+if APP_ENV not in {'dev', 'homolog', 'prod', 'test'}:
+    raise ImproperlyConfigured(
+        'APP_ENV deve ser dev, homolog, prod ou test.'
+    )
+
+DJANGO_ENV = env('DJANGO_ENV', default='').strip().lower() or (
+    'production' if APP_ENV in {'homolog', 'prod'} else 'development'
+)
+
+if APP_ENV == 'prod':
+    if DEBUG:
+        raise ImproperlyConfigured('DEBUG não pode ser True com APP_ENV=prod.')
+    if DJANGO_ENV != 'production':
+        raise ImproperlyConfigured(
+            'APP_ENV=prod exige DJANGO_ENV=production.'
+        )
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
 
@@ -147,8 +169,43 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# Banco SEMPRE externo no deploy, acessado por domínio (DB_HOST). A stack da
+# aplicação não contém serviço de banco. Precedência:
+#   1. DATABASE_URL, quando informada;
+#   2. DB_* (DB_CONNECTION/DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD);
+#   3. SQLite local, apenas para testes executados no host sem banco configurado.
+_db_url = env('DATABASE_URL', default='').strip()
+if not _db_url:
+    _db_host = env('DB_HOST', default='').strip()
+    if _db_host:
+        _db_connection = env('DB_CONNECTION', default='postgres').strip().lower()
+        if _db_connection in {'postgres', 'postgresql'}:
+            _db_scheme = 'postgresql'
+            _default_port = 5432
+        elif _db_connection in {'mysql', 'mariadb'}:
+            _db_scheme = 'mysql'
+            _default_port = 3306
+        else:
+            raise ImproperlyConfigured(
+                'DB_CONNECTION deve ser postgres/postgresql ou mysql/mariadb.'
+            )
+        _db_port = env('DB_PORT', default=str(_default_port)).strip()
+        _db_name = env('DB_NAME', default='').strip()
+        _db_user = env('DB_USER', default='').strip()
+        _db_password = env('DB_PASSWORD', default='')
+        if not _db_name or not _db_user:
+            raise ImproperlyConfigured(
+                'DB_NAME e DB_USER são obrigatórios quando DB_HOST está definido.'
+            )
+        _db_url = (
+            f'{_db_scheme}://{quote_plus(_db_user)}:{quote_plus(_db_password)}'
+            f'@{_db_host}:{_db_port}/{_db_name}'
+        )
+    else:
+        _db_url = 'sqlite:///db.sqlite3'
+
 DATABASES = {
-    'default': env.db('DATABASE_URL', default='sqlite:///db.sqlite3'),
+    'default': env.db_url_config(_db_url),
 }
 
 AUTH_USER_MODEL = 'users.User'
@@ -161,7 +218,7 @@ ENABLE_LOCAL_LOGIN = env('ENABLE_LOCAL_LOGIN', default=True)
 SENHAUNICA_KEY = env('SENHAUNICA_KEY', default='')
 SENHAUNICA_SECRET = env('SENHAUNICA_SECRET', default='')
 SENHAUNICA_CALLBACK_ID = env('SENHAUNICA_CALLBACK_ID', default='')
-SENHAUNICA_ENV = env('SENHAUNICA_ENV', default='prod')
+SENHAUNICA_ENV = env('SENHAUNICA_ENV', default='').strip() or 'prod'
 # Override opcional dos endpoints OAuth (ex.: http://senhaunica-faker:3141/wsusuario/oauth
 # na stack E2E). Vazio usa a URL oficial de SENHAUNICA_ENV.
 SENHAUNICA_OAUTH_BASE_URL = env('SENHAUNICA_OAUTH_BASE_URL', default='')
@@ -236,9 +293,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # O Celery usa o DB 0 do Redis; o rate limiting usa o DB 1 para não misturar
 # contadores com mensagens de fila.
 REDIS_URL = env('REDIS_URL', default='redis://redis:6379/0')
-CACHE_URL = env(
-    'CACHE_URL',
-    default=f"{REDIS_URL.rsplit('/', 1)[0]}/1",
+CACHE_URL = env('CACHE_URL', default='').strip() or (
+    f"{REDIS_URL.rsplit('/', 1)[0]}/1"
 )
 CACHES = {
     'default': {
@@ -327,9 +383,9 @@ if EMAIL_USE_TLS and EMAIL_USE_SSL:
     )
 
 # E-mail padrão usado no remetente dos disparos de notificação.
-_mail_from_address = env(
-    'DEFAULT_FROM_EMAIL',
-    default=env('MAIL_FROM_ADDRESS', default='noreply@cea.ime.usp.br'),
+_mail_from_address = env('DEFAULT_FROM_EMAIL', default='').strip() or env(
+    'MAIL_FROM_ADDRESS',
+    default='noreply@cea.ime.usp.br',
 )
 _mail_from_name = env('MAIL_FROM_NAME', default='').strip()
 DEFAULT_FROM_EMAIL = (
@@ -341,19 +397,19 @@ SERVER_EMAIL = env('SERVER_EMAIL', default=_mail_from_address)
 
 # Destinatário dos avisos internos para a equipe CEA.
 NOTIFICATION_CENTER_EMAIL = env(
-    'NOTIFICATION_CENTER_EMAIL',
-    default=env('MAIL_CEA', default='cea@ime.usp.br'),
-)
+    'NOTIFICATION_CENTER_EMAIL', default=''
+).strip() or env('MAIL_CEA', default='cea@ime.usp.br')
 # Destinatário padrão do comando ``send_test_email`` (homologação/dev).
 MAIL_DEV_TEST = env('MAIL_DEV_TEST', default='')
 
 
 # ---- Integração Pix (API REST/JSON - WSPIX) ----
-PIX_WEBHOOK_TOKEN = env('PIX_WEBHOOK_TOKEN', default='dev-webhook-token')
+PIX_WEBHOOK_TOKEN = (
+    env('PIX_WEBHOOK_TOKEN', default='').strip() or 'dev-webhook-token'
+)
 # Base do WSPIX em desenvolvimento; produção: https://uspdigital.usp.br/wspix/api
-PIX_BASE_URL = env(
-    'PIX_BASE_URL',
-    default='https://api-dev.portalservicos.usp.br/wspix/api',
+PIX_BASE_URL = env('PIX_BASE_URL', default='').strip() or (
+    'https://api-dev.portalservicos.usp.br/wspix/api'
 )
 PIX_USERNAME = env('PIX_USERNAME', default='')
 PIX_PASSWORD = env('PIX_PASSWORD', default='')
@@ -366,9 +422,8 @@ PIX_RECONCILIATION_MAX_DAYS = env.int('PIX_RECONCILIATION_MAX_DAYS', default=30)
 
 
 # ---- Integração Boleto (SOAP/WSDL) ----
-BANK_SLIP_WSDL_URL = env(
-    'BANK_SLIP_WSDL_URL',
-    default='https://dev.uspdigital.usp.br/wsboleto/wsdl/boleto.wsdl',
+BANK_SLIP_WSDL_URL = env('BANK_SLIP_WSDL_URL', default='').strip() or (
+    'https://dev.uspdigital.usp.br/wsboleto/wsdl/boleto.wsdl'
 )
 BANK_SLIP_USERNAME = env('BANK_SLIP_USERNAME', default='')
 BANK_SLIP_PASSWORD = env('BANK_SLIP_PASSWORD', default='')
@@ -387,7 +442,9 @@ BANK_SLIP_SACADO_INFO = env(
 # Quando ligado, Pix e Boleto usam clientes em memória (sem rede). A stack E2E
 # define PAYMENT_GATEWAY_FAKE=True; em produção é proibido ligar.
 PAYMENT_GATEWAY_FAKE = env.bool('PAYMENT_GATEWAY_FAKE', default=False)
-if PAYMENT_GATEWAY_FAKE and env('DJANGO_ENV', default='development') == 'production':
+if PAYMENT_GATEWAY_FAKE and (
+    APP_ENV == 'prod' or DJANGO_ENV == 'production'
+):
     raise ImproperlyConfigured(
         'PAYMENT_GATEWAY_FAKE não pode ser habilitado em produção.'
     )

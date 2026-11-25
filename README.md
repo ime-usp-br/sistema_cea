@@ -55,10 +55,16 @@ Diferente de um projeto Django comum, ele já nasce integrado à infraestrutura 
 
 3.  **Suba a infraestrutura:**
     ```bash
-    # Constroi a imagem e inicia Banco (Postgres), Redis e a Aplicação Web
+    # Sobe a stack da aplicação (web, worker e Redis). O banco é EXTERNO,
+    # acessado por domínio (DB_HOST) — não há serviço de banco no compose.
     docker compose up -d --build
     ```
-    O `entrypoint` (`scripts/entrypoint.sh`) aplica as **migrações** e o `collectstatic` automaticamente a cada subida do contêiner `web`, então não é preciso executá-los manualmente.
+    O `entrypoint` (`docker/entrypoint.sh`) espera o banco externo por domínio,
+    aplica as **migrações** e o `collectstatic` automaticamente a cada subida do
+    contêiner `web`, então não é preciso executá-los manualmente.
+
+    O padrão de deploy (Portainer, NPM, banco externo, backup/restore e
+    variáveis por ambiente) está em [`docs/deploy/README.md`](docs/deploy/README.md).
 
 4.  **(Opcional) Reaplique migrações manualmente:**
     ```bash
@@ -80,7 +86,8 @@ Abaixo estão as variáveis críticas presentes no seu arquivo `.env` que conect
 | | `SECRET_KEY` | Chave criptográfica do Django. |
 | | `DEBUG` | `True`/`False` (modo debug do Django). |
 | | `ALLOWED_HOSTS` | Hosts permitidos, separados por vírgula (ex: `localhost,127.0.0.1`). |
-| | `WEB_PORT` | Porta exposta no host pelo `web` (padrão `8000`). |
+| | `WEB_PORT` | Porta interna do `web` (padrão `8000`); não é publicada no deploy. |
+| | `DB_HOST` | Domínio do banco externo do ambiente (ex.: `db-dev.<dominio>`). |
 | **Senha Única** | `SENHAUNICA_KEY` | *Consumer Key* fornecida pela STI. |
 | | `SENHAUNICA_SECRET` | *Consumer Secret* fornecida pela STI. |
 | | `SENHAUNICA_CALLBACK_ID` | ID de callback registrado junto à STI. Obrigatório. A URL de callback é montada automaticamente a partir da rota `/callback/`. |
@@ -122,7 +129,10 @@ A segurança não é opcional na USP. O kit implementa:
     *   Middlewares de segurança do Django ativados (`SECURE_SSL_REDIRECT`, `CSRF_COOKIE_SECURE` em prod).
     *   Sanitização automática de inputs do Replicado para evitar *SQL Injection* em bancos legados.
 3.  **Gestão de Segredos:**
-    *   O `docker-compose.yml` nunca expõe portas de banco de dados para a rede externa em produção.
+    *   O `docker-compose.yml` não publica portas e não contém banco de dados:
+        o banco é externo, acessado por domínio (`DB_HOST`), fora da rede Docker
+        da aplicação.
+    *   Nenhum segredo é versionado; no deploy as variáveis vêm do Portainer.
 
 ---
 
@@ -134,6 +144,9 @@ Mantemos a qualidade do código alta para garantir a manutenibilidade a longo pr
 ```bash
 # Roda a suíte completa com relatório de cobertura
 poetry run pytest --cov=apps
+
+# Ou em stack isolada (banco efêmero próprio, sem tocar no banco externo)
+make test
 ```
 
 **Verificação de Estilo e Tipagem (Linting):**

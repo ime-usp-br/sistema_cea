@@ -45,7 +45,9 @@ O projeto roda **inteiramente via Docker Compose** (Postgres, Redis, Web, Celery
 | `docker compose exec web mypy .` | Roda a verificação de tipos (MyPy). |
 | `docker compose logs -f web` | Acompanha os logs do Django. |
 
-O `docker-compose.override.yml` faz *bind mount* do código-fonte em `/app`, portanto alterações locais são refletidas imediatamente no container.
+O `docker-compose.yml` é a stack única de deploy (sem banco, sem portas e sem bind mount). O banco é **externo**, acessado por domínio (`DB_HOST`). Hot reload local é opcional e vive em `docker-compose.local.yml` (`make up-local`), que faz *bind mount* do código-fonte em `/app`; ele não é usado no Portainer.
+
+O padrão completo de deploy (Portainer, NPM, variáveis, backup/restore) está em `docs/deploy/README.md`.
 
 ---
 

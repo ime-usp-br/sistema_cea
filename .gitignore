@@ -28,8 +28,10 @@ db.sqlite3-journal
 media/
 staticfiles/
 
-# Secrets
+# Secrets / ambiente
 .env
+.env.*
+!.env.example
 
 # IDEs
 .vscode/
@@ -37,8 +39,14 @@ staticfiles/
 *.swp
 *.swo
 
+# Backups locais (nunca versionar; contêm dados pessoais)
+backups/
+
 # Project Specific
 tmp/
+# Biblioteca de scripts versionada (o padrão Python `lib/` acima a ignoraria)
+!scripts/lib/
+!scripts/lib/**
 .agent/*
 !.agent/rules/
 

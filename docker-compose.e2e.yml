@@ -24,6 +24,8 @@ x-e2e-app-environment: &e2e-app-environment
   SECRET_KEY: e2e-secret-key-not-for-production
   ALLOWED_HOSTS: "*"
   DATABASE_URL: postgres://e2e:e2e@db:5432/e2e
+  # Stack descartável: host de serviço Compose é permitido apenas aqui.
+  DB_ALLOW_LOCAL_HOST: "true"
   REDIS_URL: redis://redis:6379/0
   CACHE_URL: redis://redis:6379/1
   RATE_LIMIT_ENABLED: "True"
@@ -66,7 +68,8 @@ services:
   web:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: docker/Dockerfile
+      target: runtime
     environment: *e2e-app-environment
     depends_on:
       db:

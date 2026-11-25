@@ -1,45 +1,115 @@
-# Docker Compose compatível com deploy via Portainer a partir do repositório GitHub.
+# Stack ÚNICA da aplicação (dev, homologação e produção).
 #
-# Em desenvolvimento local, o compose interpola as variáveis do arquivo .env da raiz.
-# No Portainer, defina os valores na seção "Environment variables" do Stack
-# (não é necessário nem recomendado commitar o .env com segredos).
-# Para produção, ajuste DJANGO_ENV=production, SECRET_KEY, ALLOWED_HOSTS e as credenciais do banco.
+# - As diferenças entre ambientes existem apenas nas variáveis de ambiente,
+#   configuradas no campo "Environment variables" da stack no Portainer.
+# - O banco NÃO pertence a esta stack: é externo, acessado por domínio (DB_HOST).
+# - Nenhuma porta é publicada. O Nginx Proxy Manager (NPM) alcança o container
+#   pela rede externa `web`, no alias `sistema-cea-<env>-web:${WEB_PORT}`.
+# - Nenhum bind mount de código-fonte e nenhum env_file obrigatório.
+#
+# Variáveis obrigatórias usam ${VAR:?mensagem} e falham cedo quando ausentes.
 
 x-app-environment: &app-environment
-  DJANGO_ENV: "${DJANGO_ENV:-development}"
-  DEBUG: "${DEBUG:-True}"
-  SECRET_KEY: "${SECRET_KEY:-django-insecure-change-me}"
-  ALLOWED_HOSTS: "${ALLOWED_HOSTS:-*}"
+  # --- Ambiente -----------------------------------------------------------
+  APP_ENV: "${APP_ENV:?defina APP_ENV (dev|homolog|prod)}"
+  # Vazio deriva de APP_ENV (dev -> development; homolog/prod -> production).
+  DJANGO_ENV: "${DJANGO_ENV:-}"
+  DEBUG: "${DEBUG:-False}"
+  SECRET_KEY: "${SECRET_KEY:?defina SECRET_KEY}"
+  ALLOWED_HOSTS: "${ALLOWED_HOSTS:?defina ALLOWED_HOSTS}"
+  APP_URL: "${APP_URL:-}"
+  TZ: "${TZ:-America/Sao_Paulo}"
+  WEB_PORT: "${WEB_PORT:-8000}"
+  GUNICORN_WORKERS: "${GUNICORN_WORKERS:-3}"
+  LOG_LEVEL: "${LOG_LEVEL:-INFO}"
+  LOG_CHANNEL: "${LOG_CHANNEL:-stdout}"
+
+  # --- Proxy reverso / NPM ------------------------------------------------
   CSRF_TRUSTED_ORIGINS: "${CSRF_TRUSTED_ORIGINS:-}"
   SECURE_PROXY_SSL_HEADER: "${SECURE_PROXY_SSL_HEADER:-}"
-  DATABASE_URL: "${DATABASE_URL:-postgres://uspuser:usppass@db:5432/uspdb}"
-  REDIS_URL: "${REDIS_URL:-redis://redis:${REDIS_PORT:-6379}/0}"
-  WEB_PORT: "${WEB_PORT:-8000}"
+  RATE_LIMIT_TRUST_X_FORWARDED_FOR: "${RATE_LIMIT_TRUST_X_FORWARDED_FOR:-False}"
+
+  # --- Papel e boot -------------------------------------------------------
+  CONTAINER_ROLE: "${CONTAINER_ROLE:-web}"
+  RUN_MIGRATIONS: "${RUN_MIGRATIONS:-true}"
+  RUN_SEEDERS: "${RUN_SEEDERS:-false}"
+  WARM_CACHE: "${WARM_CACHE:-false}"
+
+  # --- Banco externo (por DOMÍNIO, nunca por serviço Compose) -------------
+  DB_CONNECTION: "${DB_CONNECTION:-postgres}"
+  DB_HOST: "${DB_HOST:?defina DB_HOST com o domínio do banco externo}"
+  DB_PORT: "${DB_PORT:-5432}"
+  DB_NAME: "${DB_NAME:?defina DB_NAME}"
+  DB_USER: "${DB_USER:?defina DB_USER}"
+  DB_PASSWORD: "${DB_PASSWORD:?defina DB_PASSWORD}"
+  # Opcional. Quando vazio, o Django monta a URL a partir de DB_*.
+  DATABASE_URL: "${DATABASE_URL:-}"
+  DB_WAIT_TIMEOUT: "${DB_WAIT_TIMEOUT:-90}"
+  DB_WAIT_INTERVAL: "${DB_WAIT_INTERVAL:-3}"
+  # true SOMENTE em stacks de teste com banco efêmero interno.
+  DB_ALLOW_LOCAL_HOST: "${DB_ALLOW_LOCAL_HOST:-false}"
+
+  # --- Backup -------------------------------------------------------------
+  PROJECT_NAME: "${PROJECT_NAME:-sistema-cea}"
+  BACKUP_DIR: "${BACKUP_DIR:-/app/backups}"
+  BACKUP_RETENTION_DAYS: "${BACKUP_RETENTION_DAYS:-7}"
+
+  # --- Redis / cache / fila ----------------------------------------------
+  REDIS_URL: "${REDIS_URL:-redis://redis:6379/0}"
+  CACHE_URL: "${CACHE_URL:-}"
+  CELERY_TASK_ALWAYS_EAGER: "${CELERY_TASK_ALWAYS_EAGER:-False}"
+  CELERY_TASK_EAGER_PROPAGATES: "${CELERY_TASK_EAGER_PROPAGATES:-True}"
+
+  # --- Rate limiting ------------------------------------------------------
+  RATE_LIMIT_ENABLED: "${RATE_LIMIT_ENABLED:-True}"
+  RATE_LIMIT_WINDOW: "${RATE_LIMIT_WINDOW:-60}"
+  RATE_LIMIT_LOGIN: "${RATE_LIMIT_LOGIN:-5}"
+  RATE_LIMIT_WEBHOOK: "${RATE_LIMIT_WEBHOOK:-60}"
+  RATE_LIMIT_DOWNLOAD: "${RATE_LIMIT_DOWNLOAD:-30}"
+  RATE_LIMIT_POST: "${RATE_LIMIT_POST:-20}"
+
+  # --- Autenticação -------------------------------------------------------
   ENABLE_LOCAL_LOGIN: "${ENABLE_LOCAL_LOGIN:-True}"
-  GUNICORN_WORKERS: "${GUNICORN_WORKERS:-3}"
   SENHAUNICA_KEY: "${SENHAUNICA_KEY:-}"
   SENHAUNICA_SECRET: "${SENHAUNICA_SECRET:-}"
   SENHAUNICA_CALLBACK_ID: "${SENHAUNICA_CALLBACK_ID:-}"
-  SENHAUNICA_ENV: "${SENHAUNICA_ENV:-prod}"
+  SENHAUNICA_ENV: "${SENHAUNICA_ENV:-}"
   SENHAUNICA_OAUTH_BASE_URL: "${SENHAUNICA_OAUTH_BASE_URL:-}"
   SENHAUNICA_LOGIN_REDIRECT_URL: "${SENHAUNICA_LOGIN_REDIRECT_URL:-/}"
-  PIX_BASE_URL: "${PIX_BASE_URL:-https://api-dev.portalservicos.usp.br/wspix/api}"
+
+  # --- Replicado ----------------------------------------------------------
+  REPLICADO_HOST: "${REPLICADO_HOST:-}"
+  REPLICADO_PORT: "${REPLICADO_PORT:-}"
+  REPLICADO_DATABASE: "${REPLICADO_DATABASE:-}"
+  REPLICADO_USERNAME: "${REPLICADO_USERNAME:-}"
+  REPLICADO_PASSWORD: "${REPLICADO_PASSWORD:-}"
+  REPLICADO_SYBASE: "${REPLICADO_SYBASE:-}"
+
+  # --- Pix (WSPIX) --------------------------------------------------------
+  PIX_BASE_URL: "${PIX_BASE_URL:-}"
   PIX_USERNAME: "${PIX_USERNAME:-}"
   PIX_PASSWORD: "${PIX_PASSWORD:-}"
-  PIX_WEBHOOK_TOKEN: "${PIX_WEBHOOK_TOKEN:-dev-webhook-token}"
+  PIX_WEBHOOK_TOKEN: "${PIX_WEBHOOK_TOKEN:-}"
   PIX_EXPIRATION_SECONDS: "${PIX_EXPIRATION_SECONDS:-3600}"
   PIX_CODIGO_FONTE_RECURSO: "${PIX_CODIGO_FONTE_RECURSO:-423}"
   PIX_CODIGO_UNIDADE_DESPESA: "${PIX_CODIGO_UNIDADE_DESPESA:-1}"
-  PIX_ESTRUTURA_HIERARQUICA: '${PIX_ESTRUTURA_HIERARQUICA:-\DISTRIBUIDOR}'
+  PIX_ESTRUTURA_HIERARQUICA: "${PIX_ESTRUTURA_HIERARQUICA:-\\DISTRIBUIDOR}"
   PIX_RECONCILIATION_MAX_DAYS: "${PIX_RECONCILIATION_MAX_DAYS:-30}"
-  BANK_SLIP_WSDL_URL: "${BANK_SLIP_WSDL_URL:-https://dev.uspdigital.usp.br/wsboleto/wsdl/boleto.wsdl}"
+
+  # --- Boleto (SOAP/WSDL) -------------------------------------------------
+  BANK_SLIP_WSDL_URL: "${BANK_SLIP_WSDL_URL:-}"
   BANK_SLIP_USERNAME: "${BANK_SLIP_USERNAME:-}"
   BANK_SLIP_PASSWORD: "${BANK_SLIP_PASSWORD:-}"
   BANK_SLIP_DUE_DAYS: "${BANK_SLIP_DUE_DAYS:-3}"
   BANK_SLIP_CODIGO_FONTE_RECURSO: "${BANK_SLIP_CODIGO_FONTE_RECURSO:-423}"
   BANK_SLIP_CODIGO_UNIDADE_DESPESA: "${BANK_SLIP_CODIGO_UNIDADE_DESPESA:-1}"
-  BANK_SLIP_ESTRUTURA_HIERARQUICA: '${BANK_SLIP_ESTRUTURA_HIERARQUICA:-\DISTRIBUIDOR}'
+  BANK_SLIP_ESTRUTURA_HIERARQUICA: "${BANK_SLIP_ESTRUTURA_HIERARQUICA:-\\DISTRIBUIDOR}"
   BANK_SLIP_SACADO_INFO: "${BANK_SLIP_SACADO_INFO:-Dúvidas: cea@ime.usp.br}"
+
+  # Gateways simulados: somente stacks de teste. Nunca em produção.
+  PAYMENT_GATEWAY_FAKE: "${PAYMENT_GATEWAY_FAKE:-False}"
+
+  # --- E-mail -------------------------------------------------------------
   MAIL_DRIVER: "${MAIL_DRIVER:-log}"
   MAIL_HOST: "${MAIL_HOST:-smtp.ime.usp.br}"
   MAIL_PORT: "${MAIL_PORT:-587}"
@@ -52,72 +122,80 @@ x-app-environment: &app-environment
   MAIL_CEA: "${MAIL_CEA:-cea@ime.usp.br}"
   EMAIL_BACKEND: "${EMAIL_BACKEND:-}"
   EMAIL_FILE_PATH: "${EMAIL_FILE_PATH:-}"
-  CELERY_TASK_ALWAYS_EAGER: "${CELERY_TASK_ALWAYS_EAGER:-False}"
-  CELERY_TASK_EAGER_PROPAGATES: "${CELERY_TASK_EAGER_PROPAGATES:-True}"
-  PAYMENT_GATEWAY_FAKE: "${PAYMENT_GATEWAY_FAKE:-False}"
+  DEFAULT_FROM_EMAIL: "${DEFAULT_FROM_EMAIL:-}"
+  NOTIFICATION_CENTER_EMAIL: "${NOTIFICATION_CENTER_EMAIL:-}"
 
 services:
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: runtime
+    image: "${APP_IMAGE:-sistema-cea-app:latest}"
     restart: unless-stopped
-    volumes:
-      - staticfiles:/app/staticfiles
-      - media:/app/media
+    stop_grace_period: 30s
     environment: *app-environment
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    networks:
-      - default
-      - web
-
-  db:
-    image: postgres:17-alpine
-    restart: unless-stopped
+    expose:
+      - "${WEB_PORT:-8000}"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    environment:
-      POSTGRES_DB: "${POSTGRES_DB:-uspdb}"
-      POSTGRES_USER: "${POSTGRES_USER:-uspuser}"
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-usppass}"
+      - media:/app/media
+      - backups:/app/backups
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      default:
+      web:
+        aliases:
+          - "sistema-cea-${APP_ENV}-web"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-uspuser} -d ${POSTGRES_DB:-uspdb}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      test: ["CMD", "/app/scripts/healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Mesma imagem do web. Sem portas, sem rede `web`, sem migrações/seeders.
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: runtime
+    image: "${APP_IMAGE:-sistema-cea-app:latest}"
+    restart: unless-stopped
+    stop_grace_period: 60s
+    environment:
+      <<: *app-environment
+      CONTAINER_ROLE: worker
+    volumes:
+      - media:/app/media
+      - backups:/app/backups
+    depends_on:
+      redis:
+        condition: service_healthy
     networks:
       - default
 
+  # Broker/cache interno da aplicação. Não é banco de dados e não é exposto.
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    expose:
-      - "${REDIS_PORT:-6379}"
-    networks:
-      - default
-
-  celery_worker:
-    build: .
-    command: celery -A core worker -l info
-    restart: unless-stopped
+    command: ["redis-server", "--save", "60", "1", "--appendonly", "no"]
     volumes:
-      - media:/app/media
-    environment: *app-environment
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
+      - redis_data:/data
     networks:
       - default
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
 networks:
   web:
     external: true
 
 volumes:
-  postgres_data:
-  staticfiles:
   media:
+  backups:
+  redis_data:
