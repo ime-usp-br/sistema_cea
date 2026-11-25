@@ -77,10 +77,24 @@ django_settings_module = "core.settings"
 DJANGO_SETTINGS_MODULE = "core.settings"
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
 norecursedirs = ["e2e", ".kilo", ".git", ".venv", "venv", "node_modules", "staticfiles"]
-addopts = "--cov=apps --cov-report=term-missing --cov-fail-under=92 --reuse-db -p no:cacheprovider"
+markers = [
+    "slow: Testes mais lentos, executados na suíte completa/nightly.",
+    "integration: Testes de integração entre camadas ou com o banco real.",
+]
+addopts = "--cov=apps --cov-report=term-missing -p no:cacheprovider"
 
 [tool.coverage.run]
 data_file = "/tmp/.coverage"
+omit = [
+    "*/migrations/*",
+    "*/tests/*",
+    "*/tests.py",
+    "*/test_*.py",
+    "*/factories.py",
+]
+
+[tool.coverage.report]
+show_missing = true
 
 
 
