@@ -28,7 +28,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Dependências de teste + navegadores do Playwright.
-RUN pip install --no-cache-dir pytest 'pytest-playwright>=0.6' \
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt \
     && python -m playwright install --with-deps chromium
 
 # O código-fonte é montado em /workspace em runtime (ver docker-compose.e2e.yml).

@@ -114,7 +114,7 @@ jobs:
         timeout-minutes: 20
         run: |
           mkdir -p e2e-artifacts test-results
-          pytest -q -p no:cacheprovider ${{ matrix.shard.files }} -c e2e/pytest.ini \
+          pytest -q -p no:cacheprovider -p randomly ${{ matrix.shard.files }} -c e2e/pytest.ini \
             --junitxml=e2e-artifacts/junit.xml \
             --tracing=retain-on-failure \
             --screenshot=only-on-failure
