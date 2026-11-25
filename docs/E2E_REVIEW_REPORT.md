@@ -222,7 +222,7 @@ As duas inscrições ativas eram as importadas das rodadas 1 e 2, ambas com dono
 1. 216/216 cenários classificados e com status no catálogo.
 2. 100% dos P0 com E2E ou waiver aprovado.
 3. Toda rota não-admin coberta ou com isenção registrada.
-4. Toda notificação com destinatário, BCC e dispatch assertados.
+4. Notificações com destinatário e dispatch assertados; BCC apenas onde o negócio exige (reemissão/falha de boleto).
 5. Matriz de acesso por perfil cobrindo todas as rotas sensíveis.
 6. Três execuções verdes consecutivas no mesmo banco, sem resíduos.
 7. Suíte no CI com artefatos e tempo máximo acordado.
