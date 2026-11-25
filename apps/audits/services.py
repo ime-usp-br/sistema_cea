@@ -190,6 +190,20 @@ class DatasetAuditService:
         outcome: str,
         note: str | None = None,
     ) -> DatasetAuditReview:
+        from users.models import User
+
+        if not (
+            getattr(reviewer, "is_superuser", False)
+            or getattr(reviewer, "role", None)
+            in {
+                User.Role.TEACHER,
+                User.Role.SECRETARIAT,
+                User.Role.ADMINISTRATOR,
+            }
+        ):
+            raise DatasetAuditError(
+                "Apenas docente, secretaria ou administrador pode revisar auditoria."
+            )
         outcome_enum = DatasetAuditReview.Outcome(outcome)
         application = submission.application
         if application.lifecycle_status != ServiceApplication.LifecycleStatus.AWAITING_DATASET_REVIEW:

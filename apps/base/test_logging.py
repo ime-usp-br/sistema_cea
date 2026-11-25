@@ -41,3 +41,31 @@ class StructuredLoggingTests(SimpleTestCase):
         self.assertEqual(
             logging_config["handlers"]["console"]["formatter"], "json"
         )
+
+    def test_TS_INT_006_segredos_nao_aparecem_em_logs(self) -> None:
+        record = logging.LogRecord(
+            name="payments.services",
+            level=logging.ERROR,
+            pathname=__file__,
+            lineno=1,
+            msg=(
+                "falha password=segredo123 token: abc456 "
+                "authorization=Bearer xyz X-Password: senha-forte"
+            ),
+            args=(),
+            exc_info=None,
+        )
+        record.password = "segredo-campo"
+        record.token = "token-campo"
+        payload = cast(dict[str, Any], json.loads(JsonFormatter().format(record)))
+        text = str(payload)
+        for secret in (
+            "segredo123",
+            "abc456",
+            "Bearer xyz",
+            "senha-forte",
+            "segredo-campo",
+            "token-campo",
+        ):
+            self.assertNotIn(secret, text)
+        self.assertIn("***", text)

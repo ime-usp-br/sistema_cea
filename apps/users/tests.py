@@ -142,6 +142,27 @@ class CustomSenhaUnicaBackendTests(TestCase):
             ).exists()
         )
 
+    # TS-INT-003
+    def test_TS_INT_003_falha_do_provedor_nao_cria_usuario(self) -> None:
+        from users.backends import CustomSenhaUnicaBackend
+
+        with (
+            self._settings(),
+            patch(
+                "users.senhaunica.SenhaUnicaClient.fetch_access_token",
+                side_effect=RuntimeError("provedor indisponível"),
+            ),
+        ):
+            result = CustomSenhaUnicaBackend().authenticate(
+                self._request(),
+                oauth_token="tok",
+                oauth_verifier="ver",
+                oauth_token_secret="sec",
+            )
+
+        self.assertIsNone(result)
+        self.assertEqual(User.objects.count(), 0)
+
     # TST-USER-007
     def test_login_atualiza_usuario_existente_e_nao_duplica_vinculo(self) -> None:
         from users.backends import CustomSenhaUnicaBackend
@@ -342,7 +363,40 @@ class SenhaUnicaFakerIntegrationTests(TestCase):
         self.assertEqual(response.status_code, 400)
 
     # TST-USER-014
-    def test_login_init_sem_credenciais_retorna_500(self) -> None:
+    def test_login_init_sem_credenciais_retorna_503(self) -> None:
         with override_settings(SENHAUNICA_KEY="", SENHAUNICA_SECRET=""):
             response = self.client.get(reverse("users:senhaunica_login"))
-        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("não configurada", response.content.decode())
+
+
+# TST-USER-015
+class SessionRoutesTests(TestCase):
+    def setUp(self) -> None:
+        self.user = User.objects.create_user(
+            username="sessao",
+            email="sessao@example.com",
+            password="senha-antiga-123",
+            is_email_verified=True,
+        )
+
+    def test_TST_USER_015_troca_de_senha_e_logout(self) -> None:
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("password_change"))
+        self.assertEqual(response.status_code, 200)
+        response = self.client.post(
+            reverse("password_change"),
+            {
+                "old_password": "senha-antiga-123",
+                "new_password1": "senha-nova-456",
+                "new_password2": "senha-nova-456",
+            },
+        )
+        self.assertRedirects(response, reverse("password_change_done"))
+        self.assertEqual(self.client.get(reverse("password_change_done")).status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("senha-nova-456"))
+
+        response = self.client.get(reverse("logout"))
+        self.assertRedirects(response, reverse("index"))
+        self.assertNotIn("_auth_user_id", self.client.session)

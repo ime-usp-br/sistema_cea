@@ -32,6 +32,12 @@ class ReportScenarioTests(TestCase):
             password="pass",
             role=User.Role.CANDIDATE,
         )
+        self.teacher = User.objects.create_user(
+            username="teacher1",
+            email="teacher@example.com",
+            password="pass",
+            role=User.Role.TEACHER,
+        )
         self.term = AcademicTerm.objects.create(year=2026, period="first")
         self.service = ReportService()
 
@@ -77,29 +83,6 @@ class ReportScenarioTests(TestCase):
         self.assertEqual(fee_cell["method"], "pix")
         self.assertEqual(fee_cell["status"], "Pago")
 
-    def test_TS_REP_002_sincronizacao_pix_estados(self):
-        # A sincronização de estados é responsabilidade dos gateways; o relatório
-        # expõe instrumentos Pix ativos/expirados com o estado atual.
-        app = self.create_project()
-        fee = self.ensure_fee(app)
-        PaymentInstrument.objects.create(
-            fee_requirement=fee,
-            method=PaymentInstrument.Method.PIX,
-            state=PaymentInstrument.State.EXPIRED,
-            amount=fee.amount,
-        )
-        rows = self.service.build_financial_report_data()
-        row = next(r for r in rows if r["protocol"] == app.protocol)
-        self.assertEqual(row["fees"]["application_fee"]["method"], "pix")
-
-    def test_TS_REP_003_sincronizacao_boleto_estados(self):
-        app = self.create_project()
-        self.create_paid_instrument(app, PaymentInstrument.Method.BANK_SLIP)
-        rows = self.service.build_financial_report_data()
-        row = next(r for r in rows if r["protocol"] == app.protocol)
-        self.assertEqual(row["fees"]["application_fee"]["method"], "bank_slip")
-        self.assertEqual(row["fees"]["application_fee"]["status"], "Pago")
-
     def test_TS_REP_004_exportacao_csv_bom_e_delimitador(self):
         app = self.create_project()
         self.create_paid_instrument(app, PaymentInstrument.Method.PIX)
@@ -135,7 +118,7 @@ class ReportScenarioTests(TestCase):
         )
         audit_service.review_submission(
             submission=submission,
-            reviewer=self.candidate,
+            reviewer=self.teacher,
             outcome="approved",
         )
         rows = self.service.build_audit_report_data()

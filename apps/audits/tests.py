@@ -263,6 +263,21 @@ class AuditScenarioTests(TestCase):
                 external_url=None,
             )
 
+    # TST-AUD-004
+    def test_TST_AUD_004_candidato_nao_revisa_auditoria(self) -> None:
+        application = self.create_project()
+        self.pay_application_fee(application)
+        submission = self.submit_file(application)
+        with self.assertRaises(DatasetAuditError):
+            self.service.review_submission(
+                submission=submission,
+                reviewer=self.candidate,
+                outcome="approved",
+            )
+        submission.refresh_from_db()
+        self.assertEqual(submission.state, DatasetAuditSubmission.State.SUBMITTED)
+        self.assertFalse(submission.reviews.exists())
+
     # TS-AUD-009
     def test_TS_AUD_009_docente_solicita_correcao(self) -> None:
         application = self.create_project()

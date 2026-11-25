@@ -46,7 +46,7 @@ def senhaunica_login(request: HttpRequest) -> HttpResponse:
     """Inicia o handshake OAuth1 e redireciona para a autorização externa."""
     client = get_senhaunica_client(request)
     if client is None:
-        return HttpResponse("Senha Única não configurada.", status=500)
+        return HttpResponse("Senha Única não configurada.", status=503)
     try:
         token_response = client.fetch_request_token()
         oauth_token = token_response.get("oauth_token")
