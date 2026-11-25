@@ -46,7 +46,7 @@ class E2ECleanupCommandTests(TestCase):
         persisted = ServiceApplication.all_objects.get(pk=self.application.pk)
         self.assertIsNotNone(persisted.soft_deleted_at)
 
-    # TST-APP-012
+    # TST-APP-051
     def test_e2e_cleanup_desativa_prefixo_preservando_seed(self) -> None:
         seed = User.objects.create_user(
             username="e2e_candidate",
@@ -64,7 +64,7 @@ class E2ECleanupCommandTests(TestCase):
         self.assertTrue(seed.is_active)
         self.assertFalse(created.is_active)
 
-    # TST-APP-013
+    # TST-APP-052
     def test_e2e_cleanup_purge_protocol_e_escopado(self) -> None:
         other = ApplicationSubmissionService().create_application(
             term=self.term,

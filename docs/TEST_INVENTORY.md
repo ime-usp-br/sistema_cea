@@ -55,6 +55,8 @@ em `TEST_SCENARIOS.md`; testes de infraestrutura/complementares usam `TST-*`.
 | TST-APP-048 | `apps/applications/tests.py` | `test_application_modality_change_view` |
 | TST-APP-049 | `apps/applications/tests.py` | `test_application_delete_view_soft_delete` |
 | TST-APP-050 | `apps/applications/tests.py` | `test_application_delete_view_exige_secretaria` |
+| TST-APP-051 | `apps/applications/tests/test_e2e_cleanup.py` | `test_e2e_cleanup_desativa_prefixo_preservando_seed` |
+| TST-APP-052 | `apps/applications/tests/test_e2e_cleanup.py` | `test_e2e_cleanup_purge_protocol_e_escopado` |
 | TST-AUD-001 | `apps/audits/tests.py` | `test_validate_external_url_helper` |
 | TST-AUD-002 | `apps/audits/tests.py` | `test_TST_AUD_002_GAP_001_link_externo_nao_pode_apontar_para_localhost_ssrf` |
 | TST-AUD-003 | `apps/audits/tests.py` | `test_TST_AUD_003_GAP_001b_url_publica_continua_aceita` |
