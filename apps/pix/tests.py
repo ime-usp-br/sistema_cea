@@ -2,7 +2,7 @@ import base64
 import tempfile
 from datetime import timedelta
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 from unittest.mock import patch
 
 from django.test import TestCase, override_settings
@@ -115,6 +115,7 @@ class PixScenarioTests(TestCase):
             pix.expires_at - pix.generated_at, timedelta(seconds=3600)
         )
 
+    # Cobre: TS-INT-005
     def test_TS_PIX_001b_falha_de_storage_do_qr_nao_invalida_pix(self) -> None:
         application = self.create_consultation()
         with (
@@ -343,6 +344,13 @@ class PixScenarioTests(TestCase):
         self.assertEqual(pix.qr_code_image_asset_id, asset.id)
         assert asset.size_bytes is not None
         self.assertGreater(asset.size_bytes, 0)
+
+        self.client.force_login(self.candidate)
+        response = self.client.get(reverse("pix:qrcode_image", args=[pix.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], asset.content_type)
+        content = b"".join(cast(Any, response).streaming_content)
+        self.assertTrue(content)
 
 
 @override_settings(
@@ -589,6 +597,16 @@ class PixGatewayContractTests(TestCase):
         headers = PixGateway()._headers()
         self.assertEqual(headers["X-Username"], "consumerdi")
         self.assertEqual(headers["X-Password"], "teste1")
+
+    def test_TS_INT_001_timeout_do_pix_vira_erro_de_gateway(self) -> None:
+        import httpx
+
+        from pix.gateways import PixGatewayError
+
+        with patch(
+            "httpx.Client.request", side_effect=httpx.TimeoutException("timeout")
+        ), self.assertRaises(PixGatewayError):
+            self.gateway.check_pix_status("pix-timeout")
 
     # TST-PIX-010
     def test_consultar_usa_get_por_idfpix(self) -> None:

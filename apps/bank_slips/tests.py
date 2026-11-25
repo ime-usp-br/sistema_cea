@@ -17,6 +17,7 @@ from bank_slips.models import BankSlipPaymentInstrument
 from bank_slips.services import BankSlipDomainError, BankSlipPaymentService
 from notifications.models import NotificationDispatch
 from payments.models import FeeRequirement, PaymentInstrument
+from reports.services import ReportService
 from terms.models import AcademicTerm
 from users.models import User
 
@@ -247,20 +248,36 @@ class BankSlipScenarioTests(TestCase):
     # TS-BSL-007 — Cancelamento de boleto substituído
     # ------------------------------------------------------------------
 
-    def test_TS_BSL_007_cancelamento(self) -> None:
+    def test_TS_BSL_007_cancelamento_boleto_substituido(self) -> None:
         application = self.create_consultation()
-        slip = self.generate_slip(application)
+        old_slip = self.generate_slip(application)
+        old_instrument = old_slip.payment_instrument
+        old_instrument.state = PaymentInstrument.State.SUPERSEDED
+        old_instrument.active_unique_fee_token = None
+        old_instrument.save(update_fields=["state", "active_unique_fee_token", "updated_at"])
+        with patch(
+            "bank_slips.gateways.BankSlipGateway.gerar_boleto",
+            return_value={**SLIP_RESULT, "codigoIDBoleto": "boleto-002"},
+        ):
+            new_slip = self.service.generate_bank_slip_for_fee(
+                fee_requirement=self.get_fee(application),
+                created_by=self.candidate,
+            )
+        self.assertNotEqual(old_slip.pk, new_slip.pk)
+
         with patch(
             "bank_slips.gateways.BankSlipGateway.cancelar_boleto",
             return_value=True,
         ):
-            self.service.cancel_bank_slip(slip)
-        slip.payment_instrument.refresh_from_db()
-        self.assertEqual(
-            slip.payment_instrument.state, PaymentInstrument.State.CANCELED
-        )
-        self.assertEqual(slip.bank_status, BankSlipPaymentInstrument.BankStatus.CANCELED)
-        self.assertIsNotNone(slip.cancellation_date)
+            self.service.cancel_bank_slip(old_slip)
+
+        old_slip.refresh_from_db()
+        old_instrument.refresh_from_db()
+        new_slip.payment_instrument.refresh_from_db()
+        self.assertEqual(old_instrument.state, PaymentInstrument.State.SUPERSEDED)
+        self.assertEqual(old_slip.bank_status, BankSlipPaymentInstrument.BankStatus.CANCELED)
+        self.assertIsNotNone(old_slip.cancellation_date)
+        self.assertEqual(new_slip.payment_instrument.state, PaymentInstrument.State.ACTIVE)
 
     # ------------------------------------------------------------------
     # TS-BSL-008 — Consulta em lote
@@ -269,20 +286,41 @@ class BankSlipScenarioTests(TestCase):
     def test_TS_BSL_008_consulta_em_lote(self) -> None:
         application = self.create_consultation()
         slip_a = self.generate_slip(application)
-        slip_b = self.generate_slip(application)
-        self.assertEqual(slip_a.pk, slip_b.pk, "boleto ativo deve ser reutilizado")
+        fee_b = FeeRequirement.objects.create(
+            application=application,
+            fee_type=FeeRequirement.FeeType.SUPPLEMENT_FEE,
+            base_amount=Decimal("60.00"),
+            amount=Decimal("60.00"),
+        )
+        with patch(
+            "bank_slips.gateways.BankSlipGateway.gerar_boleto",
+            return_value={**SLIP_RESULT, "codigoIDBoleto": "boleto-002"},
+        ):
+            slip_b = self.service.generate_bank_slip_for_fee(
+                fee_requirement=fee_b, created_by=self.candidate
+            )
+
         with patch(
             "bank_slips.gateways.BankSlipGateway.obter_situacao",
-            return_value="P",
+            side_effect=["P", "P"],
         ):
-            self.service.sync_bank_slip_status(slip_a)
-        slip_b.refresh_from_db()
-        self.assertEqual(slip_b.payment_instrument.state, PaymentInstrument.State.PAID)
+            synced = ReportService().sync_application_payments(application)
+
+        self.assertEqual(synced, {"bank_slips": 2, "pix": 0})
+        slip_a.payment_instrument.refresh_from_db()
+        slip_b.payment_instrument.refresh_from_db()
+        self.assertEqual(
+            slip_a.payment_instrument.state, PaymentInstrument.State.PAID
+        )
+        self.assertEqual(
+            slip_b.payment_instrument.state, PaymentInstrument.State.PAID
+        )
 
     # ------------------------------------------------------------------
     # TS-BSL-009 — Falha SOAP
     # ------------------------------------------------------------------
 
+    # Cobre: TS-INT-002
     def test_TS_BSL_009_falha_soap_nao_grava_inconsistencia(self) -> None:
         application = self.create_consultation()
         slip = self.generate_slip(application)

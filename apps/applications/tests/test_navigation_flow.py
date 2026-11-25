@@ -19,6 +19,7 @@ from django.urls import reverse
 
 from applications.factories import ApplicationFactory, build_valid_form_payload
 from applications.models import ServiceApplication
+from audits.models import DatasetAuditSubmission
 from terms.factories import AcademicTermFactory
 from users.factories import (
     AdministratorFactory,
@@ -287,15 +288,43 @@ class NavigationFlowTests(TestCase):
         )
 
     def test_TS_NAV_006_relatorios_ligam_as_inscricoes(self) -> None:
-        self._application(modality=ServiceApplication.Modality.CONSULTATION)
+        application = self._application(modality=ServiceApplication.Modality.PROJECT)
+        if not application.dataset_audit_required:
+            application.dataset_audit_required = True
+            application.dataset_audit_state = (
+                ServiceApplication.DatasetAuditState.AWAITING_SUBMISSION
+            )
+            application.save(
+                update_fields=[
+                    "dataset_audit_required",
+                    "dataset_audit_state",
+                    "updated_at",
+                ]
+            )
+        if not application.audit_submissions.exists():
+            DatasetAuditSubmission.objects.create(
+                application=application,
+                submitted_by=self.admin,
+                submission_channel=DatasetAuditSubmission.Channel.EXTERNAL_LINK,
+                external_url="https://example.com/dados-nav",
+                external_link_declaration=True,
+            )
         self.client.force_login(self.admin)
         financial = self._get(reverse("reports:financial_report"))
         self.assertEqual(financial.status_code, 200)
         self.assertContains(financial, "Relatório Financeiro")
+        self.assertContains(
+            financial,
+            reverse("applications:detail", args=[application.protocol]),
+        )
 
         audit = self._get(reverse("reports:audit_report"))
         self.assertEqual(audit.status_code, 200)
         self.assertContains(audit, "Relatório de Auditoria")
+        self.assertContains(
+            audit,
+            reverse("applications:detail", args=[application.protocol]),
+        )
 
 
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp(prefix="cea-nav-media-"))

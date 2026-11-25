@@ -1,7 +1,7 @@
 # Matriz de rastreabilidade — cenários × testes
 
 Gerada a partir de `docs/TEST_SCENARIOS.md`, dos arquivos `apps/**/test*.py` e
-dos marcadores `# Cobre: TS-*` em `e2e/**/test*.py`.
+dos marcadores `# Cobre: TS-*` em `apps/**/test*.py` e `e2e/**/test*.py`.
 Atualize-a com `python scripts/gen_test_traceability.py` (ou manualmente) ao mover/renomear testes.
 
 | ID | Cenário | Arquivo::teste | Status |
@@ -34,7 +34,7 @@ Atualize-a com `python scripts/gen_test_traceability.py` (ou manualmente) ao mov
 | TS-APP-019 | CPF bancário inválido | `apps/applications/tests/test_massive_application_combinations.py::test_TS_APP_019_cpf_bancario_invalido_falha` | Coberto |
 | TS-APP-020 | Sem reembolso e dados bancários vazios | `apps/applications/tests/test_massive_application_combinations.py::test_TS_APP_020_sem_reembolso_dados_bancarios_vazios_passa` | Coberto |
 | TS-APP-022 | Regressão de payload representativo | `apps/applications/tests/test_massive_application_combinations.py::test_TS_APP_022_regressao_payload_representativo_aceito` | Coberto |
-| TS-APP-024 | Inscrição fora do período | `apps/applications/tests/test_application_form.py::test_TS_APP_024_bloqueio_inscricao_projeto_fora_do_periodo`<br>`apps/applications/tests/test_application_form.py::test_TS_APP_024_consulta_nao_e_bloqueada_fora_do_periodo` | Coberto |
+| TS-APP-024 | Inscrição fora do período | `apps/applications/tests/test_application_form.py::test_TS_APP_024_bloqueio_inscricao_projeto_fora_do_periodo`<br>`apps/applications/tests/test_application_form.py::test_TS_APP_024_abertura_do_periodo_respeita_fuso_do_app`<br>`apps/applications/tests/test_application_form.py::test_TS_APP_024_consulta_nao_e_bloqueada_fora_do_periodo` | Coberto |
 | TS-VAL-001 | Telefone inválido é rejeitado | `apps/applications/tests/test_application_form.py::test_TS_VAL_001_telefone_invalido_rejeitado`<br>`e2e/test_validations_e2e.py::test_E2E_VAL_001_telefone_invalido_e_rejeitado` | Coberto |
 | TS-VAL-002 | WhatsApp exige celular | `apps/applications/tests/test_application_form.py::test_TS_VAL_002_whatsapp_exige_celular`<br>`e2e/test_validations_e2e.py::test_E2E_VAL_002_whatsapp_exige_celular` | Coberto |
 | TS-VAL-003 | Nome com número ou incompleto é rejeitado | `apps/applications/tests/test_application_form.py::test_TS_VAL_003_nome_com_numero_ou_incompleto_rejeitado`<br>`e2e/test_validations_e2e.py::test_E2E_VAL_003_nome_com_numero_ou_incompleto_e_rejeitado` | Coberto |
@@ -104,7 +104,7 @@ Atualize-a com `python scripts/gen_test_traceability.py` (ou manualmente) ao mov
 | TS-BSL-004 | Status V não confirma pagamento | `apps/bank_slips/tests.py::test_TS_BSL_004_status_v_nao_confirma` | Coberto |
 | TS-BSL-005 | Boleto pago atualiza fluxo | `apps/bank_slips/tests.py::test_TS_BSL_005_pago_atualiza_fluxo`<br>`e2e/test_full_journeys_e2e.py::test_E2E_CONSULTATION_001_jornada_completa_com_boleto` | Coberto |
 | TS-BSL-006 | Download de PDF | `apps/bank_slips/tests.py::test_TS_BSL_006_pdf_gerado_e_armazenado`<br>`e2e/test_payments_e2e.py::test_E2E_BSL_001_boleto_pela_ui_pdf_e_confirmacao` | Coberto |
-| TS-BSL-007 | Cancelamento de boleto substituído | `apps/bank_slips/tests.py::test_TS_BSL_007_cancelamento`<br>`e2e/test_remaining_processes_e2e.py::test_E2E_BSL_ADMIN_001_gerar_e_regenerar_boleto_pela_secretaria` | Coberto |
+| TS-BSL-007 | Cancelamento de boleto substituído | `apps/bank_slips/tests.py::test_TS_BSL_007_cancelamento_boleto_substituido`<br>`e2e/test_remaining_processes_e2e.py::test_E2E_BSL_ADMIN_001_gerar_e_regenerar_boleto_pela_secretaria` | Coberto |
 | TS-BSL-008 | Consulta em lote | `apps/bank_slips/tests.py::test_TS_BSL_008_consulta_em_lote` | Coberto |
 | TS-BSL-009 | Falha SOAP | `apps/bank_slips/tests.py::test_TS_BSL_009_falha_soap_nao_grava_inconsistencia` | Coberto |
 | TS-BSL-010 | Simulação de pagamento em desenvolvimento | `apps/bank_slips/tests.py::test_TS_BSL_010_simulacao_apenas_em_dev`<br>`e2e/test_payments_e2e.py::test_E2E_BSL_001_boleto_pela_ui_pdf_e_confirmacao` | Coberto |
@@ -124,7 +124,7 @@ Atualize-a com `python scripts/gen_test_traceability.py` (ou manualmente) ao mov
 | TS-MOD-003 | Projeto pago com valor igual ou superior a R$ 140,00 | `apps/payments/tests.py::test_TS_MOD_003_projeto_pago_igual_ou_superior_140` | Coberto |
 | TS-MOD-004 | Consulta não paga convertida em Projeto | `apps/payments/tests.py::test_TS_MOD_004_consulta_nao_paga_convertida_em_projeto`<br>`e2e/test_remaining_processes_e2e.py::test_E2E_MOD_004_005_mudanca_de_modalidade_pela_lista` | Coberto |
 | TS-MOD-005 | Consulta paga convertida em Projeto | `apps/payments/tests.py::test_TS_MOD_005_consulta_paga_convertida_em_projeto`<br>`e2e/test_remaining_processes_e2e.py::test_E2E_MOD_004_005_mudanca_de_modalidade_pela_lista` | Coberto |
-| TS-MOD-006 | Conversão de Consulta para Projeto exige auditoria quando há dono | `apps/payments/tests.py::test_TS_MOD_006_projeto_com_taxa_de_projeto_paga_convertido_para_consulta_gera_excesso` | Coberto |
+| TS-MOD-006 | Conversão de Consulta para Projeto exige auditoria quando há dono | `apps/payments/tests.py::test_TS_MOD_006_consulta_para_projeto_exige_auditoria` | Coberto |
 | TS-MOD-007 | Conversão de inscrição importada sem dono | `apps/payments/tests.py::test_TS_MOD_007_conversao_de_importada_sem_dono_nao_habilita_auditoria` | Coberto |
 | TS-TRM-001 | Transferência manual com período futuro existente | `e2e/test_journeys_e2e.py::test_E2E_N9_02_transferir_semestre_nao_quebra` | Coberto |
 | TS-TRM-002 | Transferência pendente sem período futuro | `apps/applications/tests/test_term_transfer_pending.py::test_TS_TRM_002_sem_proximo_periodo_fica_pendente`<br>`e2e/test_backoffice_e2e.py::test_E2E_TRM_001_002_003_cadastro_de_semestre_e_transferencia_pendente` | Coberto |
@@ -141,7 +141,7 @@ Atualize-a com `python scripts/gen_test_traceability.py` (ou manualmente) ao mov
 | TS-MEET-006 | Reunião presencial exige local | `apps/meetings/tests.py::test_TS_MEET_006_reuniao_presencial_exige_local` | Coberto |
 | TS-MEET-007 | Reagendar | `apps/meetings/tests.py::test_TS_MEET_007_reagendar`<br>`e2e/test_meetings_e2e.py::test_E2E_MEET_007_008_reagendar_e_cancelar_triagem`<br>`e2e/test_meetings_e2e.py::test_E2E_MEET_003_007_008_reuniao_reagendar_cancelar` | Coberto |
 | TS-MEET-008 | Cancelar | `apps/meetings/tests.py::test_TS_MEET_008_cancelar`<br>`e2e/test_meetings_e2e.py::test_E2E_MEET_007_008_reagendar_e_cancelar_triagem`<br>`e2e/test_meetings_e2e.py::test_E2E_MEET_003_007_008_reuniao_reagendar_cancelar` | Coberto |
-| TS-MEET-009 | Decisão aprovado como Projeto | `apps/meetings/tests.py::test_TS_MEET_009b_decisao_aprovado_como_projeto_com_credito`<br>`e2e/test_full_journeys_e2e.py::test_E2E_PROJECT_001_jornada_completa_ate_aprovado_como_projeto` | Coberto |
+| TS-MEET-009 | Decisão aprovado como Projeto | `apps/meetings/tests.py::test_TS_MEET_009_decisao_aprovado_como_projeto`<br>`apps/meetings/tests.py::test_TS_MEET_009b_decisao_aprovado_como_projeto_com_credito`<br>`e2e/test_full_journeys_e2e.py::test_E2E_PROJECT_001_jornada_completa_ate_aprovado_como_projeto` | Coberto |
 | TS-MEET-010 | Decisão aprovado como Consulta | `apps/meetings/tests.py::test_TS_MEET_010_decisao_aprovado_como_consulta`<br>`e2e/test_meetings_e2e.py::test_E2E_MEET_010_triagem_aprovada_como_consulta_gera_complemento` | Coberto |
 | TS-MEET-011 | Decisão não aprovado | `apps/meetings/tests.py::test_TS_MEET_011_decisao_nao_aprovado`<br>`apps/meetings/tests.py::test_TS_MEET_011b_reuniao_decisao_nao_aprovado`<br>`apps/meetings/tests.py::test_TS_MEET_011c_decisao_exige_feedback_do_docente`<br>`e2e/test_meetings_e2e.py::test_E2E_MEET_011_triagem_nao_aprovada` | Coberto |
 | TS-MEET-012 | Feedback docente após evento | `apps/meetings/tests.py::test_TS_MEET_012_feedback_docente_apos_evento`<br>`apps/meetings/tests.py::test_TS_MEET_012b_feedback_bloqueado_antes_do_evento`<br>`apps/meetings/tests.py::test_TS_MEET_012c_feedback_bloqueado_antes_do_evento_consulta`<br>`e2e/test_full_journeys_e2e.py::test_E2E_PROJECT_001_jornada_completa_ate_aprovado_como_projeto`<br>`e2e/test_full_journeys_e2e.py::test_E2E_CONSULTATION_001_jornada_completa_com_boleto`<br>`e2e/test_meetings_e2e.py::test_E2E_MEET_012_feedback_bloqueado_antes_do_evento` | Coberto |
@@ -185,8 +185,8 @@ Atualize-a com `python scripts/gen_test_traceability.py` (ou manualmente) ao mov
 | TS-IMP-007 | Protocolos únicos na importação | `apps/imports/tests.py::test_TS_IMP_007_protocolos_duplicados_detectados`<br>`e2e/test_imports_e2e.py::test_E2E_IMP_001_importa_json_preserva_estado_e_detecta_duplicidade` | Coberto |
 | TS-IMP-008 | Arquivos ausentes | `apps/imports/tests.py::test_TS_IMP_008_arquivos_ausentes_relatados`<br>`e2e/test_imports_e2e.py::test_E2E_IMP_001_importa_json_preserva_estado_e_detecta_duplicidade` | Coberto |
 | TS-REP-001 | Relatório financeiro | `apps/reports/tests.py::test_TS_REP_001_relatorio_financeiro_reune_taxas_e_metodos`<br>`e2e/test_backoffice_e2e.py::test_E2E_REP_001_004_005_relatorio_financeiro_e_exportacoes`<br>`e2e/test_journeys_e2e.py::test_E2E_N9_03_backoffice_lista_e_relatorio` | Coberto |
-| TS-REP-002 | Sincronização Pix | `apps/reports/test_financial_sync.py::test_TS_REP_002_sincroniza_boleto_pago`<br>`apps/reports/test_financial_sync.py::test_TS_REP_002_candidato_nao_sincroniza`<br>`apps/reports/tests.py::test_TS_REP_002_sincronizacao_pix_estados`<br>`e2e/test_remaining_processes_e2e.py::test_E2E_REP_002_sincronizacao_do_relatorio_usa_gateway_simulado` | Coberto |
-| TS-REP-003 | Sincronização boleto | `apps/reports/tests.py::test_TS_REP_003_sincronizacao_boleto_estados` | Coberto |
+| TS-REP-002 | Sincronização Pix | `apps/reports/test_financial_sync.py::test_TS_REP_002_sincroniza_pix_concluido`<br>`apps/reports/test_financial_sync.py::test_TS_REP_002_candidato_nao_sincroniza`<br>`e2e/test_remaining_processes_e2e.py::test_E2E_REP_002_sincronizacao_do_relatorio_usa_gateway_simulado` | Coberto |
+| TS-REP-003 | Sincronização boleto | `apps/reports/test_financial_sync.py::test_TS_REP_003_sincroniza_boleto_pago` | Coberto |
 | TS-REP-004 | Exportação CSV | `apps/reports/tests.py::test_TS_REP_004_exportacao_csv_bom_e_delimitador`<br>`e2e/test_backoffice_e2e.py::test_E2E_REP_001_004_005_relatorio_financeiro_e_exportacoes` | Coberto |
 | TS-REP-005 | Exportação XLSX | `apps/reports/tests.py::test_TS_REP_005_exportacao_xlsx_colunas_financeiras`<br>`e2e/test_backoffice_e2e.py::test_E2E_REP_001_004_005_relatorio_financeiro_e_exportacoes` | Coberto |
 | TS-REP-006 | Relatório de auditoria | `apps/reports/tests.py::test_TS_REP_006_relatorio_auditoria_mostra_submissoes_e_decisoes`<br>`e2e/test_backoffice_e2e.py::test_E2E_REP_006_relatorio_de_auditoria` | Coberto |
@@ -195,12 +195,12 @@ Atualize-a com `python scripts/gen_test_traceability.py` (ou manualmente) ao mov
 | TS-EVT-002 | Eventos de auditoria | `e2e/test_full_journeys_e2e.py::test_E2E_PROJECT_001_jornada_completa_ate_aprovado_como_projeto` | Coberto |
 | TS-EVT-003 | Eventos financeiros | `e2e/test_payments_e2e.py::test_E2E_REF_001_002_003_reembolso_completo_pela_ui` | Coberto |
 | TS-EVT-004 | Eventos de resgate | `e2e/test_remaining_processes_e2e.py::test_E2E_CLAIM_001_002_003_resgate_por_codigo_do_email` | Coberto |
-| TS-INT-001 | Timeout no Pix | — | Sem teste |
-| TS-INT-002 | Falha SOAP no boleto | — | Sem teste |
-| TS-INT-003 | Falha no provedor de login | — | Sem teste |
-| TS-INT-004 | Falha de e-mail | — | Sem teste |
-| TS-INT-005 | Falha de storage | — | Sem teste |
-| TS-INT-006 | Segredos não logados | — | Sem teste |
+| TS-INT-001 | Timeout no Pix | `apps/pix/tests.py::test_TS_INT_001_timeout_do_pix_vira_erro_de_gateway` | Coberto |
+| TS-INT-002 | Falha SOAP no boleto | `apps/bank_slips/tests.py::test_TS_BSL_009_falha_soap_nao_grava_inconsistencia` | Coberto |
+| TS-INT-003 | Falha no provedor de login | `apps/users/tests.py::test_TS_INT_003_falha_do_provedor_nao_cria_usuario` | Coberto |
+| TS-INT-004 | Falha de e-mail | `apps/notifications/tests.py::test_TS_NOT_010_falha_de_envio_marca_failed` | Coberto |
+| TS-INT-005 | Falha de storage | `apps/pix/tests.py::test_TS_PIX_001b_falha_de_storage_do_qr_nao_invalida_pix` | Coberto |
+| TS-INT-006 | Segredos não logados | `apps/base/test_logging.py::test_TS_INT_006_segredos_nao_aparecem_em_logs` | Coberto |
 | TS-SEC-001 | CSRF | `e2e/test_security_e2e.py::test_E2E_SEC_001_post_sem_csrf_e_rejeitado` | Coberto |
 | TS-SEC-002 | Webhook Pix exige token | `e2e/test_payments_e2e.py::test_E2E_PIX_005_webhook_com_token_invalido_nao_confirma` | Coberto |
 | TS-SEC-003 | Acesso direto por URL | `e2e/test_security_e2e.py::test_E2E_SEC_001_candidato_nao_acessa_inscricao_de_terceiro` | Coberto |

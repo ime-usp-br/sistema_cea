@@ -5,9 +5,15 @@ from decimal import Decimal
 
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
 from applications.models import ApplicationEvent, ServiceApplication
 from applications.services import TermTransferService
+from audits.models import (
+    DatasetAuditResolution,
+    DatasetAuditReview,
+    DatasetAuditSubmission,
+)
 from payments.models import FeeRequirement, PaymentInstrument
 from terms.models import AcademicTerm
 from users.factories import SecretariatFactory, UserFactory
@@ -115,11 +121,34 @@ class TermTransferPendingTests(TestCase):
             state=PaymentInstrument.State.PAID,
             amount=fee.amount,
         )
+        submission = DatasetAuditSubmission.objects.create(
+            application=application,
+            submitted_by=self.candidate,
+            submission_channel=DatasetAuditSubmission.Channel.EXTERNAL_LINK,
+            external_url="https://example.com/dados",
+            external_link_declaration=True,
+            state=DatasetAuditSubmission.State.APPROVED,
+        )
+        review = DatasetAuditReview.objects.create(
+            submission=submission,
+            reviewer=self.secretariat,
+            outcome=DatasetAuditReview.Outcome.APPROVED,
+            reviewed_at=timezone.now(),
+        )
+
         TermTransferService().transfer_to_next_semester(
             application, decided_by=self.secretariat
         )
         new_term = AcademicTerm.objects.create(year=2100, period="second")
         application.refresh_from_db()
+        resolution = DatasetAuditResolution.objects.create(
+            submission=submission,
+            application=application,
+            target_term=new_term,
+            decided_by=self.secretariat,
+            resolution=DatasetAuditResolution.Resolution.TRANSFER_TERM,
+            decided_at=timezone.now(),
+        )
         self.assertEqual(application.term_id, new_term.pk)
         self.assertEqual(application.fee_requirements.count(), 1)
         self.assertTrue(
@@ -127,4 +156,11 @@ class TermTransferPendingTests(TestCase):
                 pk=instrument.pk, fee_requirement__application=application
             ).exists()
         )
+        self.assertTrue(
+            DatasetAuditSubmission.objects.filter(
+                pk=submission.pk, application=application
+            ).exists()
+        )
+        self.assertTrue(DatasetAuditReview.objects.filter(pk=review.pk).exists())
+        self.assertTrue(DatasetAuditResolution.objects.filter(pk=resolution.pk).exists())
         self.assertEqual(application.events.filter(event_code="term.transfer_auto").count(), 1)

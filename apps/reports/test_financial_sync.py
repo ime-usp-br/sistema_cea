@@ -10,6 +10,8 @@ from django.urls import reverse
 from applications.models import ServiceApplication
 from bank_slips.models import BankSlipPaymentInstrument
 from payments.models import FeeRequirement, PaymentInstrument
+from pix.models import PixPaymentInstrument
+from reports.services import ReportService
 from terms.models import AcademicTerm
 from users.models import User
 
@@ -58,7 +60,7 @@ class FinancialReportSyncTests(TestCase):
             document_amount=self.fee.amount,
         )
 
-    def test_TS_REP_002_sincroniza_boleto_pago(self) -> None:
+    def test_TS_REP_003_sincroniza_boleto_pago(self) -> None:
         self.client.force_login(self.secretariat)
         with patch(
             "bank_slips.gateways.BankSlipGateway.obter_situacao", return_value="P"
@@ -69,6 +71,27 @@ class FinancialReportSyncTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.instrument.refresh_from_db()
         self.assertEqual(self.instrument.state, PaymentInstrument.State.PAID)
+
+    def test_TS_REP_002_sincroniza_pix_concluido(self) -> None:
+        self.instrument.method = PaymentInstrument.Method.PIX
+        self.instrument.state = PaymentInstrument.State.ACTIVE
+        self.instrument.save(update_fields=["method", "state", "updated_at"])
+        self.slip.delete()
+        pix = PixPaymentInstrument.objects.create(
+            payment_instrument=self.instrument,
+            pix_reference="SYNC-PIX-1",
+            qr_code_payload="00020126sync",
+        )
+        with patch(
+            "pix.gateways.PixGateway.check_pix_status",
+            return_value={"status": "Concluído", "valor": "140,00"},
+        ):
+            synced = ReportService().sync_application_payments(self.application)
+        self.assertEqual(synced, {"bank_slips": 0, "pix": 1})
+        self.instrument.refresh_from_db()
+        pix.refresh_from_db()
+        self.assertEqual(self.instrument.state, PaymentInstrument.State.PAID)
+        self.assertEqual((pix.external_status or "").lower(), "pago")
 
     def test_TS_REP_002_candidato_nao_sincroniza(self) -> None:
         self.client.force_login(self.candidate)

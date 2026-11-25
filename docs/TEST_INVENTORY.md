@@ -58,6 +58,7 @@ em `TEST_SCENARIOS.md`; testes de infraestrutura/complementares usam `TST-*`.
 | TST-AUD-001 | `apps/audits/tests.py` | `test_validate_external_url_helper` |
 | TST-AUD-002 | `apps/audits/tests.py` | `test_TST_AUD_002_GAP_001_link_externo_nao_pode_apontar_para_localhost_ssrf` |
 | TST-AUD-003 | `apps/audits/tests.py` | `test_TST_AUD_003_GAP_001b_url_publica_continua_aceita` |
+| TST-AUD-004 | `apps/audits/tests.py` | `test_TST_AUD_004_candidato_nao_revisa_auditoria` |
 | TST-BASE-001 | `apps/base/test_rate_limit.py` | `test_login_limita_por_ip_e_username` |
 | TST-BASE-002 | `apps/base/test_rate_limit.py` | `test_login_headers_de_limite_em_resposta_permitida` |
 | TST-BASE-003 | `apps/base/test_rate_limit.py` | `test_webhook_limita_por_ip` |
@@ -70,6 +71,10 @@ em `TEST_SCENARIOS.md`; testes de infraestrutura/complementares usam `TST-*`.
 | TST-BASE-010 | `apps/base/tests.py` | `test_ids_de_cenarios_citados_existem_no_documento` |
 | TST-BASE-011 | `apps/base/tests.py` | `test_todos_os_testes_tem_id_ts_ou_tst` |
 | TST-BASE-012 | `apps/base/tests.py` | `test_inventario_tst_esta_atualizado` |
+| TST-BASE-013 | `apps/base/test_rate_limit.py` | `test_reset_de_senha_e_resgate_respeitam_rate_limit_post` |
+| TST-BASE-014 | `apps/base/test_admin_screens.py` | `test_todas_as_listagens_do_admin_respondem` |
+| TST-BASE-015 | `apps/base/test_admin_screens.py` | `test_todas_as_telas_de_criacao_do_admin_respondem` |
+| TST-BASE-016 | `apps/base/test_admin_screens.py` | `test_telas_de_edicao_e_exclusao_do_admin_respondem` |
 | TST-BSL-001 | `apps/bank_slips/test_polling.py` | `test_TST_BSL_001_GAP_006_task_de_polling_atualiza_boletos_pendentes` |
 | TST-BSL-002 | `apps/bank_slips/test_polling.py` | `test_TST_BSL_002_GAP_006_poller_ignora_boletos_ja_pagos` |
 | TST-BSL-003 | `apps/bank_slips/tests.py` | `test_TST_BSL_003_GAP_001_regeneracao_automatica_apenas_para_taxa_de_inscricao` |
@@ -173,6 +178,7 @@ em `TEST_SCENARIOS.md`; testes de infraestrutura/complementares usam `TST-*`.
 | TST-PAY-004 | `apps/payments/tests.py` | `test_TST_PAY_004_GAP_002_nao_permite_confirmar_manual_antes_do_vencimento` |
 | TST-PAY-005 | `apps/payments/tests.py` | `test_TST_PAY_005_GAP_002b_permite_confirmar_manual_no_vencimento` |
 | TST-PAY-006 | `apps/payments/tests.py` | `test_TST_PAY_006_GAP_002c_permite_confirmar_manual_apos_vencimento` |
+| TST-PAY-007 | `apps/payments/tests.py` | `test_TST_PAY_007_projeto_com_taxa_de_projeto_paga_convertido_para_consulta_gera_excesso` |
 | TST-PIX-001 | `apps/pix/tests.py` | `test_webhook_endpoint_confirma_pagamento` |
 | TST-PIX-002 | `apps/pix/tests.py` | `test_webhook_endpoint_token_invalido_rejeitado` |
 | TST-PIX-003 | `apps/pix/tests.py` | `test_owner_pode_ver_a_pagina` |
@@ -211,4 +217,5 @@ em `TEST_SCENARIOS.md`; testes de infraestrutura/complementares usam `TST-*`.
 | TST-USER-011 | `apps/users/tests.py` | `test_login_init_usa_endpoints_do_faker` |
 | TST-USER-012 | `apps/users/tests.py` | `test_callback_autentica_usuario_do_faker` |
 | TST-USER-013 | `apps/users/tests.py` | `test_callback_sem_sessao_retorna_400` |
-| TST-USER-014 | `apps/users/tests.py` | `test_login_init_sem_credenciais_retorna_500` |
+| TST-USER-014 | `apps/users/tests.py` | `test_login_init_sem_credenciais_retorna_503` |
+| TST-USER-015 | `apps/users/tests.py` | `test_TST_USER_015_troca_de_senha_e_logout` |

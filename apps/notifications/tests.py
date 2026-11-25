@@ -174,6 +174,7 @@ class NotificationScenarioTests(TestCase):
     # TS-NOT-010
     @EAGER
     @patch("django.core.mail.EmailMessage.send", side_effect=RuntimeError("SMTP down"))
+    # Cobre: TS-INT-004
     def test_TS_NOT_010_falha_de_envio_marca_failed(self, _mock_send) -> None:
         _, instrument = self._fee_and_instrument()
         self.service.notify_payment_confirmed(self.application, instrument)

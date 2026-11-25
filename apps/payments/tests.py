@@ -32,6 +32,8 @@ from payments.services import (
     PaymentDomainError,
     PaymentOrchestrationService,
     RefundRequestService,
+    advance_lifecycle_after_application_fee,
+    refresh_payment_state,
 )
 from terms.models import AcademicTerm
 from users.models import User
@@ -202,20 +204,39 @@ class PaymentScenarioTests(TestCase):
     def test_TS_FEE_007_valor_final_consistente(self) -> None:
         application = self.create_project()
         self.approve_project_audit(application)
-        self.fee_service.create_project_fee(application)
-        application.refresh_from_db()
+        application.modality_credit_amount = Decimal("60.00")
+        application.save(update_fields=["modality_credit_amount", "updated_at"])
+        project_fee = self.fee_service.create_project_fee(application)
+        assert project_fee is not None
+        self.assertEqual(project_fee.base_amount, Decimal("250.00"))
+        self.assertEqual(project_fee.adjustment_amount, Decimal("-60.00"))
+        self.assertEqual(project_fee.amount, Decimal("190.00"))
         for fee in application.fee_requirements.all():
             self.assertEqual(fee.amount, fee.base_amount + fee.adjustment_amount)
 
     def test_TS_FEE_008_isencao_de_taxa(self) -> None:
         application = self.create_consultation()
-        fee = application.fee_requirements.get(fee_type=FeeRequirement.FeeType.APPLICATION_FEE)
+        fee = application.fee_requirements.get(
+            fee_type=FeeRequirement.FeeType.APPLICATION_FEE
+        )
         fee.is_waived = True
         fee.waiver_reason = "Bolsa de estudo"
         fee.save(update_fields=["is_waived", "waiver_reason"])
         fee.refresh_from_db()
+
         self.assertTrue(fee.is_waived)
         self.assertEqual(fee.waiver_reason, "Bolsa de estudo")
+        self.assertIsNone(refresh_payment_state(application))
+
+        application.lifecycle_status = ServiceApplication.LifecycleStatus.AWAITING_PAYMENT
+        application.save(update_fields=["lifecycle_status", "updated_at"])
+        advance_lifecycle_after_application_fee(application)
+        application.save(update_fields=["lifecycle_status", "updated_at"])
+        application.refresh_from_db()
+        self.assertEqual(
+            application.lifecycle_status,
+            ServiceApplication.LifecycleStatus.AWAITING_CONSULTATION_SCHEDULING,
+        )
 
     # ------------------------------------------------------------------
     # 9. Orquestração de pagamento
@@ -363,15 +384,32 @@ class PaymentScenarioTests(TestCase):
 
     def test_TS_MAN_002_pagamento_manual_nao_altera_status_externo(self) -> None:
         application = self.create_consultation()
-        fee = application.fee_requirements.get(fee_type=FeeRequirement.FeeType.APPLICATION_FEE)
-        instrument = self.payment_service.create_payment_instrument(
-            fee_requirement=fee, method="manual", created_by=self.secretariat
+        fee = application.fee_requirements.get(
+            fee_type=FeeRequirement.FeeType.APPLICATION_FEE
         )
-        self.manual_service.confirm_manual_payment(
-            instrument=instrument, confirmed_by=self.secretariat
+        instrument = PaymentInstrument.objects.create(
+            fee_requirement=fee,
+            method=PaymentInstrument.Method.BANK_SLIP,
+            state=PaymentInstrument.State.ACTIVE,
+            amount=fee.amount,
+            active_unique_fee_token=fee.pk,
         )
+        slip = BankSlipPaymentInstrument.objects.create(
+            payment_instrument=instrument,
+            bank_slip_reference="manual-sem-externo",
+            due_date=timezone.localdate(),
+            bank_status=BankSlipPaymentInstrument.BankStatus.EMITTED,
+            document_amount=fee.amount,
+        )
+        with patch("payments.services.cancel_external_charge") as cancel_external:
+            self.manual_service.confirm_manual_payment(
+                instrument=instrument, confirmed_by=self.secretariat
+            )
+        cancel_external.assert_not_called()
         instrument.refresh_from_db()
+        slip.refresh_from_db()
         self.assertEqual(instrument.state, PaymentInstrument.State.MANUAL_CONFIRMED)
+        self.assertEqual(slip.bank_status, BankSlipPaymentInstrument.BankStatus.EMITTED)
 
     def test_TS_MAN_003_pagamento_manual_nao_envia_email(self) -> None:
         application = self.create_consultation()
@@ -604,6 +642,21 @@ class PaymentScenarioTests(TestCase):
             ).exists()
         )
 
+    def test_TS_MOD_006_consulta_para_projeto_exige_auditoria(self) -> None:
+        application = self.create_consultation()
+        self.modality_service.convert_to_project(application=application)
+        application.refresh_from_db()
+        self.assertEqual(application.modality, ServiceApplication.Modality.PROJECT)
+        self.assertTrue(application.dataset_audit_required)
+        self.assertEqual(
+            application.dataset_audit_state,
+            ServiceApplication.DatasetAuditState.AWAITING_SUBMISSION,
+        )
+        self.assertEqual(
+            application.lifecycle_status,
+            ServiceApplication.LifecycleStatus.AWAITING_PAYMENT,
+        )
+
     def test_TS_MOD_005_consulta_paga_convertida_em_projeto(self) -> None:
         application = self.create_consultation()
         self.create_and_pay_application_fee(application)
@@ -621,7 +674,7 @@ class PaymentScenarioTests(TestCase):
     # 14b. Regressão: cobrança indevida ao converter Projeto pago -> Consulta
     # ------------------------------------------------------------------
 
-    def test_TS_MOD_006_projeto_com_taxa_de_projeto_paga_convertido_para_consulta_gera_excesso(self) -> None:
+    def test_TST_PAY_007_projeto_com_taxa_de_projeto_paga_convertido_para_consulta_gera_excesso(self) -> None:
         """
         No Laravel, a mudança olhava para a soma de TUDO o que foi pago.
         Se Inscrição (80) + Projeto (250) = 330, e muda para Consulta (140),

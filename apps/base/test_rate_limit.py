@@ -153,3 +153,27 @@ class RateLimitTests(TestCase):
         cache.set("ratelimit:login:teste", 3, timeout=60)
         call_command("e2e_clear_cache")
         self.assertIsNone(cache.get("ratelimit:login:teste"))
+
+    # TST-BASE-013
+    def test_reset_de_senha_e_resgate_respeitam_rate_limit_post(self) -> None:
+        cache.clear()
+        for _ in range(2):
+            response = self.client.post(
+                reverse("password_reset"), {"email": "alvo@example.com"}
+            )
+            self.assertNotEqual(response.status_code, 429)
+        blocked = self.client.post(
+            reverse("password_reset"), {"email": "alvo@example.com"}
+        )
+        self.assertEqual(blocked.status_code, 429)
+
+        cache.clear()
+        user = User.objects.create_user(
+            username="rate-claim", email="rate-claim@example.com", password="x"
+        )
+        self.client.force_login(user)
+        for _ in range(2):
+            response = self.client.post(reverse("imports:claim_request"), {})
+            self.assertNotEqual(response.status_code, 429)
+        blocked = self.client.post(reverse("imports:claim_request"), {})
+        self.assertEqual(blocked.status_code, 429)
