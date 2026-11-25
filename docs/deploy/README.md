@@ -94,9 +94,9 @@ Todas as chaves existem em todos os ambientes; apenas os valores mudam.
 | `APP_URL` | não | `https://dev.<dominio>` | `https://homolog.<dominio>` | `https://<dominio>` | não | URL pública |
 | `TZ` | não | `America/Sao_Paulo` | idem | idem | não | Fuso |
 | `WEB_PORT` | não | `8000` | `8000` | `8000` | não | Porta interna |
-| `DB_CONNECTION` | não | `postgres` | `postgres` | `postgres` | não | `postgres`/`mysql` |
+| `DB_CONNECTION` | não | `postgres` | `postgres` | `postgres` | não | `postgres`/`mysql` (PyMySQL) |
 | `DB_HOST` | sim | `db-dev.<dominio>` | `db-homolog.<dominio>` | `db.<dominio>` | não | **Domínio**, não serviço |
-| `DB_PORT` | não | `5432` | `5432` | `5432` | não | Porta do banco |
+| `DB_PORT` | não | `5432` | `5432` | `5432` | não | `5432` (postgres) / `3306` (mysql) |
 | `DB_NAME` | sim | nome do projeto | idem | idem | não | Específico do projeto |
 | `DB_USER` | sim | usuário do projeto | idem | idem | não | Solicitar à infra |
 | `DB_PASSWORD` | sim | senha do ambiente | senha do ambiente | senha do ambiente | **sim** | Portainer |
@@ -114,6 +114,15 @@ Todas as chaves existem em todos os ambientes; apenas os valores mudam.
 | `PIX_*` / `BANK_SLIP_*` | depende | dev | homolog | prod | **sim** | Gateways |
 | `MAIL_*` | depende | `MAIL_DRIVER=log` | SMTP real | SMTP real | **sim** | Notificações |
 | `PAYMENT_GATEWAY_FAKE` | não | `false` | `false` | `false` | não | Só teste |
+
+### MySQL/MariaDB
+
+- `DB_CONNECTION=mysql` (ou `mariadb`) usa **PyMySQL**, driver puro-Python já
+  incluído na imagem de runtime; não é preciso instalar `mysqlclient` nem
+  cliente MySQL no sistema.
+- `postgres` continua sendo o padrão recomendado e usa `psycopg`.
+- Ajuste `DB_PORT` (ex.: `3306` ou a porta publicada do banco) e informe
+  `DB_NAME`/`DB_USER`/`DB_PASSWORD` do schema do projeto.
 
 Segredos ficam no Portainer por enquanto. A estrutura permite migrar para um
 secret manager no futuro sem renomear variáveis.
@@ -355,6 +364,7 @@ Stacks de teste:
 | `DEBUG=true` recusado em prod | guard do settings | Definir `DEBUG=false` e `DJANGO_ENV=production` |
 | Backup falha com `pg_dump não encontrado` | rodando fora da imagem sem cliente | Rodar via `make backup-db` (container) |
 | `prod-check` acusa bind/porta | overlay local aplicado | Usar apenas `docker-compose.yml` |
+| `Error loading MySQLdb module` | imagem sem driver MySQL | Use a imagem deste repositório (inclui PyMySQL) ou mantenha `DB_CONNECTION=postgres` |
 
 ---
 
