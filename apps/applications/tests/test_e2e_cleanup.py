@@ -45,3 +45,40 @@ class E2ECleanupCommandTests(TestCase):
 
         persisted = ServiceApplication.all_objects.get(pk=self.application.pk)
         self.assertIsNotNone(persisted.soft_deleted_at)
+
+    # TST-APP-012
+    def test_e2e_cleanup_desativa_prefixo_preservando_seed(self) -> None:
+        seed = User.objects.create_user(
+            username="e2e_candidate",
+            email="e2e_candidate@example.com",
+            password="pass",
+        )
+        created = User.objects.create_user(
+            username="cadastro_teste",
+            email="e2e.cadastro.teste@example.com",
+            password="pass",
+        )
+        call_command("e2e_cleanup", "--deactivate-prefix", "e2e.")
+        seed.refresh_from_db()
+        created.refresh_from_db()
+        self.assertTrue(seed.is_active)
+        self.assertFalse(created.is_active)
+
+    # TST-APP-013
+    def test_e2e_cleanup_purge_protocol_e_escopado(self) -> None:
+        other = ApplicationSubmissionService().create_application(
+            term=self.term,
+            owner=self.candidate,
+            modality=ServiceApplication.Modality.CONSULTATION,
+            researcher_name="Outra E2E",
+            contact_email="outra@example.com",
+        )
+        call_command(
+            "e2e_cleanup", "--purge-protocol", self.application.protocol
+        )
+        self.assertFalse(
+            ServiceApplication.all_objects.filter(pk=self.application.pk).exists()
+        )
+        self.assertTrue(
+            ServiceApplication.all_objects.filter(pk=other.pk).exists()
+        )

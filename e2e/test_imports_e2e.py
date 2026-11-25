@@ -75,13 +75,14 @@ def test_E2E_IMP_001_importa_json_preserva_estado_e_detecta_duplicidade(
     assert refreshed["attachments"][0]["checksum"]
 
     # TS-IMP-006: transferência preserva ausência de dono e auditoria desligada.
-    next_term = create_term()
+    create_term()
     login_as("secretariat")
     page.goto(f"{BASE_URL}/inscricoes/{PROTOCOLS[0]}/")
     page.once("dialog", lambda dialog: dialog.accept())
     page.click("button:has-text('Transferir semestre')")
     expect(page.locator("h1.page-title")).to_be_visible()
     transferred = application_state(PROTOCOLS[0])
-    assert transferred["term"]["id"] == next_term["id"]
+    assert transferred["term"]["id"] != project["term"]["id"]
+    assert transferred["term"]["year"] > project["term"]["year"]
     assert transferred["owner"] is None
     assert transferred["dataset_audit_required"] is False

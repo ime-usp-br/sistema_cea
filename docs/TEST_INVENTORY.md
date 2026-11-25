@@ -59,6 +59,7 @@ em `TEST_SCENARIOS.md`; testes de infraestrutura/complementares usam `TST-*`.
 | TST-AUD-002 | `apps/audits/tests.py` | `test_TST_AUD_002_GAP_001_link_externo_nao_pode_apontar_para_localhost_ssrf` |
 | TST-AUD-003 | `apps/audits/tests.py` | `test_TST_AUD_003_GAP_001b_url_publica_continua_aceita` |
 | TST-AUD-004 | `apps/audits/tests.py` | `test_TST_AUD_004_candidato_nao_revisa_auditoria` |
+| TST-AUD-005 | `apps/audits/tests.py` | `test_view_habilitar_auditoria_de_inscricao_com_dono` |
 | TST-BASE-001 | `apps/base/test_rate_limit.py` | `test_login_limita_por_ip_e_username` |
 | TST-BASE-002 | `apps/base/test_rate_limit.py` | `test_login_headers_de_limite_em_resposta_permitida` |
 | TST-BASE-003 | `apps/base/test_rate_limit.py` | `test_webhook_limita_por_ip` |

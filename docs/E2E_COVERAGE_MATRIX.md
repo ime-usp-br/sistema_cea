@@ -3,6 +3,13 @@
 Data da linha de base: 2026-11-23
 Escopo: suíte de navegador em `e2e/`, stack `docker-compose.e2e.yml` e catálogo de `docs/TEST_SCENARIOS.md`.
 
+> **Atualização 2026-11-25:** após a revisão crítica, a stack E2E passou a rodar com
+> `TZ=America/Sao_Paulo`, a falha determinística de período foi corrigida e as três
+> frentes (core, flows e NFR) passaram: **93/93 testes E2E**. O nightly agora inclui
+> `test_nfr_e2e.py`. A rastreabilidade unitária foi para **216/216 cenários** em
+> `docs/TEST_TRACEABILITY.md`; a tabela abaixo permanece como diagnóstico histórico
+> da linha de base e deve ser lida junto do catálogo atualizado.
+
 Arquivos de apoio:
 
 - `docs/e2e_scenario_catalog.csv` — os 216 cenários `TS-*` com camada-alvo, evidência E2E e status.
@@ -158,6 +165,11 @@ Rotas sem cobertura:
 | `logout/` | E2E-UI | Logout não é exercitado. |
 
 Admin: apenas a criação de período em `/admin/terms/academicterm/add/` é exercitada. Usuários, papéis, templates de e-mail, permissões da secretaria e demais telas do admin não têm cobertura E2E.
+
+> **Atualização 2026-11-25:** as 9 rotas acima passaram a ter cobertura por unidade/integração
+> (ver `docs/e2e_route_coverage.csv`). O admin passou a ter smoke de listagem, criação,
+> edição e exclusão por modelo em `apps/base/test_admin_screens.py` (TST-BASE-014/015/016),
+> sem substituir a cobertura E2E dos fluxos críticos.
 
 ## 8. Divergências e pendências
 

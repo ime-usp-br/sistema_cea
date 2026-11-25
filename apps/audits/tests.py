@@ -263,6 +263,23 @@ class AuditScenarioTests(TestCase):
                 external_url=None,
             )
 
+    # TST-AUD-005
+    def test_view_habilitar_auditoria_de_inscricao_com_dono(self) -> None:
+        application = self.create_project()
+        self.client.force_login(self.secretariat)
+        response = self.client.post(
+            reverse("audits:enable_audit", args=[application.protocol])
+        )
+        self.assertRedirects(
+            response, reverse("applications:detail", args=[application.protocol])
+        )
+        application.refresh_from_db()
+        self.assertTrue(application.dataset_audit_required)
+        self.assertEqual(
+            application.dataset_audit_state,
+            ServiceApplication.DatasetAuditState.AWAITING_SUBMISSION,
+        )
+
     # TST-AUD-004
     def test_TST_AUD_004_candidato_nao_revisa_auditoria(self) -> None:
         application = self.create_project()

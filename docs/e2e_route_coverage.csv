@@ -4,8 +4,8 @@ auth/password_reset/,E2E-UI,Coberto,test_E2E_AUTH_006
 auth/password_reset/done/,E2E-UI,Indireto,Redirecionamento após POST não é assertado
 auth/reset/<uidb64>/<token>/,E2E-UI,Coberto,test_E2E_AUTH_006 (link do e-mail)
 auth/reset/done/,E2E-UI,Indireto,test_E2E_AUTH_006 verifica a mensagem final
-auth/password_change/,E2E-UI,Lacuna,Troca de senha autenticada não é coberta
-auth/password_change/done/,E2E-UI,Lacuna,Troca de senha autenticada não é coberta
+auth/password_change/,E2E-UI,Coberto (unidade),test_TST_USER_015_troca_de_senha_e_logout
+auth/password_change/done/,E2E-UI,Coberto (unidade),test_TST_USER_015_troca_de_senha_e_logout
 ,E2E-UI,Coberto,test_E2E_AUTH_001 (landing pública)
 login/usp/,E2E-UI,Indireto,test_E2E_AUTH_004 clica no botão da Senha Única
 callback/,E2E-UI,Indireto,test_E2E_AUTH_004 via senhaunica-faker
@@ -24,10 +24,10 @@ inscricoes/<str:protocol>/excluir/,E2E-UI,Indireto,test_E2E_APP_010 (botão Excl
 inscricoes/<str:protocol>/transferir-semestre/,E2E-UI,Indireto,test_E2E_N9_02/TRM_... (botão Transferir)
 inscricoes/<str:protocol>/,E2E-UI,Coberto,Vários testes de detalhe
 auditoria/inscricao/<str:protocol>/enviar/,E2E-UI,Coberto,test_E2E_AUD_003/005
-auditoria/inscricao/<str:protocol>/habilitar/,E2E-UI,Lacuna,Habilitar auditoria após resgate não é coberto
+auditoria/inscricao/<str:protocol>/habilitar/,E2E-UI,Coberto (unidade),test_view_habilitar_auditoria_de_inscricao_com_dono
 auditoria/fila/,E2E-UI,Coberto,test_E2E_AUD_003/005
 auditoria/submissao/<int:submission_id>/revisar/,E2E-UI,Indireto,Ação Analisar da fila
-auditoria/submissao/<int:submission_id>/arquivo/,E2E-API,Lacuna,Download da submissão e autorização não cobertos
+auditoria/submissao/<int:submission_id>/arquivo/,E2E-API,Coberto (unidade),test_TS_AUD_018 e autorização
 auditoria/rejeitadas/,E2E-UI,Coberto,test_E2E_AUD_012/014/015
 auditoria/submissao/<int:submission_id>/resolver/,E2E-UI,Indireto,Ação Decidir das rejeitadas
 pagamento/inscricao/<str:protocol>/,E2E-UI,Coberto,pay_fee/start_payment
@@ -43,7 +43,7 @@ webhooks/pix/,E2E-API,Coberto,test_E2E_PIX_004/005
 pagamento/inscricao/<str:protocol>/pix/gerar/,E2E-UI,Indireto,start_payment escolhe Pix
 pagamento/inscricao/<str:protocol>/pix/verificar/,E2E-UI,Indireto,test_E2E_PIX_003
 pagamento/inscricao/<str:protocol>/pix/,E2E-UI,Indireto,Tela de detalhe do Pix
-pix/<int:pix_id>/qrcode/,E2E-API,Lacuna,QR Code não é baixado/assertado
+pix/<int:pix_id>/qrcode/,E2E-API,Coberto (unidade),test_TS_PIX_011_qrcode_asset_criado
 pagamento/inscricao/<str:protocol>/boleto/gerar/,E2E-UI,Indireto,start_payment escolhe boleto
 aplicacao/<str:protocol>/boleto/gerar-admin/,E2E-UI,Indireto,test_E2E_BSL_ADMIN_001
 pagamento/inscricao/<str:protocol>/boleto/,E2E-UI,Indireto,test_E2E_BSL_001
@@ -51,7 +51,7 @@ boleto/<int:slip_id>/pdf/,E2E-API,Indireto,test_E2E_BSL_001
 boleto/<int:slip_id>/regenerar/,E2E-UI,Indireto,test_E2E_BSL_ADMIN_001
 triagens/,E2E-UI,Coberto,open_first_screening_decision/open_teacher_feedback
 reunioes/,E2E-UI,Coberto,open_first_consultation_decision/open_teacher_feedback
-agendamentos/,E2E-UI,Lacuna,Alias da fila de agendamentos não é exercitado
+agendamentos/,E2E-UI,Coberto (unidade),test_view_fila_para_docente_mostra_apenas_aguardando_resultado
 agendamentos/triagem/<str:protocol>/,E2E-UI,Coberto,schedule_screening_for
 agendamentos/reuniao/<str:protocol>/,E2E-UI,Coberto,schedule_consultation_for
 agendamentos/triagem/<int:screening_id>/decisao/,E2E-UI,Indireto,open_first_screening_decision
@@ -68,6 +68,6 @@ gestao/relatorios/financeiro/xlsx/,E2E-API,Coberto,test_E2E_REP_001_004_005
 gestao/relatorios/auditoria/,E2E-UI,Coberto,test_E2E_REP_006
 vincular-inscricao/,E2E-UI,Coberto,test_E2E_CLAIM_001_002_003
 vincular-inscricao/confirmar/,E2E-UI,Indireto,Envio do código em test_E2E_CLAIM_001_002_003
-gestao/resgates/,E2E-UI,Lacuna,Fila de aprovação manual de resgates
-gestao/resgates/<int:claim_id>/aprovar/,E2E-UI,Lacuna,Aprovação manual de resgate
-logout/,E2E-UI,Lacuna,Logout não é exercitado
+gestao/resgates/,E2E-UI,Coberto (unidade),test_view_claim_queue_exibe_solicitacoes
+gestao/resgates/<int:claim_id>/aprovar/,E2E-UI,Coberto (unidade),test_view_claim_approve_manual
+logout/,E2E-UI,Coberto (unidade),test_TST_USER_015_troca_de_senha_e_logout

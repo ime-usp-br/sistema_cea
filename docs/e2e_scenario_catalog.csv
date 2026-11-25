@@ -188,12 +188,12 @@ TS-EVT-001,Eventos de inscrição,P0,E2E-UI,test_E2E_EVT_001,Coberto,Histórico 
 TS-EVT-002,Eventos de auditoria,P0,E2E-UI,test_E2E_PROJECT_001 (indireto),Coberto,Códigos de auditoria assertados pontualmente. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
 TS-EVT-003,Eventos financeiros,P0,E2E-UI,test_E2E_REF_001_002_003 (indireto),Coberto,Alguns eventos financeiros assertados. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
 TS-EVT-004,Eventos de resgate,P1,E2E-UI,test_E2E_CLAIM_001_002_003 (indireto),Coberto,Evento claim.verified assertado. Cobertura complementar de unidade em TEST_TRACEABILITY.md.
-TS-INT-001,Timeout no Pix,P1,Unidade,-,Unidade,Falha de integração coberta por unidade; decidir se algum caso vira E2E de erro.
-TS-INT-002,Falha SOAP no boleto,P1,Unidade,-,Unidade,Falha de integração coberta por unidade; decidir se algum caso vira E2E de erro.
-TS-INT-003,Falha no provedor de login,P1,Unidade,-,Unidade,Falha de integração coberta por unidade; decidir se algum caso vira E2E de erro.
-TS-INT-004,Falha de e-mail,P1,Unidade,-,Unidade,Falha de integração coberta por unidade; decidir se algum caso vira E2E de erro.
-TS-INT-005,Falha de storage,P1,Unidade,-,Unidade,Falha de integração coberta por unidade; decidir se algum caso vira E2E de erro.
-TS-INT-006,Segredos não logados,P0,Unidade,-,Unidade,Falha de integração coberta por unidade; decidir se algum caso vira E2E de erro.
+TS-INT-001,Timeout no Pix,P1,Unidade,test_TS_INT_001_timeout_do_pix_vira_erro_de_gateway,Coberto,Timeout/erro HTTP do gateway vira PixGatewayError (teste dedicado).
+TS-INT-002,Falha SOAP no boleto,P1,Unidade,test_TS_BSL_009_falha_soap_nao_grava_inconsistencia,Coberto,Mapeado para o teste de falha SOAP sem inconsistência.
+TS-INT-003,Falha no provedor de login,P1,Unidade,test_TS_INT_003_falha_do_provedor_nao_cria_usuario,Coberto,Exceção do provedor não cria usuário (teste dedicado).
+TS-INT-004,Falha de e-mail,P1,Unidade,test_TS_NOT_010_falha_de_envio_marca_failed,Coberto,Mapeado para o teste de falha de envio.
+TS-INT-005,Falha de storage,P1,Unidade,test_TS_PIX_001b_falha_de_storage_do_qr_nao_invalida_pix,Coberto,Mapeado para o teste de falha de storage do QR.
+TS-INT-006,Segredos não logados,P0,Unidade,test_TS_INT_006_segredos_nao_aparecem_em_logs,Coberto,Redaction de credenciais no JsonFormatter (teste dedicado).
 TS-SEC-001,CSRF,P0,E2E-UI,test_E2E_SEC_001_post_sem_csrf_e_rejeitado,Coberto,POST anônimo e autenticado sem token recebem 403.
 TS-SEC-002,Webhook Pix exige token,P0,E2E-UI,test_E2E_PIX_005,Coberto,Webhook Pix exige token.
 TS-SEC-003,Acesso direto por URL,P0,E2E-UI,test_E2E_SEC_001,Coberto,Acesso por URL de terceiro; matriz completa de rotas/perfis não. Cobertura complementar de unidade em TEST_TRACEABILITY.md.

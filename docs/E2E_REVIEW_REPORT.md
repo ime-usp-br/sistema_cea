@@ -3,6 +3,13 @@
 Data: 2026-11-23
 Base: inspeção estática da suíte, três execuções na stack isolada e cruzamento com `docs/TEST_SCENARIOS.md`.
 
+> **Atualização 2026-11-25:** a revisão crítica encontrou uma falha determinística de
+> timezone em `_admin_create_term` (container E2E em UTC, app em `America/Sao_Paulo`),
+> que foi corrigida com `TZ=America/Sao_Paulo` e data do app. Após a correção, a
+> execução completa passou **93/93** (core + flows + NFR), o cleanup deixou apenas os
+> quatro usuários seed ativos e o NFR entrou no nightly. Os números de 55/93 testes
+> neste relatório são históricos.
+
 Documentos gerados nesta fase:
 
 - `docs/E2E_COVERAGE_MATRIX.md` — métricas, lacunas e matriz por prioridade/área.

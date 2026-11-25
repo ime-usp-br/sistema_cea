@@ -59,3 +59,6 @@ jobs:
 
       - name: Testes
         run: pytest
+
+      - name: Cobertura de produção (meta 92% como aviso)
+        run: python scripts/check_coverage_target.py
