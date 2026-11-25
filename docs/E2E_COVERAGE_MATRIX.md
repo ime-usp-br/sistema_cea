@@ -6,9 +6,10 @@ Escopo: suíte de navegador em `e2e/`, stack `docker-compose.e2e.yml` e catálog
 > **Atualização 2026-11-25:** após a revisão crítica, a stack E2E passou a rodar com
 > `TZ=America/Sao_Paulo`, a falha determinística de período foi corrigida e as três
 > frentes (core, flows e NFR) passaram: **93/93 testes E2E**. O nightly agora inclui
-> `test_nfr_e2e.py`. A rastreabilidade unitária foi para **216/216 cenários** em
-> `docs/TEST_TRACEABILITY.md`; a tabela abaixo permanece como diagnóstico histórico
-> da linha de base e deve ser lida junto do catálogo atualizado.
+> `test_nfr_e2e.py` e executa com `pytest-randomly`; as execuções randomizadas também
+> passaram (31 no core e 62 em flows+NFR). A rastreabilidade unitária foi para
+> **216/216 cenários** em `docs/TEST_TRACEABILITY.md`; a tabela abaixo permanece como
+> diagnóstico histórico da linha de base e deve ser lida junto do catálogo atualizado.
 
 Arquivos de apoio:
 
