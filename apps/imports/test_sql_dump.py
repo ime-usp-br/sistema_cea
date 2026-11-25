@@ -334,6 +334,7 @@ class SqlDumpTests(TestCase):
         os.unlink(self.dump_path)
         shutil.rmtree(self.media_root, ignore_errors=True)
 
+    # TST-IMP-001
     def test_read_dump_extrai_tabelas(self) -> None:
         dump = read_dump(self.dump_path)
         self.assertEqual(len(dump["applications"]), 2)
@@ -345,6 +346,7 @@ class SqlDumpTests(TestCase):
         self.assertEqual(len(dump["consultation_meetings"]), 1)
         self.assertEqual(len(dump["events"]), 2)
 
+    # TST-IMP-002
     def test_build_records_mapeia_inscricao_completa(self) -> None:
         records = build_records(read_dump(self.dump_path))
         record = records[0]
@@ -405,6 +407,7 @@ class SqlDumpTests(TestCase):
             "consultation_completed",
         )
 
+    # TST-IMP-003
     def test_command_importa_com_storage_e_reimporta_sem_duplicar(self) -> None:
         storage_root = os.path.join(self.media_root, "legacy")
         os.makedirs(os.path.join(storage_root, "123456789"))
@@ -482,6 +485,7 @@ class SqlDumpTests(TestCase):
             1,
         )
 
+    # TST-IMP-004
     def test_command_sem_storage_ignora_arquivos_e_avisa(self) -> None:
         output = StringIO()
         call_command(
@@ -494,6 +498,7 @@ class SqlDumpTests(TestCase):
         self.assertEqual(FileAsset.objects.filter(application=app).count(), 0)
         self.assertIn("storage", output.getvalue().lower())
 
+    # TST-IMP-005
     def test_command_limit_processa_apenas_um(self) -> None:
         call_command(
             "import_legacy_sql",
@@ -505,6 +510,7 @@ class SqlDumpTests(TestCase):
             ServiceApplication.all_objects.filter(origin="imported").count(), 1
         )
 
+    # TST-IMP-006
     def test_command_dump_inexistente_gera_erro(self) -> None:
         with self.assertRaises(CommandError):
             call_command(

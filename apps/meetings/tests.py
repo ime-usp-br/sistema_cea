@@ -294,7 +294,7 @@ class MeetingScenarioTests(TestCase):
         )
 
     # TS-MEET-GAP-002 — triagem CONCLUÍDA não pode ser cancelada (taxa órfã)
-    def test_TS_MEET_GAP_002_nao_cancela_triagem_concluida(self) -> None:
+    def test_TST_MEET_005_GAP_002_nao_cancela_triagem_concluida(self) -> None:
         """Paridade Laravel: decisão final (COMPLETED) protege contra cancelamento."""
         application = self.project_awaiting_scheduling()
         screening = self.schedule_project(
@@ -333,7 +333,7 @@ class MeetingScenarioTests(TestCase):
         )
 
     # TS-MEET-GAP-003 — reunião CONCLUÍDA não pode ser cancelada
-    def test_TS_MEET_GAP_003_nao_cancela_reuniao_concluida(self) -> None:
+    def test_TST_MEET_006_GAP_003_nao_cancela_reuniao_concluida(self) -> None:
         application = self.consultation_awaiting_scheduling()
         meeting = self.schedule_consultation(
             application, scheduled_date=PAST_DATE, scheduled_time=PAST_TIME
@@ -363,7 +363,7 @@ class MeetingScenarioTests(TestCase):
             ServiceApplication.LifecycleStatus.APPROVED_AS_CONSULTATION,
         )
 
-
+    def test_TS_MEET_009_decisao_aprovado_como_projeto(self) -> None:
         application = self.project_awaiting_scheduling()
         screening = self.schedule_project(
             application, scheduled_date=PAST_DATE, scheduled_time=PAST_TIME
@@ -563,7 +563,7 @@ class MeetingScenarioTests(TestCase):
         self.assertIsNone(meeting.teacher_feedback)
 
     # TS-MEET-GAP-001 — Docente não pode decidir/feedbackar triagem CANCELADA.
-    def test_TS_MEET_GAP_001_decisao_bloqueada_em_triagem_cancelada(self) -> None:
+    def test_TST_MEET_007_GAP_001_decisao_bloqueada_em_triagem_cancelada(self) -> None:
         application = self.project_awaiting_scheduling()
         screening = self.schedule_project(application)
         self.screening_service.cancel_screening(
@@ -582,7 +582,7 @@ class MeetingScenarioTests(TestCase):
         self.assertIsNone(screening.decision)
         self.assertEqual(screening.state, ProjectScreening.State.CANCELED)
 
-    def test_TS_MEET_GAP_001b_feedback_bloqueado_em_triagem_cancelada(self) -> None:
+    def test_TST_MEET_008_GAP_001b_feedback_bloqueado_em_triagem_cancelada(self) -> None:
         application = self.project_awaiting_scheduling()
         screening = self.screening_service.schedule_screening(
             application=application,
@@ -609,7 +609,7 @@ class MeetingScenarioTests(TestCase):
         self.assertEqual(screening.state, ProjectScreening.State.CANCELED)
 
     # TS-MEET-GAP-001 (consulta) — mesmo bloqueio para reuniões de Consulta.
-    def test_TS_MEET_GAP_001c_decisao_bloqueada_em_reuniao_cancelada(self) -> None:
+    def test_TST_MEET_009_GAP_001c_decisao_bloqueada_em_reuniao_cancelada(self) -> None:
         application = self.consultation_awaiting_scheduling()
         meeting = self.schedule_consultation(application)
         self.consultation_service.cancel_consultation(
@@ -628,7 +628,7 @@ class MeetingScenarioTests(TestCase):
         self.assertIsNone(meeting.decision)
         self.assertEqual(meeting.state, ConsultationMeeting.State.CANCELED)
 
-    def test_TS_MEET_GAP_001d_feedback_bloqueado_em_reuniao_cancelada(self) -> None:
+    def test_TST_MEET_010_GAP_001d_feedback_bloqueado_em_reuniao_cancelada(self) -> None:
         application = self.consultation_awaiting_scheduling()
         meeting = self.consultation_service.schedule_consultation(
             application=application,
@@ -694,7 +694,7 @@ class MeetingScenarioTests(TestCase):
         )
 
     # TS-MOD-GAP-003 — triagem agendada é cancelada ao converter Projeto -> Consulta
-    def test_TS_MOD_GAP_003_mudanca_de_modalidade_cancela_triagem_agendada(self) -> None:
+    def test_TST_MEET_011_MOD_GAP_003_mudanca_de_modalidade_cancela_triagem_agendada(self) -> None:
         """Paridade com o Laravel: mudar Projeto para Consulta não deixa a triagem
         agendada órfã no banco — ela deve ser cancelada via ProjectScreeningService."""
         from payments.services import ModalityChangeService
@@ -797,6 +797,7 @@ class MeetingViewTests(TestCase):
         )
 
     # Fila de agendamentos (/agendamentos/)
+    # TST-MEET-012
     def test_view_fila_para_docente_mostra_apenas_aguardando_resultado(self) -> None:
         """O docente enxerga apenas os itens onde registra feedback, sem as
         seções de agendamento (operacionais da secretaria)."""
@@ -828,10 +829,12 @@ class MeetingViewTests(TestCase):
             response, reverse("meetings:consultation_decision", args=[meeting_id])
         )
 
+    # TST-MEET-013
     def test_view_fila_requer_autenticacao(self) -> None:
         response = self.client.get(reverse("meetings:queue"))
         self.assertEqual(response.status_code, 302)
 
+    # TST-MEET-014
     def test_view_fila_exibe_projetos_e_consultas_aguardando(self) -> None:
         self.client.force_login(self.secretariat)
         proj = self.project_awaiting()
@@ -841,6 +844,7 @@ class MeetingViewTests(TestCase):
         self.assertContains(response, proj.protocol)
         self.assertContains(response, cons.protocol)
 
+    # TST-MEET-015
     def test_view_fila_exibe_aguardando_resultado_com_link_de_decisao(self) -> None:
         self.client.force_login(self.teacher)
         proj = self.project_awaiting()
@@ -865,6 +869,7 @@ class MeetingViewTests(TestCase):
             response, reverse("meetings:consultation_decision", args=[meeting.pk])
         )
 
+    # TST-MEET-016
     def test_view_fila_bloqueia_candidato(self) -> None:
         candidate = User.objects.create_user(
             username="candidate_view",
@@ -877,6 +882,7 @@ class MeetingViewTests(TestCase):
         self.assertEqual(response.status_code, 403)
 
     # Agendamento de triagem (/agendamentos/triagem/<protocol>/)
+    # TST-MEET-017
     def test_view_screening_schedule_get(self) -> None:
         self.client.force_login(self.secretariat)
         proj = self.project_awaiting()
@@ -886,6 +892,7 @@ class MeetingViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["application"], proj)
 
+    # TST-MEET-018
     def test_view_screening_schedule_post_online(self) -> None:
         self.client.force_login(self.secretariat)
         proj = self.project_awaiting()
@@ -906,6 +913,7 @@ class MeetingViewTests(TestCase):
         )
         self.assertEqual(ProjectScreening.objects.filter(application=proj).count(), 1)
 
+    # TST-MEET-019
     def test_view_screening_schedule_post_presencial_exige_local(self) -> None:
         self.client.force_login(self.secretariat)
         proj = self.project_awaiting()
@@ -921,6 +929,7 @@ class MeetingViewTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(ProjectScreening.objects.filter(application=proj).count(), 0)
 
+    # TST-MEET-020
     def test_view_screening_schedule_cancel(self) -> None:
         self.client.force_login(self.secretariat)
         proj = self.project_awaiting()
@@ -934,6 +943,7 @@ class MeetingViewTests(TestCase):
         self.assertEqual(screening.state, ProjectScreening.State.CANCELED)
 
     # Agendamento de reunião de consulta (/agendamentos/reuniao/<protocol>/)
+    # TST-MEET-021
     def test_view_consultation_schedule_post_online(self) -> None:
         self.client.force_login(self.secretariat)
         cons = self.consultation_awaiting()
@@ -954,6 +964,7 @@ class MeetingViewTests(TestCase):
         )
         self.assertEqual(ConsultationMeeting.objects.filter(application=cons).count(), 1)
 
+    # TST-MEET-022
     def test_view_consultation_schedule_cancel(self) -> None:
         self.client.force_login(self.secretariat)
         cons = self.consultation_awaiting()
@@ -974,6 +985,7 @@ class MeetingViewTests(TestCase):
         self.assertEqual(meeting.state, ConsultationMeeting.State.CANCELED)
 
     # Decisão de triagem (/agendamentos/triagem/<id>/decisao/)
+    # TST-MEET-023
     def test_view_screening_decision_aprovado_como_projeto(self) -> None:
         self.client.force_login(self.secretariat)
         proj = self.project_awaiting()
@@ -997,6 +1009,7 @@ class MeetingViewTests(TestCase):
         fee = proj.fee_requirements.get(fee_type=FeeRequirement.FeeType.PROJECT_FEE)
         self.assertEqual(fee.amount, Decimal("250.00"))
 
+    # TST-MEET-024
     def test_view_screening_decision_nao_aprovado(self) -> None:
         self.client.force_login(self.secretariat)
         proj = self.project_awaiting()
@@ -1016,6 +1029,7 @@ class MeetingViewTests(TestCase):
             proj.lifecycle_status, ServiceApplication.LifecycleStatus.NOT_APPROVED
         )
 
+    # TST-MEET-025
     def test_view_screening_docente_nao_pode_registrar_decisao(self) -> None:
         self.client.force_login(self.teacher)
         proj = self.project_awaiting()
@@ -1033,6 +1047,7 @@ class MeetingViewTests(TestCase):
         screening.refresh_from_db()
         self.assertIsNone(screening.decision)
 
+    # TST-MEET-026
     def test_view_screening_secretaria_nao_pode_registrar_feedback(self) -> None:
         self.client.force_login(self.secretariat)
         proj = self.project_awaiting()
@@ -1045,6 +1060,7 @@ class MeetingViewTests(TestCase):
         screening.refresh_from_db()
         self.assertIsNone(screening.teacher_feedback)
 
+    # TST-MEET-027
     def test_view_screening_pagina_segmentationa_formularios_por_perfil(self) -> None:
         proj = self.project_awaiting()
         screening = self.schedule_project(proj, scheduled_date=PAST_DATE)
@@ -1065,6 +1081,7 @@ class MeetingViewTests(TestCase):
         self.assertContains(response, "Registrar decisão")
         self.assertNotContains(response, "Registrar feedback do docente")
 
+    # TST-MEET-028
     def test_view_screening_feedback_bloqueado_antes_do_evento(self) -> None:
         self.client.force_login(self.teacher)
         proj = self.project_awaiting()
@@ -1077,6 +1094,7 @@ class MeetingViewTests(TestCase):
         screening.refresh_from_db()
         self.assertIsNone(screening.teacher_feedback)
 
+    # TST-MEET-029
     def test_view_screening_feedback_registrado_apos_evento(self) -> None:
         self.client.force_login(self.teacher)
         proj = self.project_awaiting()
@@ -1092,6 +1110,7 @@ class MeetingViewTests(TestCase):
             ProjectScreening.TeacherFeedback.SCREENING_COMPLETED,
         )
 
+    # TST-MEET-030
     def test_view_screening_feedback_botao_sem_valor_nao_vira_decisao(self) -> None:
         """Botão 'Registrar feedback' envia submit_feedback vazio (""), o que não
         deve recair na validação do formulário de decisão."""
@@ -1109,6 +1128,7 @@ class MeetingViewTests(TestCase):
             ProjectScreening.TeacherFeedback.SCREENING_COMPLETED,
         )
 
+    # TST-MEET-031
     def test_view_screening_feedback_payload_navegador_form_action(self) -> None:
         """Paridade com o navegador: o JS global desabilita o botão de submit e
         ele não envia name/value; o despacho usa o campo hidden ``form_action``."""
@@ -1126,6 +1146,7 @@ class MeetingViewTests(TestCase):
             ProjectScreening.TeacherFeedback.SCREENING_COMPLETED,
         )
 
+    # TST-MEET-032
     def test_view_consultation_feedback_payload_navegador_form_action(self) -> None:
         self.client.force_login(self.teacher)
         cons = self.consultation_awaiting()
@@ -1149,6 +1170,7 @@ class MeetingViewTests(TestCase):
         )
 
     # Decisão de reunião de consulta (/agendamentos/reuniao/<id>/decisao/)
+    # TST-MEET-033
     def test_view_consultation_decision_aprovado(self) -> None:
         self.client.force_login(self.secretariat)
         cons = self.consultation_awaiting()
@@ -1176,6 +1198,7 @@ class MeetingViewTests(TestCase):
             ServiceApplication.LifecycleStatus.APPROVED_AS_CONSULTATION,
         )
 
+    # TST-MEET-034
     def test_view_consultation_docente_nao_pode_registrar_decisao(self) -> None:
         self.client.force_login(self.teacher)
         cons = self.consultation_awaiting()
@@ -1200,6 +1223,7 @@ class MeetingViewTests(TestCase):
         meeting.refresh_from_db()
         self.assertIsNone(meeting.decision)
 
+    # TST-MEET-035
     def test_view_consultation_secretaria_nao_pode_registrar_feedback(self) -> None:
         self.client.force_login(self.secretariat)
         cons = self.consultation_awaiting()
@@ -1219,6 +1243,7 @@ class MeetingViewTests(TestCase):
         meeting.refresh_from_db()
         self.assertIsNone(meeting.teacher_feedback)
 
+    # TST-MEET-036
     def test_view_consultation_pagina_segmentationa_formularios_por_perfil(self) -> None:
         cons = self.consultation_awaiting()
         meeting = self.consultation_service.schedule_consultation(

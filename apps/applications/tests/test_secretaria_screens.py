@@ -56,7 +56,7 @@ class SecretariaScreenTests(TestCase):
         )
 
     # TS-APP-LISTA-DEFAULT
-    def test_TS_APP_LISTA_default_e_semestre_atual(self) -> None:
+    def test_TST_APP_034_LISTA_default_e_semestre_atual(self) -> None:
         """Sem ``?term=``, a lista usa o semestre atual (segundo de 2026)."""
         in_first = self._create(self.term_first)
         in_second = self._create(self.term_second)
@@ -66,7 +66,7 @@ class SecretariaScreenTests(TestCase):
         self.assertNotContains(response, in_first.protocol)
 
     # TS-APP-LIxeIRA-001
-    def test_TS_APP_LIXEIRA_mostra_excluidas_e_esconde_da_lista(self) -> None:
+    def test_TST_APP_035_LIXEIRA_mostra_excluidas_e_esconde_da_lista(self) -> None:
         app = self._create(self.term_second)
         app.soft_delete()
         self.client.force_login(self.secretariat)
@@ -77,7 +77,7 @@ class SecretariaScreenTests(TestCase):
         self.assertContains(deleted_response, "Restaurar")
 
     # TS-APP-RESTORE-001
-    def test_TS_APP_RESTORE_recupera_inscricao_e_registra_evento(self) -> None:
+    def test_TST_APP_036_RESTORE_recupera_inscricao_e_registra_evento(self) -> None:
         app = self._create(self.term_second)
         app.soft_delete()
         self.client.force_login(self.secretariat)
@@ -94,7 +94,7 @@ class SecretariaScreenTests(TestCase):
         )
 
     # TS-APP-DOC-CPF-OCULTO
-    def test_TS_APP_DOCENTE_nao_ve_cpf_nem_financeiro_na_ficha(self) -> None:
+    def test_TST_APP_037_DOCENTE_nao_ve_cpf_nem_financeiro_na_ficha(self) -> None:
         app = self._create(self.term_second, tax_id="123.456.789-01")
         self.client.force_login(self.teacher)
         response = self.client.get(reverse("applications:detail", args=[app.protocol]))
@@ -103,7 +103,7 @@ class SecretariaScreenTests(TestCase):
         self.assertNotContains(response, "Financeiro")
 
     # TS-APP-DOC-CPF-OCULTO (variação) — dono e Secretaria veem
-    def test_TS_APP_SECRETARIA_ve_cpf_e_financeiro_na_ficha(self) -> None:
+    def test_TST_APP_038_SECRETARIA_ve_cpf_e_financeiro_na_ficha(self) -> None:
         app = self._create(self.term_second, tax_id="123.456.789-01")
         self.client.force_login(self.secretariat)
         response = self.client.get(reverse("applications:detail", args=[app.protocol]))
@@ -111,7 +111,7 @@ class SecretariaScreenTests(TestCase):
         self.assertContains(response, "Financeiro")
 
     # TS-APP-EVENTOS-POR-SEMESTRE
-    def test_TS_APP_EVENTOS_filtra_por_semestre_atual(self) -> None:
+    def test_TST_APP_039_EVENTOS_filtra_por_semestre_atual(self) -> None:
         in_first = self._create(self.term_first)
         in_second = self._create(self.term_second)
         in_second.events.create(
@@ -124,7 +124,7 @@ class SecretariaScreenTests(TestCase):
         self.assertNotContains(response, "evento do primeiro")
 
     # TS-APP-PDF-LEGADO
-    def test_TS_APP_PDF_full_contem_itens_do_legado(self) -> None:
+    def test_TST_APP_040_PDF_full_contem_itens_do_legado(self) -> None:
         from unittest.mock import patch
 
         from applications.factories import ApplicationFactory

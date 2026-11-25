@@ -25,6 +25,7 @@ def _latest_application(modality: str) -> ServiceApplication:
 
 
 class SimulateJourneyCommandProjectTests(TestCase):
+    # TST-APP-041
     def test_sim_project_pagamento_manual_avanca_para_envio_de_dados(self) -> None:
         call_command("simulate_journey", "--modality", "project", "--submit")
         call_command("simulate_journey", "--modality", "project", "--pay", "--method", "manual")
@@ -59,6 +60,7 @@ class SimulateJourneyCommandProjectTests(TestCase):
         decided_by = app.events.get(event_code="meeting.screening_decided").actor_id
         self.assertEqual(decided_by, User.objects.get(username="sim_secretariat").pk)
 
+    # TST-APP-042
     def test_sim_project_auditoria_rejeitada_e_inscricao_reprovada(self) -> None:
         call_command("simulate_journey", "--modality", "project", "--submit")
         call_command("simulate_journey", "--modality", "project", "--pay", "--method", "manual")
@@ -72,6 +74,7 @@ class SimulateJourneyCommandProjectTests(TestCase):
         self.assertEqual(submission.state, "rejected")
         self.assertEqual(submission.resolutions.get().resolution, "reject_application")
 
+    # TST-APP-043
     def test_sim_project_step_1_apenas_cria_inscricao(self) -> None:
         call_command("simulate_journey", "--modality", "project", "--step", "1")
 
@@ -109,6 +112,7 @@ class SimulateJourneyCommandConsultationTests(TestCase):
         decided_by = app.events.get(event_code="meeting.consultation_decided").actor_id
         self.assertEqual(decided_by, User.objects.get(username="sim_secretariat").pk)
 
+    # TST-APP-044
     def test_sim_consulta_reuniao_aprova_como_projeto(self) -> None:
         call_command("simulate_journey", "--modality", "consultation", "--submit")
         call_command("simulate_journey", "--modality", "consultation", "--pay", "--method", "manual")
@@ -141,6 +145,7 @@ class SimulateJourneyCommandConsultationTests(TestCase):
 
 
 class SimulateJourneyCommandMiscTests(TestCase):
+    # TST-APP-045
     def test_sim_refund_marca_payment_state_refunded(self) -> None:
         call_command("simulate_journey", "--modality", "project", "--submit")
         call_command("simulate_journey", "--modality", "project", "--pay", "--method", "manual")

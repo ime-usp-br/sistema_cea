@@ -290,7 +290,7 @@ class NotificationScenarioTests(TestCase):
     # TS-NOT-GAP-001 — Paridade Laravel: e-mail de mudança de modalidade anexa o boleto.
     @EAGER
     @override_settings(MEDIA_ROOT=tempfile.mkdtemp(prefix="cea-notif-media-"))
-    def test_TS_NOT_GAP_001_mudanca_de_modalidade_anexa_novo_boleto_ao_email(self) -> None:
+    def test_TST_NOT_005_GAP_001_mudanca_de_modalidade_anexa_novo_boleto_ao_email(self) -> None:
         fee = FeeRequirement.objects.create(
             application=self.application,
             fee_type=FeeRequirement.FeeType.APPLICATION_FEE,
@@ -340,7 +340,7 @@ class NotificationScenarioTests(TestCase):
     # TS-NOT-GAP-002 — Paridade Laravel: e-mail do CEA anexa ficha PDF + uploads.
     @EAGER
     @override_settings(MEDIA_ROOT=tempfile.mkdtemp(prefix="cea-notif-media-"))
-    def test_TS_NOT_GAP_002_email_nova_inscricao_deve_conter_pdf_ficha_e_anexos(self) -> None:
+    def test_TST_NOT_006_GAP_002_email_nova_inscricao_deve_conter_pdf_ficha_e_anexos(self) -> None:
         upload = SimpleUploadedFile(
             "dados_do_aluno.pdf",
             b"%PDF-1.4 test",
@@ -371,7 +371,7 @@ class NotificationScenarioTests(TestCase):
 
     # TS-MOD-GAP-002 — fluxo real: conversão não gera boleto; e-mail orienta o painel
     @EAGER
-    def test_TS_MOD_GAP_002_mudanca_modalidade_sem_boleto_previo_nao_anexa_pdf(self) -> None:
+    def test_TST_NOT_007_MOD_GAP_002_mudanca_modalidade_sem_boleto_previo_nao_anexa_pdf(self) -> None:
         """Sem boleto prévio, o e-mail de mudança de modalidade não anexa PDF."""
         FeeRequirement.objects.create(
             application=self.application,

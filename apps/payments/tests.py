@@ -770,7 +770,7 @@ class PaymentScenarioTests(TestCase):
                 fee_requirement=fee, created_by=self.candidate
             )
 
-    def test_TS_MOD_GAP_001_mudanca_de_modalidade_cancela_boleto_via_soap(self) -> None:
+    def test_TST_PAY_001_MOD_GAP_001_mudanca_de_modalidade_cancela_boleto_via_soap(self) -> None:
         """Paridade Laravel: converter Projeto -> Consulta baixa o boleto no banco."""
         application = self.create_project()
         app_fee = application.fee_requirements.get(
@@ -789,7 +789,7 @@ class PaymentScenarioTests(TestCase):
             slip.payment_instrument.state, PaymentInstrument.State.CANCELED
         )
 
-    def test_TS_MOD_GAP_001b_cancelamento_externo_nao_bloqueia_fluxo(self) -> None:
+    def test_TST_PAY_002_MOD_GAP_001b_cancelamento_externo_nao_bloqueia_fluxo(self) -> None:
         """Falha no gateway não impede a mudança de modalidade (best-effort)."""
         application = self.create_project()
         app_fee = application.fee_requirements.get(
@@ -812,7 +812,7 @@ class PaymentScenarioTests(TestCase):
             slip.payment_instrument.state, PaymentInstrument.State.CANCELED
         )
 
-    def test_TS_MAN_GAP_001_confirmacao_manual_cancela_boleto_externo(self) -> None:
+    def test_TST_PAY_003_GAP_001_confirmacao_manual_cancela_boleto_externo(self) -> None:
         """Pagamento manual baixa o boleto/Pix ativo no gateway (anti-duplicidade)."""
         application = self.create_consultation()
         fee = application.fee_requirements.get(
@@ -842,7 +842,7 @@ class PaymentScenarioTests(TestCase):
         )
 
     # TS-MAN-GAP-002 — trava temporal: pagamento manual só após/no dia do vencimento
-    def test_TS_MAN_GAP_002_nao_permite_confirmar_manual_antes_do_vencimento(self) -> None:
+    def test_TST_PAY_004_GAP_002_nao_permite_confirmar_manual_antes_do_vencimento(self) -> None:
         """Paridade com o Laravel: bloquear depósito de boleto ainda vigente (DDA)."""
         application = self.create_consultation()
         fee = application.fee_requirements.first()
@@ -870,7 +870,7 @@ class PaymentScenarioTests(TestCase):
         self.assertEqual(ManualPaymentConfirmation.objects.count(), 0)
 
     # TS-MAN-GAP-002b — permite confirmar no dia do vencimento (due_date == hoje)
-    def test_TS_MAN_GAP_002b_permite_confirmar_manual_no_vencimento(self) -> None:
+    def test_TST_PAY_005_GAP_002b_permite_confirmar_manual_no_vencimento(self) -> None:
         application = self.create_consultation()
         fee = application.fee_requirements.first()
         assert fee is not None
@@ -894,7 +894,7 @@ class PaymentScenarioTests(TestCase):
         )
 
     # TS-MAN-GAP-002c — permite confirmar quando o boleto já venceu
-    def test_TS_MAN_GAP_002c_permite_confirmar_manual_apos_vencimento(self) -> None:
+    def test_TST_PAY_006_GAP_002c_permite_confirmar_manual_apos_vencimento(self) -> None:
         application = self.create_consultation()
         fee = application.fee_requirements.first()
         assert fee is not None

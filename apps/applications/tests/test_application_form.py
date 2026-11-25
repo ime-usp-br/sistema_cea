@@ -33,6 +33,7 @@ class ApplicationFormFakerTest(TestCase):
     def _post(self, payload) -> Any:
         return self.client.post(reverse("applications:create"), payload)
 
+    # TST-APP-001
     def test_payload_completo_cria_projeto(self) -> None:
         payload = build_valid_form_payload(modality="project", term_pk=self.term.pk)
         response = self._post(payload)
@@ -47,6 +48,7 @@ class ApplicationFormFakerTest(TestCase):
         self.assertTrue(application.dataset_audit_required)
         self.assertTrue(application.catalog_selections.exists())
 
+    # TST-APP-002
     def test_payload_completo_cria_consulta_com_taxa(self) -> None:
         payload = build_valid_form_payload(modality="consultation", term_pk=self.term.pk)
         response = self._post(payload)
@@ -60,6 +62,7 @@ class ApplicationFormFakerTest(TestCase):
         self.assertFalse(application.dataset_audit_required)
         self.assertTrue(application.fee_requirements.exists())
 
+    # TST-APP-003
     def test_payload_cpf_invalido_rejeitado(self) -> None:
         payload = build_valid_form_payload(
             modality="consultation",
@@ -71,6 +74,7 @@ class ApplicationFormFakerTest(TestCase):
         self.assertIn("tax_id", response.context["form"].errors)
         self.assertEqual(ServiceApplication.objects.count(), 0)
 
+    # TST-APP-004
     def test_payload_campos_obrigatorios_ausentes_rejeitado(self) -> None:
         payload = build_valid_form_payload(
             modality="project",
@@ -84,6 +88,7 @@ class ApplicationFormFakerTest(TestCase):
         self.assertIn("contact_email", response.context["form"].errors)
         self.assertEqual(ServiceApplication.objects.count(), 0)
 
+    # TST-APP-005
     def test_payload_catalogo_duplicado_por_secao_rejeitado(self) -> None:
         from applications.models import CatalogOption
 
@@ -156,7 +161,7 @@ class ApplicationFormFakerTest(TestCase):
         self.assertEqual(ServiceApplication.objects.count(), 1)
 
     # TS-FILE-GAP-001 — Segurança: rejeita extensões/MIME types executáveis.
-    def test_TS_FILE_GAP_001_rejeita_arquivos_com_mime_types_nao_permitidos(self) -> None:
+    def test_TST_APP_006_GAP_001_rejeita_arquivos_com_mime_types_nao_permitidos(self) -> None:
         payload = build_valid_form_payload(
             modality="consultation", term_pk=self.term.pk
         )
@@ -175,7 +180,7 @@ class ApplicationFormFakerTest(TestCase):
         )
         self.assertEqual(ServiceApplication.objects.count(), 0)
 
-    def test_TS_FILE_GAP_001b_rejeita_extensao_perigosa_mesmo_sem_mime(self) -> None:
+    def test_TST_APP_007_GAP_001b_rejeita_extensao_perigosa_mesmo_sem_mime(self) -> None:
         payload = build_valid_form_payload(
             modality="consultation", term_pk=self.term.pk
         )
@@ -190,7 +195,7 @@ class ApplicationFormFakerTest(TestCase):
         self.assertIn("attachments", response.context["form"].errors)
         self.assertEqual(ServiceApplication.objects.count(), 0)
 
-    def test_TS_FILE_GAP_001c_aceita_pdf_valido(self) -> None:
+    def test_TST_APP_008_GAP_001c_aceita_pdf_valido(self) -> None:
         payload = build_valid_form_payload(
             modality="consultation", term_pk=self.term.pk
         )
@@ -267,7 +272,7 @@ class ApplicationFormFakerTest(TestCase):
         self.assertEqual(ServiceApplication.objects.count(), 1)
 
     # TS-APP-GAP-001 — paridade Laravel: instituição é um campo obrigatório
-    def test_TS_APP_GAP_001_institution_name_e_obrigatorio(self) -> None:
+    def test_TST_APP_009_GAP_001_institution_name_e_obrigatorio(self) -> None:
         payload = build_valid_form_payload(
             modality="consultation", term_pk=self.term.pk
         )

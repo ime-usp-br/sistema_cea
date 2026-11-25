@@ -81,6 +81,7 @@ class DocumentRenderingServiceTests(TestCase):
             pdf_bytes = method(self.application)
         return pdf_bytes.decode("utf-8")
 
+    # TST-DOC-001
     def test_render_application_full_pdf_generates_bytes(self) -> None:
         with patch.object(
             DocumentRenderingService, "_convert_to_pdf", staticmethod(_capture_html)
@@ -89,6 +90,7 @@ class DocumentRenderingServiceTests(TestCase):
         self.assertIsInstance(result, bytes)
         self.assertIn("Ficha de Inscrição", result.decode("utf-8"))
 
+    # TST-DOC-002
     def test_render_payment_receipt_pdf_generates_bytes(self) -> None:
         with patch.object(
             DocumentRenderingService, "_convert_to_pdf", staticmethod(_capture_html)
@@ -97,6 +99,7 @@ class DocumentRenderingServiceTests(TestCase):
         self.assertIsInstance(result, bytes)
         self.assertIn("Comprovante de Pagamento", result.decode("utf-8"))
 
+    # TST-DOC-003
     def test_render_screening_summary_pdf_generates_bytes(self) -> None:
         with patch.object(
             DocumentRenderingService, "_convert_to_pdf", staticmethod(_capture_html)
@@ -105,6 +108,7 @@ class DocumentRenderingServiceTests(TestCase):
         self.assertIsInstance(result, bytes)
         self.assertIn("Resumo de Triagem", result.decode("utf-8"))
 
+    # TST-DOC-004
     def test_pdf_fallback_sem_weasyprint_retorna_mock(self) -> None:
         html = "<html><body>OK</body></html>"
         with patch.dict("sys.modules", {"weasyprint": None}):
@@ -152,6 +156,7 @@ class DocumentRenderingServiceTests(TestCase):
         self.assertNotIn("Recibo para Reembolso", html)
 
     # Gap 5 — primeira página (1 página) do aplicativo
+    # TST-DOC-005
     def test_render_application_firstpage_pdf_contem_dados_essenciais(self) -> None:
         html = self._html("render_application_firstpage_pdf")
         self.assertIn("Inscrição CEA — Protocolo", html)
@@ -159,6 +164,7 @@ class DocumentRenderingServiceTests(TestCase):
         self.assertIn(self.application.protocol, html)
         self.assertIn("Projeto", html)
 
+    # TST-DOC-006
     def test_render_application_firstpage_pdf_eh_resumo_nao_ficha_completa(self) -> None:
         html = self._html("render_application_firstpage_pdf")
         self.assertIn("Inscrição CEA", html)
@@ -189,6 +195,7 @@ class DocumentDownloadViewTests(TestCase):
             contact_email="owner@example.com",
         )
 
+    # TST-DOC-007
     def test_ficha_owner_candidato_nao_pode_baixar(self) -> None:
         self.client.force_login(self.owner)
         response = self.client.get(
@@ -199,6 +206,7 @@ class DocumentDownloadViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 403)
 
+    # TST-DOC-008
     def test_ficha_secretaria_pode_baixar(self) -> None:
         staff = User.objects.create_user(
             username="secretaria",
@@ -220,6 +228,7 @@ class DocumentDownloadViewTests(TestCase):
         self.assertEqual(response["Content-Type"], "application/pdf")
         self.assertIn("attachment", response["Content-Disposition"])
 
+    # TST-DOC-009
     def test_ficha_docente_nao_pode_baixar(self) -> None:
         teacher = User.objects.create_user(
             username="docente",
@@ -236,6 +245,7 @@ class DocumentDownloadViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 403)
 
+    # TST-DOC-010
     def test_ficha_outro_candidato_nao_pode_baixar(self) -> None:
         self.client.force_login(self.other)
         response = self.client.get(
@@ -246,6 +256,7 @@ class DocumentDownloadViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 403)
 
+    # TST-DOC-011
     def test_ficha_exige_login(self) -> None:
         response = self.client.get(
             reverse(
@@ -255,6 +266,7 @@ class DocumentDownloadViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 302)
 
+    # TST-DOC-012
     def test_primeira_pagina_owner_candidato_nao_pode_baixar(self) -> None:
         self.client.force_login(self.owner)
         response = self.client.get(
@@ -265,6 +277,7 @@ class DocumentDownloadViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 403)
 
+    # TST-DOC-013
     def test_primeira_pagina_docente_pode_baixar(self) -> None:
         teacher = User.objects.create_user(
             username="docente",
@@ -286,6 +299,7 @@ class DocumentDownloadViewTests(TestCase):
         self.assertEqual(response["Content-Type"], "application/pdf")
         self.assertIn("attachment", response["Content-Disposition"])
 
+    # TST-DOC-014
     def test_primeira_pagina_outro_candidato_nao_pode_baixar(self) -> None:
         self.client.force_login(self.other)
         response = self.client.get(

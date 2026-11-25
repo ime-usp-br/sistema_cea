@@ -28,6 +28,7 @@ class E2ECleanupCommandTests(TestCase):
             contact_email="cleanup@example.com",
         )
 
+    # TST-APP-010
     def test_e2e_cleanup_marca_inscricao_como_excluida(self) -> None:
         call_command("e2e_cleanup", "--protocol", self.application.protocol)
 
@@ -37,6 +38,7 @@ class E2ECleanupCommandTests(TestCase):
         persisted = ServiceApplication.all_objects.get(pk=self.application.pk)
         self.assertIsNotNone(persisted.soft_deleted_at)
 
+    # TST-APP-011
     def test_e2e_cleanup_e_idempotente(self) -> None:
         call_command("e2e_cleanup", "--protocol", self.application.protocol)
         call_command("e2e_cleanup", "--protocol", self.application.protocol)

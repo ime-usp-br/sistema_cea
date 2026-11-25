@@ -177,7 +177,7 @@ class PixBoletoConsultationJourneyTests(TestCase):
     # Pix: simulação de pagamento -> awaiting_consultation_scheduling
     # ------------------------------------------------------------------
 
-    def test_TS_PIX_jornada_pix_webhook_avanca_para_agendamento(self) -> None:
+    def test_TST_APP_027_jornada_pix_webhook_avanca_para_agendamento(self) -> None:
         application = self._create_consultation_form()
         self._choose_method(application, "pix")
         self._generate_pix(application)
@@ -265,7 +265,7 @@ class PixBoletoConsultationJourneyTests(TestCase):
     # Boleto: geração + download do PDF em /boleto/<id>/pdf/
     # ------------------------------------------------------------------
 
-    def test_TS_BSL_jornada_boleto_gera_e_baixa_pdf(self) -> None:
+    def test_TST_APP_028_jornada_boleto_gera_e_baixa_pdf(self) -> None:
         application = self._create_consultation_form()
         self._choose_method(application, "bank_slip")
 
@@ -358,7 +358,7 @@ class AuditProjectJourneyTests(TestCase):
     # Criação de Projeto + envio de dados (arquivo e link)
     # ------------------------------------------------------------------
 
-    def test_TS_AUD_jornada_projeto_comeca_aguardando_pagamento(self) -> None:
+    def test_TST_APP_029_jornada_projeto_comeca_aguardando_pagamento(self) -> None:
         application = self._create_project_form()
         self.assertTrue(application.dataset_audit_required)
         # Fluxo sequencial: o Projeto começa aguardando o pagamento da taxa de

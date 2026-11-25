@@ -11,6 +11,7 @@ from django.test import TestCase, override_settings
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 class SendTestEmailCommandTests(TestCase):
+    # TST-NOT-001
     def test_envia_para_destinatario_informado(self) -> None:
         call_command(
             "send_test_email",
@@ -30,6 +31,7 @@ class SendTestEmailCommandTests(TestCase):
         MAIL_DEV_TEST="dev@example.com",
         NOTIFICATION_CENTER_EMAIL="centro@example.com",
     )
+    # TST-NOT-002
     def test_usa_mail_dev_test_quando_to_nao_e_informado(self) -> None:
         call_command("send_test_email")
         self.assertEqual(mail.outbox[0].to, ["dev@example.com"])
@@ -38,10 +40,12 @@ class SendTestEmailCommandTests(TestCase):
         MAIL_DEV_TEST="",
         NOTIFICATION_CENTER_EMAIL="centro@example.com",
     )
+    # TST-NOT-003
     def test_usa_notification_center_como_ultimo_fallback(self) -> None:
         call_command("send_test_email")
         self.assertEqual(mail.outbox[0].to, ["centro@example.com"])
 
+    # TST-NOT-004
     def test_falha_de_smtp_vira_command_error(self) -> None:
         with (
             patch(

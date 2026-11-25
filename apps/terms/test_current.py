@@ -9,14 +9,14 @@ from terms.utils import resolve_term, term_filter_id
 
 
 class CurrentTermTests(TestCase):
-    def test_TS_TRM_CURRENT_ordena_por_ano_desc_segundo_dentro_do_ano(self) -> None:
+    def test_TST_TERM_001_CURRENT_ordena_por_ano_desc_segundo_dentro_do_ano(self) -> None:
         AcademicTerm.objects.create(year=2025, period="second")
         AcademicTerm.objects.create(year=2026, period="first")
         expected = AcademicTerm.objects.create(year=2026, period="second")
         self.assertEqual(AcademicTerm.current(), expected)
         self.assertEqual(AcademicTerm.latest(), expected)
 
-    def test_TS_TRM_CURRENT_regressao_first_nao_eh_atual_quando_segundo_existe(
+    def test_TST_TERM_002_CURRENT_regressao_first_nao_eh_atual_quando_segundo_existe(
         self,
     ) -> None:
         first = AcademicTerm.objects.create(year=2026, period="first")
@@ -26,7 +26,7 @@ class CurrentTermTests(TestCase):
         self.assertEqual(AcademicTerm.objects.first(), first)
         self.assertEqual(AcademicTerm.current(), second)
 
-    def test_TS_TRM_RESOLVE_lhe_term_e_semester_id(self) -> None:
+    def test_TST_TERM_003_RESOLVE_lhe_term_e_semester_id(self) -> None:
         term = AcademicTerm.objects.create(year=2024, period="first")
         factory = RequestFactory()
         request = factory.get("/", {"term": str(term.pk)})
@@ -34,13 +34,13 @@ class CurrentTermTests(TestCase):
         legacy_request = factory.get("/", {"semester_id": str(term.pk)})
         self.assertEqual(resolve_term(legacy_request), term)
 
-    def test_TS_TRM_RESOLVE_fallback_ao_atual(self) -> None:
+    def test_TST_TERM_004_RESOLVE_fallback_ao_atual(self) -> None:
         AcademicTerm.objects.create(year=2026, period="first")
         expected = AcademicTerm.objects.create(year=2026, period="second")
         factory = RequestFactory()
         self.assertEqual(resolve_term(factory.get("/")), expected)
 
-    def test_TS_TRM_FILTER_ID_retorna_bruto(self) -> None:
+    def test_TST_TERM_005_FILTER_ID_retorna_bruto(self) -> None:
         factory = RequestFactory()
         self.assertEqual(term_filter_id(factory.get("/", {"term": "5"})), "5")
         self.assertEqual(term_filter_id(factory.get("/", {"term": "all"})), "all")

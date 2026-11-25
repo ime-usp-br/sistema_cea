@@ -378,6 +378,7 @@ class PixWebhookViewTests(TestCase):
             )
         return pix
 
+    # TST-PIX-001
     def test_webhook_endpoint_confirma_pagamento(self) -> None:
         pix = self.create_paid_pix()
         response = self.client.post(
@@ -393,6 +394,7 @@ class PixWebhookViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(PixWebhookEvent.objects.filter(pix_reference=pix.pix_reference, token_valid=True).exists())
 
+    # TST-PIX-002
     def test_webhook_endpoint_token_invalido_rejeitado(self) -> None:
         pix = self.create_paid_pix()
         response = self.client.post(
@@ -454,22 +456,26 @@ class PixDetailViewPermissionTests(TestCase):
     def _detail_url(self) -> str:
         return reverse("pix:detail", kwargs={"protocol": self.application.protocol})
 
+    # TST-PIX-003
     def test_owner_pode_ver_a_pagina(self) -> None:
         self.client.force_login(self.candidate)
         response = self.client.get(self._detail_url())
         self.assertEqual(response.status_code, 200)
 
+    # TST-PIX-004
     def test_secretaria_e_administrador_podem_ver_a_pagina(self) -> None:
         for staff in (self.secretariat, self.administrator):
             self.client.force_login(staff)
             response = self.client.get(self._detail_url())
             self.assertEqual(response.status_code, 200)
 
+    # TST-PIX-005
     def test_outro_candidato_nao_pode_ver_a_pagina(self) -> None:
         self.client.force_login(self.other_candidate)
         response = self.client.get(self._detail_url())
         self.assertEqual(response.status_code, 404)
 
+    # TST-PIX-006
     def test_pix_expirado_permite_gerar_novo(self) -> None:
         fee = self.application.fee_requirements.get(
             fee_type=FeeRequirement.FeeType.APPLICATION_FEE
@@ -487,6 +493,7 @@ class PixDetailViewPermissionTests(TestCase):
         self.assertContains(response, "Gerar Pix")
         self.assertNotContains(response, str(PIX_RESULT["qrCode"]))
 
+    # TST-PIX-007
     def test_pix_ativo_mais_recente_tem_prioridade_sobre_pix_pago_antigo(self) -> None:
         fee = self.application.fee_requirements.get(
             fee_type=FeeRequirement.FeeType.APPLICATION_FEE
@@ -565,6 +572,7 @@ class PixGatewayContractTests(TestCase):
 
         return patch("pix.gateways.PixGateway._request", side_effect=fake_request)
 
+    # TST-PIX-008
     def test_gerar_usa_post_pix_gerar_com_autenticacao(self) -> None:
         with self._patch_request({"idfpix": "pix-1", "qrCode": "000201"}):
             result = self.gateway.generate_pix({"tipoPessoa": "PF"})
@@ -574,6 +582,7 @@ class PixGatewayContractTests(TestCase):
         self.assertEqual(path, "pix/gerar")
         self.assertEqual(body, {"tipoPessoa": "PF"})
 
+    # TST-PIX-009
     def test_headers_autenticacao_enviados(self) -> None:
         from pix.gateways import PixGateway
 
@@ -581,6 +590,7 @@ class PixGatewayContractTests(TestCase):
         self.assertEqual(headers["X-Username"], "consumerdi")
         self.assertEqual(headers["X-Password"], "teste1")
 
+    # TST-PIX-010
     def test_consultar_usa_get_por_idfpix(self) -> None:
         with self._patch_request({"status": "Ativo"}):
             result = self.gateway.check_pix_status("pix-1")
@@ -590,6 +600,7 @@ class PixGatewayContractTests(TestCase):
         self.assertEqual(path, "pix/pix-1")
         self.assertNotIn("verificar", params)
 
+    # TST-PIX-011
     def test_consultar_com_verificar_envia_query_param(self) -> None:
         with self._patch_request({"status": "Concluído"}):
             self.gateway.check_pix_status("pix-1", verify=True)
@@ -601,6 +612,7 @@ class PixGatewayContractTests(TestCase):
     # A formatação de ``dtaini``/``dtafim`` e o caminho ``pix/listarConcluidos``
     # são cobertos por ``PixScenarioTests.test_TS_PIX_009_listarconcluidos_usa_dtaini_dtafim``.
 
+    # TST-PIX-012
     def test_pdf_qrcode_e_simular_pagamento(self) -> None:
         with self._patch_request(None, b"%PDF"):
             pdf = self.gateway.generate_pdf("pix-1")
@@ -616,6 +628,7 @@ class PixGatewayContractTests(TestCase):
         self.assertEqual(methods, ["GET", "GET", "PATCH"])
         self.assertEqual(paths, ["pix/pix-1/pdf", "pix/pix-1/qrcode", "pix/pix-1/simularPag"])
 
+    # TST-PIX-013
     def test_webhook_config_cadastro_e_remocao(self) -> None:
         with self._patch_request({"retorno": "ok", "mensagem": "cadastrado"}):
             result = self.gateway.configure_webhook("https://cea.test/webhooks/pix/", "token-1")
@@ -635,6 +648,7 @@ class PixGatewayContractTests(TestCase):
 class FakePixGatewayTests(TestCase):
     """Gateway simulado da stack E2E (sem rede)."""
 
+    # TST-PIX-014
     def test_fake_gateway_cobre_geracao_consulta_listagem_e_arquivos(self) -> None:
         from pix.gateways import FakePixGateway, get_pix_gateway
 
@@ -670,6 +684,7 @@ class FakePixGatewayTests(TestCase):
         self.assertTrue(gateway.configure_webhook("http://x", "token")["configured"])
         self.assertTrue(gateway.remove_webhook()["removed"])
 
+    # TST-PIX-015
     def test_gateway_real_e_padrao_sem_modo_simulado(self) -> None:
         from pix.gateways import PixGateway, get_pix_gateway
 

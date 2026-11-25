@@ -24,6 +24,7 @@ from helpers import (
 from playwright.sync_api import Page, expect
 
 
+# Cobre: TST-ENV-001
 def test_E2E_ENV_001_stack_sem_gateways_externos(e2e_environment: dict) -> None:
     assert e2e_environment["debug"] is True
     assert e2e_environment["payment_gateway_fake"] is True

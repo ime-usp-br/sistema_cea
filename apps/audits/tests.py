@@ -500,6 +500,7 @@ class AuditScenarioTests(TestCase):
             ServiceApplication.LifecycleStatus.DATASET_REJECTED_PENDING_RESOLUTION,
         )
 
+    # TST-AUD-001
     def test_validate_external_url_helper(self) -> None:
         self.assertEqual(
             validate_external_url("https://example.com/p"),
@@ -513,7 +514,7 @@ class AuditScenarioTests(TestCase):
             validate_external_url("")
 
     # TS-AUD-GAP-001 — SSRF: bloqueia loopback e endereços de rede local/interna.
-    def test_TS_AUD_GAP_001_link_externo_nao_pode_apontar_para_localhost_ssrf(self) -> None:
+    def test_TST_AUD_002_GAP_001_link_externo_nao_pode_apontar_para_localhost_ssrf(self) -> None:
         application = self.create_project()
         self.pay_application_fee(application)
         bad_urls = [
@@ -533,7 +534,7 @@ class AuditScenarioTests(TestCase):
                 self.submit_link(application, url=bad_url)
         self.assertEqual(DatasetAuditSubmission.objects.count(), 0)
 
-    def test_TS_AUD_GAP_001b_url_publica_continua_aceita(self) -> None:
+    def test_TST_AUD_003_GAP_001b_url_publica_continua_aceita(self) -> None:
         """Garante que a proteção SSRF não rejeita URLs públicas legítimas."""
         application = self.create_project()
         self.pay_application_fee(application)

@@ -7,6 +7,7 @@ from terms.models import AcademicTerm
 
 
 class AcademicTermTests(TestCase):
+    # TST-TERM-006
     def test_term_creation(self) -> None:
         term = AcademicTerm.objects.create(
             year=2026,
@@ -20,11 +21,13 @@ class AcademicTermTests(TestCase):
         self.assertEqual(term.submission_end_date, date(2026, 3, 31))
         self.assertIsNotNone(term.created_at)
 
+    # TST-TERM-007
     def test_unique_year_period_constraint(self) -> None:
         AcademicTerm.objects.create(year=2026, period=AcademicTerm.Period.FIRST)
         with self.assertRaises(IntegrityError):
             AcademicTerm.objects.create(year=2026, period=AcademicTerm.Period.FIRST)
 
+    # TST-TERM-008
     def test_term_str(self) -> None:
         term = AcademicTerm.objects.create(year=2026, period=AcademicTerm.Period.SECOND)
         self.assertEqual(str(term), "2026 - Segundo Semestre")

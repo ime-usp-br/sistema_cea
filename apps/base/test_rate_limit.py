@@ -43,6 +43,7 @@ class RateLimitTests(TestCase):
             REMOTE_ADDR="198.51.100.10",
         )
 
+    # TST-BASE-001
     def test_login_limita_por_ip_e_username(self) -> None:
         first = self._login("alvo")
         second = self._login("alvo")
@@ -59,12 +60,14 @@ class RateLimitTests(TestCase):
         # Outro username no mesmo IP tem balde próprio.
         self.assertEqual(self._login("outro").status_code, 200)
 
+    # TST-BASE-002
     def test_login_headers_de_limite_em_resposta_permitida(self) -> None:
         response = self._login("alvo")
         self.assertEqual(response.headers["X-RateLimit-Limit"], "2")
         self.assertEqual(response.headers["X-RateLimit-Remaining"], "1")
 
     @override_settings(RATE_LIMIT_WEBHOOK=1)
+    # TST-BASE-003
     def test_webhook_limita_por_ip(self) -> None:
         payload = json.dumps({"idfpix": "x", "status": "Pago"})
         first = self.client.post(
@@ -82,6 +85,7 @@ class RateLimitTests(TestCase):
         self.assertEqual(first.status_code, 401)
         self.assertEqual(second.status_code, 429)
 
+    # TST-BASE-004
     def test_post_limita_por_usuario(self) -> None:
         user = User.objects.create_user(
             username="rate-post", email="rate-post@example.com", password="x"
@@ -94,6 +98,7 @@ class RateLimitTests(TestCase):
         self.assertEqual(second.status_code, 200)
         self.assertEqual(blocked.status_code, 429)
 
+    # TST-BASE-005
     def test_download_limita_por_usuario(self) -> None:
         user = User.objects.create_user(
             username="rate-download", email="rate-download@example.com", password="x"
@@ -104,18 +109,21 @@ class RateLimitTests(TestCase):
         self.assertEqual(self.client.get(path).status_code, 429)
 
     @override_settings(RATE_LIMIT_ENABLED=False)
+    # TST-BASE-006
     def test_limite_desabilitado_nao_bloqueia(self) -> None:
         for _ in range(6):
             response = self._login("alvo")
         self.assertEqual(response.status_code, 200)
 
     @override_settings(RATE_LIMIT_LOGIN=2)
+    # TST-BASE-007
     def test_falha_do_cache_libera_requisicao(self) -> None:
         with patch("core.middleware._increment", side_effect=RuntimeError("cache down")):
             response = self._login("alvo")
         self.assertEqual(response.status_code, 200)
 
     @override_settings(RATE_LIMIT_LOGIN=1, RATE_LIMIT_TRUST_X_FORWARDED_FOR=True)
+    # TST-BASE-008
     def test_login_usa_x_forwarded_for_quando_configurado(self) -> None:
         first = self.client.post(
             reverse("login"),
@@ -140,6 +148,7 @@ class RateLimitTests(TestCase):
         self.assertEqual(outro_ip.status_code, 200)
 
     @override_settings(DEBUG=True)
+    # TST-BASE-009
     def test_e2e_clear_cache_limpa_contadores(self) -> None:
         cache.set("ratelimit:login:teste", 3, timeout=60)
         call_command("e2e_clear_cache")

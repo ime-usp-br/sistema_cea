@@ -351,7 +351,7 @@ class BankSlipScenarioTests(TestCase):
         )
 
     # TS-BSL-GAP-001 — escopo da cron: regenerar apenas Taxa de Inscrição
-    def test_TS_BSL_GAP_001_regeneracao_automatica_apenas_para_taxa_de_inscricao(self) -> None:
+    def test_TST_BSL_003_GAP_001_regeneracao_automatica_apenas_para_taxa_de_inscricao(self) -> None:
         """Paridade com o Laravel: a cron NÃO regenere Taxa de Projeto/Complemento."""
         from bank_slips.tasks import regenerate_overdue_bank_slips_task
 
@@ -409,7 +409,7 @@ class BankSlipScenarioTests(TestCase):
 
     # TS-BSL-GAP-002 — falha SOAP na reemissão NÃO pode deixar o antigo cancelado
     @EAGER
-    def test_TS_BSL_GAP_002_regeneracao_falha_soap_rollback_parcial(self) -> None:
+    def test_TST_BSL_004_GAP_002_regeneracao_falha_soap_rollback_parcial(self) -> None:
         """Falha ao gerar o novo boleto deve reverter o cancelamento do antigo."""
         application = self.create_consultation()
         fee = self.get_fee(application)
@@ -445,7 +445,7 @@ class BankSlipScenarioTests(TestCase):
 
     # TS-BSL-GAP-004 — falha no MEIO da cron não desfaz boletos já processados
     @EAGER
-    def test_TS_BSL_GAP_004_falha_no_meio_da_cron_nao_desfaz_processados(self) -> None:
+    def test_TST_BSL_005_GAP_004_falha_no_meio_da_cron_nao_desfaz_processados(self) -> None:
         """Exceção no 2º boleto não faz rollback do 1º (emails/jobs já disparados)."""
         from bank_slips.tasks import regenerate_overdue_bank_slips_task
 
@@ -505,7 +505,7 @@ class BankSlipScenarioTests(TestCase):
         )
 
     # TS-BSL-GAP-003 — secretaria gera boleto primário sem slip existente (Gap D)
-    def test_TS_BSL_GAP_003_admin_gera_boleto_primario(self) -> None:
+    def test_TST_BSL_006_GAP_003_admin_gera_boleto_primario(self) -> None:
         secretariat = User.objects.create_user(
             username="secretaria_bsl",
             email="sec_bsl@example.com",
@@ -536,7 +536,7 @@ class BankSlipScenarioTests(TestCase):
         )
 
     # TS-BSL-GAP-003b — candidato NÃO pode forçar geração administrativa
-    def test_TS_BSL_GAP_003b_candidato_nao_acessa_geracao_admin(self) -> None:
+    def test_TST_BSL_007_GAP_003b_candidato_nao_acessa_geracao_admin(self) -> None:
         application = self.create_consultation()
         self.client.force_login(self.candidate)
         response = self.client.post(
@@ -545,7 +545,7 @@ class BankSlipScenarioTests(TestCase):
         self.assertEqual(response.status_code, 403)
 
     # TS-BSL-GAP-006 — poller periódico de boletos (paridade Console/Kernel.php)
-    def test_TS_BSL_GAP_006b_poller_de_polling_exportado_no_celery(self) -> None:
+    def test_TST_BSL_008_GAP_006b_poller_de_polling_exportado_no_celery(self) -> None:
         from bank_slips.tasks import sync_pending_bank_slips_task
 
         application = self.create_consultation()
@@ -572,7 +572,7 @@ class BankSlipScenarioTests(TestCase):
 
     # TS-BSL-GAP-007 — regeneração automática avisa a equipe CEA (BCC)
     @EAGER
-    def test_TS_BSL_GAP_007_regeneracao_automatica_avisa_equipe_cea(self) -> None:
+    def test_TST_BSL_009_GAP_007_regeneracao_automatica_avisa_equipe_cea(self) -> None:
         """Paridade com o Laravel (RegenerateAndNotifyPaymentFailure):
         a cron regenera o boleto vencido e a equipe CEA recebe a cópia oculta."""
         from bank_slips.tasks import regenerate_overdue_bank_slips_task
@@ -599,7 +599,7 @@ class BankSlipScenarioTests(TestCase):
 
     # TS-NOT-GAP-003 — falha do boleto gera aviso de instabilidade no e-mail
     @EAGER
-    def test_TS_NOT_GAP_003_aviso_no_email_se_boleto_falhar_na_geracao(self) -> None:
+    def test_TST_BSL_010_GAP_003_aviso_no_email_se_boleto_falhar_na_geracao(self) -> None:
         """Paridade com o ``NotifyInscribedAboutApplication``: se o SOAP cair ao
         gerar o boleto, o candidato recebe a confirmação com alerta de instabilidade."""
         application = self.create_consultation()
@@ -628,7 +628,7 @@ class BankSlipScenarioTests(TestCase):
         )
 
     # TS-BSL-GAP-005 — duplo clique "Gerar Boleto" é idempotente (1 ativo por taxa)
-    def test_TS_BSL_GAP_005_duplo_click_nao_duplica_boleto(self) -> None:
+    def test_TST_BSL_011_GAP_005_duplo_click_nao_duplica_boleto(self) -> None:
         application = self.create_consultation()
         with patch(
             "bank_slips.gateways.BankSlipGateway.gerar_boleto",
@@ -679,6 +679,7 @@ class BankSlipPdfViewTests(TestCase):
                 created_by=self.candidate,
             )
 
+    # TST-BSL-012
     def test_download_pdf_endpoint_retorna_pdf(self) -> None:
         slip = self.create_slip()
         self.client.force_login(self.candidate)
@@ -724,6 +725,7 @@ class BankSlipGatewayContractTests(TestCase):
         client.service = service
         return client
 
+    # TST-BSL-013
     def test_headers_soap_username_password(self) -> None:
         from bank_slips.gateways import BankSlipGateway
 
@@ -732,6 +734,7 @@ class BankSlipGatewayContractTests(TestCase):
             {"username": "consumerdi", "password": "teste1"},
         )
 
+    # TST-BSL-014
     def test_gerar_boleto_usa_boletoRegistrado_e_zeros_do_xsd(self) -> None:
         result = MagicMock()
         result.codigoIDBoleto = "ref-001"
@@ -761,6 +764,7 @@ class BankSlipGatewayContractTests(TestCase):
         self.assertEqual(boleto["numeroUspSacado"], 0)
         self.assertEqual(boleto["numeroUspUsuario"], 0)
 
+    # TST-BSL-015
     def test_obter_situacao_usa_identificacao_e_retorna_status(self) -> None:
         situation = MagicMock()
         situation.statusBoletoBancario = "P"
@@ -772,6 +776,7 @@ class BankSlipGatewayContractTests(TestCase):
         self.assertEqual(call_kwargs["identificacao"], {"codigoIDBoleto": "ref-001"})
         self.assertIn("_soapheaders", call_kwargs)
 
+    # TST-BSL-016
     def test_obter_situacao_status_invalido_erro(self) -> None:
         from bank_slips.gateways import BankSlipGatewayError
 
@@ -783,6 +788,7 @@ class BankSlipGatewayContractTests(TestCase):
         ):
             self.gateway.obter_situacao("ref-001")
 
+    # TST-BSL-017
     def test_obter_boleto_pdf_retorna_base64(self) -> None:
         client = self._fake_call(obterBoleto=_PDF_BYTES)
         with patch.object(self.gateway, "_client", return_value=client):
@@ -791,6 +797,7 @@ class BankSlipGatewayContractTests(TestCase):
         call_kwargs = client.service.obterBoleto.call_args.kwargs
         self.assertEqual(call_kwargs["identificacao"], {"codigoIDBoleto": "ref-001"})
 
+    # TST-BSL-018
     def test_cancelar_boleto_chama_soap_e_retorna_true(self) -> None:
         client = self._fake_call(cancelarBoleto=MagicMock())
         with patch.object(self.gateway, "_client", return_value=client):
@@ -798,6 +805,7 @@ class BankSlipGatewayContractTests(TestCase):
         call_kwargs = client.service.cancelarBoleto.call_args.kwargs
         self.assertEqual(call_kwargs["identificacao"], {"codigoIDBoleto": "ref-001"})
 
+    # TST-BSL-019
     def test_obter_detalhe_retorna_pares_chave_valor(self) -> None:
         detail = MagicMock()
         detail.entry = [
@@ -815,6 +823,7 @@ class BankSlipGatewayContractTests(TestCase):
 class FakeBankSlipGatewayTests(TestCase):
     """Gateway SOAP simulado da stack E2E (sem rede)."""
 
+    # TST-BSL-020
     def test_fake_gateway_cobre_emissao_status_pdf_cancelamento_e_detalhe(self) -> None:
         from bank_slips.gateways import FakeBankSlipGateway, get_bank_slip_gateway
 
@@ -829,6 +838,7 @@ class FakeBankSlipGatewayTests(TestCase):
         self.assertIn("lnhdgv", gateway.obter_detalhe(reference))
         self.assertEqual(gateway.registrar_boleto(reference), "OK")
 
+    # TST-BSL-021
     def test_gateway_real_e_padrao_sem_modo_simulado(self) -> None:
         from bank_slips.gateways import BankSlipGateway, get_bank_slip_gateway
 

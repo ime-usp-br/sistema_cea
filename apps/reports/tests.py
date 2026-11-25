@@ -145,6 +145,7 @@ class ReportScenarioTests(TestCase):
         self.assertEqual(row["teacher_decision"], "Aprovado")
         self.assertGreaterEqual(row["corrections"], 1)
 
+    # TST-REP-001
     def test_views_requerem_permissao_secretaria(self):
         self.client.force_login(self.candidate)
         response = self.client.get(reverse("reports:financial_report"))
@@ -152,6 +153,7 @@ class ReportScenarioTests(TestCase):
         response = self.client.get(reverse("reports:audit_report"))
         self.assertEqual(response.status_code, 403)
 
+    # TST-REP-002
     def test_views_disponiveis_para_secretaria_e_admin(self):
         for user in (self.secretariat, self.administrator):
             self.client.force_login(user)

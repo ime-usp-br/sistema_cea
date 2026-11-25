@@ -94,7 +94,7 @@ class MeetingsScreeningConsultationTests(TestCase):
         )
 
     # TS-MTG-TRIAGENS-DEFAULT
-    def test_TS_MTG_TRIAGENS_filtra_por_semestre_atual_por_default(self) -> None:
+    def test_TST_MEET_001_TRIAGENS_filtra_por_semestre_atual_por_default(self) -> None:
         first = self._screening(self.term_first)
         second = self._screening(self.term_second)
         self.client.force_login(self.secretariat)
@@ -103,7 +103,7 @@ class MeetingsScreeningConsultationTests(TestCase):
         self.assertNotContains(response, first.application.protocol)
 
     # TS-MTG-REUNIOES-SEM-TAXA-PROJETO
-    def test_TS_MTG_REUNIOES_nao_tem_coluna_taxa_projeto(self) -> None:
+    def test_TST_MEET_002_REUNIOES_nao_tem_coluna_taxa_projeto(self) -> None:
         self._meeting(self.term_second)
         self.client.force_login(self.secretariat)
         response = self.client.get(reverse("meetings:consultation_list"))
@@ -111,14 +111,14 @@ class MeetingsScreeningConsultationTests(TestCase):
         self.assertNotContains(response, "Taxa Projeto")
 
     # TS-MTG-TRIAGENS-COM-TAXA-PROJETO (Secretaria)
-    def test_TS_MTG_TRIAGENS_exibe_taxa_projeto_para_secretaria(self) -> None:
+    def test_TST_MEET_003_TRIAGENS_exibe_taxa_projeto_para_secretaria(self) -> None:
         self._screening(self.term_second)
         self.client.force_login(self.secretariat)
         response = self.client.get(reverse("meetings:screening_list"))
         self.assertContains(response, "Taxa Projeto")
 
     # TS-MTG-TRIAGENS-SEM-TAXA-PROJETO (Docente - T3.3)
-    def test_TS_MTG_TRIAGENS_esconde_taxa_projeto_para_docente(self) -> None:
+    def test_TST_MEET_004_TRIAGENS_esconde_taxa_projeto_para_docente(self) -> None:
         self._screening(self.term_second)
         self.client.force_login(self.teacher)
         response = self.client.get(reverse("meetings:screening_list"))

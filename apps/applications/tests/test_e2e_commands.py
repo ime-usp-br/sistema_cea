@@ -30,6 +30,7 @@ def _call(*args: str) -> str:
 
 @override_settings(DEBUG=True)
 class SeedAndInspectionCommandsTests(TestCase):
+    # TST-APP-012
     def test_seed_e2e_cria_usuarios_verificados_e_admin(self) -> None:
         output = _call("seed_e2e")
         data = json.loads(output.strip().splitlines()[-1])
@@ -42,6 +43,7 @@ class SeedAndInspectionCommandsTests(TestCase):
             User.objects.get(username="e2e_candidate").role, User.Role.CANDIDATE
         )
 
+    # TST-APP-013
     def test_e2e_environment_expoe_configuracao_de_mock(self) -> None:
         with override_settings(
             PAYMENT_GATEWAY_FAKE=True,
@@ -54,6 +56,7 @@ class SeedAndInspectionCommandsTests(TestCase):
         self.assertEqual(data["bank_slip_gateway"], "FakeBankSlipGateway")
         self.assertTrue(data["celery_task_always_eager"])
 
+    # TST-APP-014
     def test_e2e_create_term_e_idempotente(self) -> None:
         first = json.loads(_call("e2e_create_term", "--year", "2099"))
         second = json.loads(_call("e2e_create_term", "--year", "2099"))
@@ -61,6 +64,7 @@ class SeedAndInspectionCommandsTests(TestCase):
         self.assertFalse(second["created"])
         self.assertEqual(first["id"], second["id"])
 
+    # TST-APP-015
     def test_e2e_create_term_auto_e_peek_no_namespace(self) -> None:
         peek = json.loads(_call("e2e_create_term", "--peek"))
         created = json.loads(_call("e2e_create_term", "--auto"))
@@ -68,6 +72,7 @@ class SeedAndInspectionCommandsTests(TestCase):
         self.assertTrue(created["created"])
         self.assertEqual(json.loads(_call("e2e_create_term", "--peek"))["year"], peek["year"] + 1)
 
+    # TST-APP-016
     def test_e2e_create_user_candidato_verificado_e_recusa_duplicado(self) -> None:
         first = json.loads(
             _call("e2e_create_user", "--suffix", "run-001")
@@ -82,6 +87,7 @@ class SeedAndInspectionCommandsTests(TestCase):
         with self.assertRaises(CommandError):
             _call("e2e_create_user", "--suffix", "run-001")
 
+    # TST-APP-017
     def test_simulate_journey_respeita_term_explicito(self) -> None:
         term = json.loads(_call("e2e_create_term", "--year", "9101"))
         output = _call(
@@ -98,6 +104,7 @@ class SeedAndInspectionCommandsTests(TestCase):
         )
         self.assertEqual(application.term_id, term["id"])
 
+    # TST-APP-018
     def test_inspect_application_emite_taxas_eventos_e_nao_encontrado(self) -> None:
         term = AcademicTerm.objects.create(year=2098, period="first")
         owner = User.objects.create_user(username="inspect", email="inspect@example.com")
@@ -126,6 +133,7 @@ class SeedAndInspectionCommandsTests(TestCase):
 
 
 class CleanupCommandTests(TestCase):
+    # TST-APP-019
     def test_cleanup_remove_protocolo_termo_vazio_e_desativa_email(self) -> None:
         term = AcademicTerm.objects.create(year=2097, period="first")
         empty_term = AcademicTerm.objects.create(year=2096, period="first")
@@ -159,10 +167,12 @@ class CleanupCommandTests(TestCase):
         self.assertTrue(AcademicTerm.objects.filter(pk=term.pk).exists())
         self.assertFalse(owner.is_active)
 
+    # TST-APP-020
     def test_cleanup_sem_argumentos_nao_falha(self) -> None:
         output = _call("e2e_cleanup")
         self.assertIn("Nenhum item", output)
 
+    # TST-APP-021
     def test_cleanup_purga_apenas_namespace_e2e(self) -> None:
         namespace_term = AcademicTerm.objects.create(year=9000, period="first")
         seed_term = AcademicTerm.objects.create(year=2036, period="first")
@@ -195,6 +205,7 @@ class CleanupCommandTests(TestCase):
 
 
 class MailboxCommandTests(TestCase):
+    # TST-APP-022
     def test_mailbox_filtra_por_destinatario_assunto_e_ultima(self) -> None:
         directory = tempfile.mkdtemp(prefix="cea-mailbox-")
         with override_settings(
@@ -221,6 +232,7 @@ class MailboxCommandTests(TestCase):
             self.assertEqual(len(latest), 1)
         self.assertTrue(Path(directory).is_dir())
 
+    # TST-APP-023
     def test_mailbox_exige_backend_filebased_e_debug(self) -> None:
         with (
             override_settings(
@@ -236,6 +248,7 @@ class MailboxCommandTests(TestCase):
 
 @override_settings(DEBUG=True)
 class BackdateBankSlipCommandTests(TestCase):
+    # TST-APP-024
     def test_recua_vencimento_do_boleto(self) -> None:
         term = AcademicTerm.objects.create(year=2095, period="first")
         owner = User.objects.create_user(username="slip", email="slip@example.com")
@@ -274,6 +287,7 @@ class BackdateBankSlipCommandTests(TestCase):
 
 @override_settings(DEBUG=True)
 class ImportedApplicationFixtureTests(TestCase):
+    # TST-APP-025
     def test_cria_inscricao_legada_sem_dono_e_e_idempotente(self) -> None:
         AcademicTerm.objects.create(year=2094, period="first")
         first = json.loads(
@@ -300,6 +314,7 @@ class ImportedApplicationFixtureTests(TestCase):
         self.assertIsNone(application.owner)
         self.assertEqual(application.origin, ServiceApplication.Origin.IMPORTED)
 
+    # TST-APP-026
     def test_comando_exige_debug(self) -> None:
         with override_settings(DEBUG=False), self.assertRaises(CommandError):
             call_command(

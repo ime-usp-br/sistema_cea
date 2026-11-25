@@ -38,7 +38,7 @@ class BankSlipPollingTests(TestCase):
             contact_email="ana_poll@example.com",
         )
 
-    def test_TS_BSL_GAP_006_task_de_polling_atualiza_boletos_pendentes(self) -> None:
+    def test_TST_BSL_001_GAP_006_task_de_polling_atualiza_boletos_pendentes(self) -> None:
         application = self.create_consultation()
         fee = application.fee_requirements.get(fee_type="application_fee")
 
@@ -71,7 +71,7 @@ class BankSlipPollingTests(TestCase):
             application.payment_state, ServiceApplication.PaymentState.PAID
         )
 
-    def test_TS_BSL_GAP_006_poller_ignora_boletos_ja_pagos(self) -> None:
+    def test_TST_BSL_002_GAP_006_poller_ignora_boletos_ja_pagos(self) -> None:
         application = self.create_consultation()
         fee = application.fee_requirements.get(fee_type="application_fee")
 

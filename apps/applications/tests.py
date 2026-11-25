@@ -314,6 +314,7 @@ class ApplicationAdminViewsTests(TestCase):
             contact_email="maria@example.com",
         )
 
+    # TST-APP-046
     def test_application_list_filtra_por_semestre(self) -> None:
         in_term1 = self._create(self.term1)
         in_term2 = self._create(self.term2)
@@ -337,11 +338,13 @@ class ApplicationAdminViewsTests(TestCase):
         self.assertContains(filtered, in_term1.protocol)
         self.assertNotContains(filtered, in_term2.protocol)
 
+    # TST-APP-047
     def test_application_list_exige_secretaria(self) -> None:
         self.client.force_login(self.candidate)
         response = self.client.get(reverse("applications:list"))
         self.assertEqual(response.status_code, 403)
 
+    # TST-APP-048
     def test_application_modality_change_view(self) -> None:
         application = self._create(self.term1)
         self.client.force_login(self.secretariat)
@@ -354,6 +357,7 @@ class ApplicationAdminViewsTests(TestCase):
             application.modality, ServiceApplication.Modality.CONSULTATION
         )
 
+    # TST-APP-049
     def test_application_delete_view_soft_delete(self) -> None:
         application = self._create(self.term1)
         self.client.force_login(self.secretariat)
@@ -366,6 +370,7 @@ class ApplicationAdminViewsTests(TestCase):
         self.assertNotIn(application, ServiceApplication.objects.all())
         self.assertIn(application, ServiceApplication.objects.all_with_deleted())
 
+    # TST-APP-050
     def test_application_delete_view_exige_secretaria(self) -> None:
         application = self._create(self.term1)
         self.client.force_login(self.candidate)

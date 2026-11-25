@@ -125,6 +125,7 @@ class LegacyImportScenarioTests(TestCase):
         self.assertIn(PaymentInstrument.State.MANUAL_CONFIRMED, states)
         self.assertEqual(app.payment_state, ServiceApplication.PaymentState.PAID)
 
+    # TST-IMP-007
     def test_import_agrupa_boletos_substituidos_em_uma_taxa(self):
         record = dict(LEGACY_RECORD)
         record["payments"] = [
@@ -187,6 +188,7 @@ class LegacyImportScenarioTests(TestCase):
             self.assertTrue(report.created)
             self.assertIn("nao_existe.pdf", report.missing_files)
 
+    # TST-IMP-008
     def test_management_command_importa_dados_de_exemplo(self):
         call_command("import_legacy_data")
         self.assertEqual(
@@ -395,7 +397,7 @@ class LegacyClaimScenarioTests(TestCase):
         )
 
     @EAGER_EMAIL
-    def test_TS_CLAIM_GAP_001_novo_pedido_de_resgate_invalida_tokens_anteriores(self):
+    def test_TST_IMP_009_CLAIM_GAP_001_novo_pedido_de_resgate_invalida_tokens_anteriores(self):
         """Novo pedido não acumula códigos válidos: o anterior é invalidado."""
         claim_1, token_1 = self.service.request_claim(
             user=self.candidate,
@@ -458,11 +460,13 @@ class LegacyClaimViewTests(TestCase):
         self.application = report.created[0]
 
     # /vincular-inscricao/
+    # TST-IMP-010
     def test_view_claim_request_get(self) -> None:
         self.client.force_login(self.candidate)
         response = self.client.get(reverse("imports:claim_request"))
         self.assertEqual(response.status_code, 200)
 
+    # TST-IMP-011
     def test_view_claim_request_post_cria_claim_e_redireciona(self) -> None:
         self.client.force_login(self.candidate)
         response = self.client.post(
@@ -474,6 +478,7 @@ class LegacyClaimViewTests(TestCase):
         self.assertIsNotNone(claim.pk)
         self.assertEqual(len(mail.outbox), 1)
 
+    # TST-IMP-012
     def test_view_claim_request_post_aceita_protocolo_com_mascara(self) -> None:
         self.client.force_login(self.candidate)
         masked = f"{self.application.protocol[:3]}.{self.application.protocol[3:6]}.{self.application.protocol[6:]}"
@@ -486,11 +491,13 @@ class LegacyClaimViewTests(TestCase):
         self.assertEqual(claim.protocol, self.application.protocol)
 
     # /vincular-inscricao/confirmar/
+    # TST-IMP-013
     def test_view_claim_confirm_get_sem_sessao_redireciona(self) -> None:
         self.client.force_login(self.candidate)
         response = self.client.get(reverse("imports:claim_confirm"))
         self.assertRedirects(response, reverse("imports:claim_request"))
 
+    # TST-IMP-014
     def test_view_claim_confirm_post_codigo_correto_vincula(self) -> None:
         self.client.force_login(self.candidate)
         claim, token = self.service.request_claim(
@@ -511,6 +518,7 @@ class LegacyClaimViewTests(TestCase):
         claim.refresh_from_db()
         self.assertEqual(claim.status, LegacyOwnershipClaim.Status.VERIFIED)
 
+    # TST-IMP-015
     def test_view_claim_confirm_post_codigo_incorreto(self) -> None:
         self.client.force_login(self.candidate)
         claim, _token = self.service.request_claim(
@@ -530,6 +538,7 @@ class LegacyClaimViewTests(TestCase):
         self.assertIsNone(self.application.owner_id)
 
     # /gestao/resgates/
+    # TST-IMP-016
     def test_view_claim_queue_exibe_solicitacoes(self) -> None:
         self.client.force_login(self.secretariat)
         claim, _token = self.service.request_claim(
@@ -542,12 +551,14 @@ class LegacyClaimViewTests(TestCase):
         assert claim.protocol is not None
         self.assertContains(response, claim.protocol)
 
+    # TST-IMP-017
     def test_view_claim_queue_requer_secretaria(self) -> None:
         self.client.force_login(self.candidate)
         response = self.client.get(reverse("imports:claim_queue"))
         self.assertEqual(response.status_code, 403)
 
     # /gestao/resgates/<id>/aprovar/
+    # TST-IMP-018
     def test_view_claim_approve_manual(self) -> None:
         self.client.force_login(self.secretariat)
         claim, _token = self.service.request_claim(

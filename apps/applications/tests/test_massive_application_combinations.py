@@ -354,6 +354,7 @@ class TestRegressionSampleMatrix:
         response = logged_client.post(reverse("applications:create"), payload)
         assert response.status_code == 302, _response_form_errors(response)
 
+    # TST-APP-030
     def test_integracao_projeto_sem_dados_coletados_rejeitado(self, logged_client, term) -> None:
         payload = build_valid_form_payload(modality="project", term_pk=term.pk)
         payload["data_already_collected"] = "false"
@@ -367,6 +368,7 @@ class TestRegressionSampleMatrix:
 class TestClientSideValidationSupport:
     """Garantias de frontend para a validação client-side e re-preenchimento."""
 
+    # TST-APP-031
     def test_form_invalido_volta_pre_preenchido(self, logged_client, term) -> None:
         payload = build_valid_form_payload(modality="project", term_pk=term.pk)
         payload["data_already_collected"] = "false"
@@ -381,6 +383,7 @@ class TestClientSideValidationSupport:
         assert "application_form.js" in html
         assert ServiceApplication.objects.count() == 0
 
+    # TST-APP-032
     def test_widget_catalogo_expoe_code_e_categoria(self, term) -> None:
         from applications.forms import ApplicationForm
 
@@ -400,6 +403,7 @@ class TestClientSideValidationSupport:
         assert 'data-category="project_purpose"' in html
         assert f'value="{doctorate.pk}"' in html
 
+    # TST-APP-033
     def test_widget_catalogo_marca_opcao_outro(self, term) -> None:
         from applications.forms import ApplicationForm
 

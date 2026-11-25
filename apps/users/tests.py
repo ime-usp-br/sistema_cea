@@ -11,9 +11,11 @@ User = get_user_model()
 
 
 class UserModelTests(TestCase):
+    # TST-USER-001
     def test_custom_user_model_exists(self) -> None:
         self.assertEqual(User._meta.label, "users.User")
 
+    # TST-USER-002
     def test_user_has_identity_fields(self) -> None:
         user = User.objects.create_user(
             username="aluno",
@@ -29,6 +31,7 @@ class UserModelTests(TestCase):
         self.assertIsNone(user.email_verified_at)
         self.assertIsNotNone(user.created_at)
 
+    # TST-USER-003
     def test_user_email_is_unique(self) -> None:
         User.objects.create_user(username="aluno1", email="dup@usp.br")
         with self.assertRaises(IntegrityError):
@@ -36,6 +39,7 @@ class UserModelTests(TestCase):
 
 
 class IdentityProviderLinkTests(TestCase):
+    # TST-USER-004
     def test_identity_provider_link_creation(self) -> None:
         user = User.objects.create_user(username="aluno", email="aluno@usp.br")
         link = IdentityProviderLink.objects.create(
@@ -67,6 +71,7 @@ class IdentityProviderLinkTests(TestCase):
         )
         self.assertEqual(link.user, user)
 
+    # TST-USER-005
     def test_unique_user_provider_constraint(self) -> None:
         user = User.objects.create_user(username="aluno", email="aluno@usp.br")
         IdentityProviderLink.objects.create(
@@ -102,6 +107,7 @@ class CustomSenhaUnicaBackendTests(TestCase):
             SENHAUNICA_CALLBACK_ID="cb",
         )
 
+    # TST-USER-006
     def test_login_cadastra_codpes_full_name_e_marca_email_verificado(self) -> None:
         from users.backends import CustomSenhaUnicaBackend
 
@@ -136,6 +142,7 @@ class CustomSenhaUnicaBackendTests(TestCase):
             ).exists()
         )
 
+    # TST-USER-007
     def test_login_atualiza_usuario_existente_e_nao_duplica_vinculo(self) -> None:
         from users.backends import CustomSenhaUnicaBackend
 
@@ -223,6 +230,7 @@ class CustomSenhaUnicaBackendTests(TestCase):
 
 
 class RoleGroupSyncTests(TestCase):
+    # TST-USER-008
     def test_role_secretariat_sincroniza_grupo_ao_criar(self) -> None:
         user = User.objects.create_user(
             username="sec1",
@@ -233,6 +241,7 @@ class RoleGroupSyncTests(TestCase):
             set(user.groups.values_list("name", flat=True)), {"secretariat"}
         )
 
+    # TST-USER-009
     def test_mudanca_de_role_atualiza_grupos(self) -> None:
         user = User.objects.create_user(
             username="muda1",
@@ -246,6 +255,7 @@ class RoleGroupSyncTests(TestCase):
             set(user.groups.values_list("name", flat=True)), {"administrator"}
         )
 
+    # TST-USER-010
     def test_papel_invalido_nao_cria_grupo(self) -> None:
         user = User.objects.create(
             username="invalido",
@@ -267,6 +277,7 @@ class RoleGroupSyncTests(TestCase):
 class SenhaUnicaFakerIntegrationTests(TestCase):
     """Login OAuth1 apontando para o uspdev/senhaunica-faker (stack E2E)."""
 
+    # TST-USER-011
     def test_login_init_usa_endpoints_do_faker(self) -> None:
         with patch(
             "users.senhaunica.SenhaUnicaClient.fetch_request_token",
@@ -287,6 +298,7 @@ class SenhaUnicaFakerIntegrationTests(TestCase):
             self.client.session["senhaunica_token_secret"], "request-secret"
         )
 
+    # TST-USER-012
     def test_callback_autentica_usuario_do_faker(self) -> None:
         session = self.client.session
         session["senhaunica_token_secret"] = "request-secret"
@@ -321,6 +333,7 @@ class SenhaUnicaFakerIntegrationTests(TestCase):
         self.assertEqual(user.full_name, "Aluno Faker")
         self.assertTrue(user.is_email_verified)
 
+    # TST-USER-013
     def test_callback_sem_sessao_retorna_400(self) -> None:
         response = self.client.get(
             reverse("users:senhaunica_callback"),
@@ -328,6 +341,7 @@ class SenhaUnicaFakerIntegrationTests(TestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+    # TST-USER-014
     def test_login_init_sem_credenciais_retorna_500(self) -> None:
         with override_settings(SENHAUNICA_KEY="", SENHAUNICA_SECRET=""):
             response = self.client.get(reverse("users:senhaunica_login"))

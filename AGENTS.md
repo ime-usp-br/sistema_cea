@@ -183,6 +183,10 @@ Ao gerar código de testes, você deve:
 - **Convenção de IDs:** o documento usa hífen (`TS-NOT-001`); o teste Python usa underscore
   (`test_TS_NOT_001_...`). Todo ID citado no nome do teste deve existir em `docs/TEST_SCENARIOS.md`
   (verificado pelo meta-teste em `apps/base/tests.py`).
+- Testes de infraestrutura/complementares que não correspondem a um cenário de negócio usam
+  `TST-*` no nome (`test_TST_APP_001_...`) ou em comentário imediatamente anterior. O inventário
+  é gerado por `scripts/gen_test_inventory.py` em `docs/TEST_INVENTORY.md`; todo teste precisa
+  de um ID `TS-*` ou `TST-*`, verificado pelo meta-teste.
 - Em testes de notificação, afirmar também **destinatário** (candidato vs.
   `settings.NOTIFICATION_CENTER_EMAIL`) e **BCC** quando o fluxo usar cópia oculta.
 - Usar _Mocks_ e _Patching_ para chamadas externas (Pix via API Rest, Boleto via SOAP). **Nenhum teste gerado deve depender de conectividade de rede externa**.
