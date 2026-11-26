@@ -55,3 +55,6 @@ tmp/
 # E2E artifacts
 e2e-artifacts/
 test-results/
+
+# Relatórios de auditoria (não versionar)
+docs/auditoria/
