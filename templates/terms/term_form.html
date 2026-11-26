@@ -1,0 +1,39 @@
+{% extends "base/base.html" %}
+
+{% block title %}{% if object %}Editar semestre{% else %}Novo semestre{% endif %}{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
+{% block breadcrumbs %}
+{% url 'terms:list' as parent_url %}
+{% include "base/_breadcrumbs.html" with current_page="Semestre" parent_label="Semestres" parent_url=parent_url %}
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{% if object %}Editar semestre{% else %}Novo semestre{% endif %}</h1>
+        <p class="page-subtitle">
+            Informe o ano, o período e as datas letivas e de inscrições.
+        </p>
+    </div>
+    <a href="{% url 'terms:list' %}" class="btn btn-ghost">Voltar aos semestres</a>
+</div>
+
+<div class="card" style="max-width: 760px;">
+    <div class="card-body">
+        <form method="post" class="form">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="alert alert-error">{{ form.non_field_errors }}</div>
+            {% endif %}
+            {{ form.as_p }}
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    {% if object %}Salvar alterações{% else %}Cadastrar semestre{% endif %}
+                </button>
+                <a href="{% url 'terms:list' %}" class="btn btn-ghost">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

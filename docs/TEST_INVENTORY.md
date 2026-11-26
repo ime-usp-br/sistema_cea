@@ -207,6 +207,12 @@ em `TEST_SCENARIOS.md`; testes de infraestrutura/complementares usam `TST-*`.
 | TST-TERM-006 | `apps/terms/tests.py` | `test_term_creation` |
 | TST-TERM-007 | `apps/terms/tests.py` | `test_unique_year_period_constraint` |
 | TST-TERM-008 | `apps/terms/tests.py` | `test_term_str` |
+| TST-TERM-009 | `apps/terms/test_secretariat_screens.py` | `test_TST_TERM_009_lista_semestres_para_secretaria` |
+| TST-TERM-010 | `apps/terms/test_secretariat_screens.py` | `test_TST_TERM_010_secretaria_cadastra_semestre_pela_pagina` |
+| TST-TERM-011 | `apps/terms/test_secretariat_screens.py` | `test_TST_TERM_011_secretaria_edita_semestre_pela_pagina` |
+| TST-TERM-012 | `apps/terms/test_secretariat_screens.py` | `test_TST_TERM_012_candidato_nao_acessa_gestao_de_semestres` |
+| TST-TERM-013 | `apps/terms/test_secretariat_screens.py` | `test_TST_TERM_013_valida_ordem_das_datas` |
+| TST-TERM-014 | `apps/terms/test_secretariat_screens.py` | `test_TST_TERM_014_administrador_acessa_gestao_de_semestres` |
 | TST-USER-001 | `apps/users/tests.py` | `test_custom_user_model_exists` |
 | TST-USER-002 | `apps/users/tests.py` | `test_user_has_identity_fields` |
 | TST-USER-003 | `apps/users/tests.py` | `test_user_email_is_unique` |

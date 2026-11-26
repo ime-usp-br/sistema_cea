@@ -73,6 +73,7 @@ urlpatterns = [
     ),
     path('', index, name='index'),
     path('', include('users.urls')),
+    path('', include('terms.urls')),
     path('', include('applications.urls')),
     path('', include('audits.urls')),
     path('', include('payments.urls')),

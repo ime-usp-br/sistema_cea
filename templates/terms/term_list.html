@@ -1,0 +1,65 @@
+{% extends "base/base.html" %}
+
+{% block title %}Semestres{% endblock %}
+{% block app_name %}Inscrições CEA{% endblock %}
+
+{% block breadcrumbs %}
+    {% include "base/_breadcrumbs.html" with current_page="Semestres" %}
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Semestres</h1>
+        <p class="page-subtitle">
+            Gerencie os períodos letivos e as janelas de inscrição do CEA.
+            {% if current_term %}
+                Semestre atual: <strong>{{ current_term }}</strong>.
+            {% endif %}
+        </p>
+    </div>
+    <a href="{% url 'terms:create' %}" class="btn btn-primary">Novo semestre</a>
+</div>
+
+{% if terms %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Ano</th>
+                    <th>Período</th>
+                    <th>Data inicial</th>
+                    <th>Data final</th>
+                    <th>Início das inscrições</th>
+                    <th>Fim das inscrições</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for term in terms %}
+                    <tr>
+                        <td>
+                            {{ term.year }}
+                            {% if current_term and current_term.pk == term.pk %}
+                                <span class="badge">Atual</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ term.get_period_display }}</td>
+                        <td>{{ term.teaching_start_date|date:"d/m/Y"|default:"—" }}</td>
+                        <td>{{ term.teaching_end_date|date:"d/m/Y"|default:"—" }}</td>
+                        <td>{{ term.submission_start_date|date:"d/m/Y"|default:"—" }}</td>
+                        <td>{{ term.submission_end_date|date:"d/m/Y"|default:"—" }}</td>
+                        <td class="actions">
+                            <a href="{% url 'terms:update' term.pk %}" class="btn btn-sm btn-secondary">Editar</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="empty-state">
+        <p>Nenhum semestre cadastrado.</p>
+    </div>
+{% endif %}
+{% endblock %}

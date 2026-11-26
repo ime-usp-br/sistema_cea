@@ -78,11 +78,11 @@
         </div>
 
         <div class="nav-dropdown">
-            <button type="button" class="nav-link nav-dropdown-toggle" aria-haspopup="true" aria-expanded="false">
+            <button type="button" class="nav-link nav-dropdown-toggle {% if nav_active == 'terms' %}nav-active{% endif %}" aria-haspopup="true" aria-expanded="false">
                 Administração
             </button>
             <div class="nav-dropdown-menu">
-                <a href="{% url 'admin:terms_academicterm_changelist' %}" class="nav-dropdown-item">Semestres</a>
+                <a href="{% url 'terms:list' %}" class="nav-dropdown-item {% if nav_active == 'terms' %}nav-active{% endif %}">Semestres</a>
                 <a href="{% url 'admin:notifications_notificationtemplate_changelist' %}" class="nav-dropdown-item">E-mails</a>
                 <a href="{% url 'admin:users_user_changelist' %}" class="nav-dropdown-item">Usuários</a>
             </div>
