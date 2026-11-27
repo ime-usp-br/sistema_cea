@@ -155,6 +155,22 @@ services:
       retries: 3
       start_period: 60s
 
+  beszel-agent:
+    image: henrygd/beszel-agent
+    container_name: beszel-agent
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./beszel_agent_data:/var/lib/beszel-agent
+      # monitor other disks / partitions by mounting a folder in /extra-filesystems
+      # - /mnt/disk/.beszel:/extra-filesystems/sda1:ro
+    environment:
+      LISTEN: 45876
+      KEY: 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK614Jz78IgPkBjaNbHtGsg0w12oJ0cb5I7BDKxZJabK'
+      TOKEN: 74dfa7b1-0270-4ac7-a48d-578396648e5f
+      HUB_URL: https://monitor.dos.ime.usp.br
+
   # Mesma imagem do web. Sem portas, sem rede `web`, sem migrações/seeders.
   worker:
     build:
